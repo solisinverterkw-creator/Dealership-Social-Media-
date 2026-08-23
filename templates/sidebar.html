@@ -1,0 +1,119 @@
+{% set ep = request.endpoint %}
+<button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+<aside class="sidebar" id="app-sidebar">
+  <div class="sidebar-brand">
+    <span class="sidebar-logo-plate"><img src="/assets/suzuki-logo.png" alt="Suzuki" class="sidebar-logo"></span>
+    <span>ROSP - Dealers Social Media</span>
+  </div>
+  <nav>
+    {% if can_view('dashboard') %}
+      <a href="{{ url_for('dashboard') }}" class="sidebar-link {% if ep == 'dashboard' %}active{% endif %}">Dashboard</a>
+    {% endif %}
+    {% if can_view('report') %}
+      <a href="{{ url_for('social_report') }}" class="sidebar-link {% if ep == 'social_report' %}active{% endif %}">Social Media Report</a>
+    {% endif %}
+    {% if can_view('weekly_posts') %}
+      <a href="{{ url_for('posting_activity') }}" class="sidebar-link {% if ep == 'posting_activity' %}active{% endif %}">Posting Activity</a>
+    {% endif %}
+    {% if can_view('yt_monthly') %}
+      <a href="{{ url_for('yt_monthly') }}" class="sidebar-link {% if ep == 'yt_monthly' %}active{% endif %}">YT Monthly Videos</a>
+    {% endif %}
+    {% if can_view('no_activity_report') %}
+      <a href="{{ url_for('follower_activity_report') }}" class="sidebar-link {% if ep == 'follower_activity_report' %}active{% endif %}">Follower Activity Report</a>
+    {% endif %}
+
+    <div style="margin:16px 0 6px; padding:0 12px; font-size:10px; color:var(--muted); font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.5px;">Facebook Integration</div>
+    {% if can_view('manual_publish') %}
+      <a href="{{ url_for('manual_publish') }}" class="sidebar-link {% if ep == 'manual_publish' %}active{% endif %}">Publish Content</a>
+    {% endif %}
+    {% if can_view('syndication_report') %}
+      <a href="{{ url_for('syndication_report') }}" class="sidebar-link {% if ep == 'syndication_report' %}active{% endif %}">Integration Report</a>
+    {% endif %}
+    {% if can_view('post_breakdown') %}
+      <a href="{{ url_for('post_breakdown_report') }}" class="sidebar-link {% if ep == 'post_breakdown_report' %}active{% endif %}">Post Breakdown Report</a>
+    {% endif %}
+    {% if can_view('reshare_compliance') %}
+      <a href="{{ url_for('reshare_compliance') }}" class="sidebar-link {% if ep == 'reshare_compliance' %}active{% endif %}">Reshare Compliance</a>
+    {% endif %}
+    {% if can_view('target_pages') %}
+      <a href="{{ url_for('target_pages') }}" class="sidebar-link {% if ep == 'target_pages' %}active{% endif %}">Target Pages</a>
+    {% endif %}
+    {% if can_view('exchange_token') %}
+      <a href="{{ url_for('exchange_token') }}" class="sidebar-link {% if ep == 'exchange_token' %}active{% endif %}">Exchange Token</a>
+    {% endif %}
+
+    <div style="margin:16px 0 6px; padding:0 12px; font-size:10px; color:var(--muted); font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.5px;">Content Compliance</div>
+    {% if can_view('submit_post_check') %}
+      <a href="{{ url_for('post_approval') }}" class="sidebar-link {% if ep == 'post_approval' %}active{% endif %}">Post Approval</a>
+    {% endif %}
+    {% if can_view('email_validator') %}
+      <a href="{{ url_for('email_validator') }}" class="sidebar-link {% if ep == 'email_validator' %}active{% endif %}">Email Validator</a>
+    {% endif %}
+
+    {% if can_view('sales_report') or can_view('stock_report') or can_view('visit_report') or can_view('ageing_report') or can_view('crm_report') or can_view('crm_parameters') or can_view('crm_data_quality') %}
+      <div style="margin:16px 0 6px; padding:0 12px; font-size:10px; color:var(--muted); font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.5px;">Sales &amp; Stock</div>
+    {% endif %}
+    {% if can_view('sales_report') %}
+      <a href="{{ url_for('sales_report') }}" class="sidebar-link {% if ep == 'sales_report' %}active{% endif %}">Sales Report</a>
+    {% endif %}
+    {% if can_view('stock_report') %}
+      <a href="{{ url_for('stock_report') }}" class="sidebar-link {% if ep == 'stock_report' %}active{% endif %}">Stock Report</a>
+    {% endif %}
+    {% if can_view('visit_report') %}
+      <a href="{{ url_for('visit_report') }}" class="sidebar-link {% if ep == 'visit_report' %}active{% endif %}">Visit Report</a>
+    {% endif %}
+    {% if can_view('ageing_report') %}
+      <a href="{{ url_for('ageing_report') }}" class="sidebar-link {% if ep == 'ageing_report' %}active{% endif %}">Ageing Report</a>
+    {% endif %}
+    {% if can_view('crm_report') %}
+      <a href="{{ url_for('crm_report') }}" class="sidebar-link {% if ep == 'crm_report' %}active{% endif %}">CRM Report</a>
+    {% endif %}
+    {% if can_view('crm_parameters') %}
+      <a href="{{ url_for('crm_parameters') }}" class="sidebar-link {% if ep == 'crm_parameters' %}active{% endif %}">CRM Parameters</a>
+    {% endif %}
+    {% if can_view('crm_data_quality') %}
+      <a href="{{ url_for('crm_data_quality') }}" class="sidebar-link {% if ep == 'crm_data_quality' %}active{% endif %}">CRM Data Quality Checker</a>
+    {% endif %}
+    {% if can_view('brand_assets') %}
+      <a href="{{ url_for('brand_assets') }}" class="sidebar-link {% if ep == 'brand_assets' %}active{% endif %}">Brand Assets</a>
+    {% endif %}
+
+    {% if is_super_admin() %}
+      <a href="{{ url_for('users') }}" class="sidebar-link {% if ep == 'users' %}active{% endif %}">User Management</a>
+    {% endif %}
+    <a href="{{ url_for('change_password') }}" class="sidebar-link {% if ep == 'change_password' %}active{% endif %}">Change Password</a>
+  </nav>
+  
+  <select class="theme-select" id="theme-select" onchange="setTheme(this.value)">
+    <option value="dark">🌙 Dark</option>
+    <option value="light">☀️ Light</option>
+    <option value="midnight">🌌 Midnight</option>
+    <option value="slate">🪨 Slate</option>
+    <option value="contrast">◐ High Contrast</option>
+  </select>
+  <div class="sidebar-footer">Developed By Wasim Javed</div>
+</aside>
+
+<script>
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+}
+document.getElementById('theme-select').value = document.documentElement.getAttribute('data-theme') || 'dark';
+
+function toggleSidebar() {
+  document.getElementById('app-sidebar').classList.toggle('open');
+  document.getElementById('sidebar-backdrop').classList.toggle('visible');
+}
+function closeSidebar() {
+  document.getElementById('app-sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('visible');
+}
+document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+document.getElementById('sidebar-backdrop').addEventListener('click', toggleSidebar);
+
+document.querySelectorAll('.sidebar nav a').forEach((link) => {
+  link.addEventListener('click', closeSidebar);
+});
+</script>

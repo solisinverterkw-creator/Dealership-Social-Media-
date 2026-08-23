@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}CRM Report{% endblock %}
+
+{% block head %}
+<style>
+.wide-report-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+.wide-report-table th, .wide-report-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: center; white-space: nowrap; }
+.wide-report-table td.name-cell { text-align: left; font-weight: 600; }
+.wide-report-table thead th { background: var(--panel-alt, rgba(128,128,128,0.15)); }
+.wide-report-table tbody tr:hover { background: rgba(128,128,128,0.08); }
+.wide-report-table td.below-target { color: var(--red); font-weight: 600; background: rgba(208,59,59,0.12); }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>CRM Report</h1>
+    <div class="subtitle">CRM &amp; Dealership Infrastructure Scorecard — Points Obtained Per KPI, Per Dealership, Per Month. Cells Below Max Points Are Highlighted. Total Max: {{ total_max_points|number_format }}</div>
+  </div>
+  <div class="toolbar">
+    <a href="{{ url_for('export_crm_report', period=selected_period, dealership_id=selected_dealership_id or 0) }}" class="btn primary">Export CSV</a>
+  </div>
+</header>
+
+{% if message %}
+  <div class="success-msg">{{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="error-msg">{{ error }}</div>
+{% endif %}
+{% if import_errors %}
+  <div class="error-msg">
+    {{ import_errors|length }} Row(s) Skipped:<br>
+    {% for err in import_errors[:20] %}
+      {{ err }}<br>
+    {% endfor %}
+    {% if import_errors|length > 20 %}
+      <br>...
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if is_super_admin() %}
+<form method="POST" enctype="multipart/form-data" class="search-panel no-print" style="margin-bottom:16px;">
+  <input type="hidden" name="action" value="import_csv">
+  <div class="field">
+    <label>Month This Data Is For</label>
+    <input type="month" name="period_month" value="{{ current_month }}" required>
+  </div>
+  <div class="field" style="flex:2;">
+    <label>CRM Scores CSV Or Excel (Dealer Name, Then One Column Per KPI In Template Order)</label>
+    <input type="file" name="crm_csv" accept=".csv,.xlsx" required>
+  </div>
+  <button type="submit" class="submit">Import CSV</button>
+</form>
+
+<div class="no-print" style="margin-bottom:24px;">
+  <a href="{{ url_for('export_crm_report') }}?template=1" class="btn">Export Template (Blank, With Current Parameters)</a>
+</div>
+{% endif %}
+
+<form method="GET" class="search-panel no-print" style="margin-bottom:24px;">
+  <div class="field">
+    <label>Dealership</label>
+    <select name="dealership_id" onchange="this.form.submit()">
+      <option value="0">— All Dealerships —</option>
+      {% for d in dealerships %}
+        <option value="{{ d.id }}" {% if selected_dealership_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if periods %}
+  <div class="field">
+    <label>Viewing Month</label>
+    <select name="period" onchange="this.form.submit()">
+      {% for p in periods %}
+        <option value="{{ p }}" {% if p == selected_period %}selected{% endif %}>{{ period_labels[p] }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+</form>
+
+{% if selected_dealership_id and not selected_dealership %}
+  <div class="error-msg">Dealership Not Found.</div>
+{% elif selected_dealership %}
+  {% set dealer_total_obtained = namespace(val=0) %}
+  {% for p in parameters %}
+    {% if p.max_points != 0.0 %}
+      {% set pt_val = score_by_param[p.id] if p.id in score_by_param else 0 %}
+      {% set dealer_total_obtained.val = dealer_total_obtained.val + pt_val %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="detail-card" style="margin-bottom:16px;">
+    <h2 style="display:flex; justify-content:space-between; align-items:center; font-size:16px;">
+      <span>{{ selected_dealership.name }}</span>
+      <span class="subtitle">{{ period_title }}</span>
+    </h2>
+  </div>
+
+  {% if not score_by_param %}
+    <div class="empty-state">No CRM Scores For This Dealership This Month Yet.</div>
+  {% else %}
+  <div class="table-wrap" style="overflow-x:auto;">
+    <table class="wide-report-table">
+      <thead>
+        <tr>
+          <th>Sr#</th>
+          <th style="text-align:left;">Parameters</th>
+          <th style="text-align:left;">Criteria</th>
+          <th>Max Pts</th>
+          <th>Points Obtained</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in parameters %}
+          {% set is_direct_result = (p.max_points == 0.0) %}
+          {% set obtained = score_by_param[p.id] if p.id in score_by_param else none %}
+          {% set target_max = 100 if is_direct_result else p.max_points %}
+          {% set below_target = (obtained is not none and obtained < target_max) %}
+          
+          {% set criteria_text = namespace(val=p.criteria or '') %}
+          {% set target_field = dealer_target_field_by_calc_key[p.calc_key] if p.calc_key in dealer_target_field_by_calc_key else none %}
+          {% if target_field and selected_dealership[target_field] is not none %}
+            {% set criteria_text.val = criteria_text.val ~ ' (Target: ' ~ selected_dealership[target_field]|number_format ~ ')' %}
+          {% endif %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td style="text-align:left; white-space:normal;">{{ p.parameter_name }}</td>
+            <td style="text-align:left; white-space:normal;">{{ criteria_text.val }}</td>
+            <td>{% if is_direct_result %}—{% else %}{{ p.max_points|number_format(0) }}{% endif %}</td>
+            <td class="{% if below_target %}below-target{% endif %}">
+              {% if obtained is not none %}
+                {{ obtained|number_format(1) }}{% if is_direct_result %}%{% endif %}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        <tr style="font-weight:600;">
+          <td></td>
+          <td style="text-align:left;" colspan="2">TOTAL CRM POINTS</td>
+          <td>{{ total_max_points|number_format(0) }}</td>
+          <td>{{ dealer_total_obtained.val|number_format(1) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+{% elif not pivot %}
+  <div class="empty-state">No CRM Data For This Month Yet — Import A CSV Above.</div>
+{% else %}
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="wide-report-table">
+    <thead>
+      <tr>
+        <th>Sr#</th>
+        <th>Dealer</th>
+        {% for p in parameters %}
+          {% set is_direct_result = (p.max_points == 0.0) %}
+          <th>{{ p.parameter_name }}{% if not is_direct_result %} ({{ p.max_points|number_format(0) }}){% endif %}</th>
+        {% endfor %}
+        <th>Total ({{ total_max_points|number_format(0) }})</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dealership_name, scores in pivot.items() %}
+        {% set dealer_total = namespace(val=0) %}
+        {% for p in parameters %}
+          {% if p.max_points != 0.0 %}
+            {% set val = scores[p.id] if p.id in scores else 0 %}
+            {% set dealer_total.val = dealer_total.val + val %}
+          {% endif %}
+        {% endfor %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="name-cell">{{ dealership_name }}</td>
+          {% for p in parameters %}
+            {% set is_direct_result = (p.max_points == 0.0) %}
+            {% set obtained = scores[p.id] if p.id in scores else none %}
+            {% set target_max = 100 if is_direct_result else p.max_points %}
+            {% set below_target = (obtained is not none and obtained < target_max) %}
+            <td class="{% if below_target %}below-target{% endif %}">
+              {% if obtained is not none %}
+                {{ obtained|number_format(1) }}{% if is_direct_result %}%{% endif %}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          {% endfor %}
+          <td><strong>{{ dealer_total.val|number_format(1) }}</strong></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

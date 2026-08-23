@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Email Validator{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Email Validator</h1>
+    <div class="subtitle">Format · MX Record · Disposable · Role-Based · SMTP (Optional) — Up To 5-Point Check</div>
+  </div>
+</header>
+
+{% if error %}
+  <div class="error-msg" style="margin-bottom:16px;">{{ error }}</div>
+{% endif %}
+
+{% if smtp_auto_disabled %}
+  <div class="error-msg" style="margin-bottom:16px;">
+    <strong>SMTP Check Auto-Disabled:</strong> Outbound connection (Port 25) appears to be blocked from this server's network. MX + Disposable + Role-Based checks are still valid, but live SMTP checks have been bypassed for the remainder of this run to avoid connection timeouts.
+  </div>
+{% endif %}
+
+<form method="POST" enctype="multipart/form-data" class="search-panel" style="margin-bottom:24px;" onsubmit="return startValidating(this)">
+  <div class="field" style="flex:1; min-width: 300px;">
+    <label>Email(s) — One Per Line</label>
+    <textarea name="emails" rows="6" placeholder="info@example.com&#10;sales@domain.com&#10;test@gmail.com">{{ emails_raw }}</textarea>
+  </div>
+  <div class="field">
+    <label>Or Upload Excel / CSV File</label>
+    <input type="file" name="email_file" accept=".xlsx,.csv">
+    <div style="font-size:11px; color:var(--muted); margin-top:4px;">Finds all cells containing "@" regardless of column.</div>
+  </div>
+  <div class="field" style="display:flex; align-items:center; gap:8px; margin-bottom: 12px; margin-top: 10px;">
+    <input type="checkbox" name="include_smtp" id="include_smtp" {% if include_smtp %}checked{% endif %} style="width:auto; margin:0;">
+    <label for="include_smtp" style="margin:0; cursor:pointer;">Include SMTP mailbox-exists check (opt-in, slower)</label>
+  </div>
+  <button type="submit" class="submit" id="validate-btn" style="width:auto; padding:11px 28px;">Validate</button>
+</form>
+
+{% if results %}
+<header style="margin-bottom:12px; margin-top:28px;">
+  <div>
+    <h2 style="font-size:16px; margin:0;">Validation Results ({{ results|length }})</h2>
+  </div>
+  <div class="toolbar">
+    <a href="{{ url_for('export_email_validation') }}" class="btn">Export CSV</a>
+  </div>
+</header>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Email Address</th>
+        <th class="th-center">Format</th>
+        <th class="th-center">MX</th>
+        <th class="th-center">Disposable</th>
+        <th class="th-center">Role-Based</th>
+        <th class="th-center">SMTP</th>
+        <th class="th-center">Overall</th>
+        <th>Verdict Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td class="row-number">{{ loop.index }}</td>
+        <td class="name" style="font-family:'IBM Plex Mono', monospace; font-size:12px;">{{ r.email }}</td>
+        
+        <td class="th-center">
+          <span class="status-badge {% if r.format_valid %}status-done{% else %}status-flag{% endif %}">
+            {% if r.format_valid %}Valid{% else %}Invalid{% endif %}
+          </span>
+        </td>
+        
+        <td class="th-center">
+          <span class="status-badge {% if r.mx_valid %}status-done{% else %}status-flag{% endif %}">
+            {% if r.mx_valid %}OK{% else %}No MX{% endif %}
+          </span>
+        </td>
+        
+        <td class="th-center">
+          {% if r.is_disposable is none %}
+            <span class="status-badge status-partial" title="Check failed / DeBounce API unreachable">—</span>
+          {% else %}
+            <span class="status-badge {% if r.is_disposable %}status-flag{% else %}status-done{% endif %}">
+              {% if r.is_disposable %}Yes{% else %}No{% endif %}
+            </span>
+          {% endif %}
+        </td>
+        
+        <td class="th-center">
+          <span class="status-badge {% if r.is_role_based %}status-flag{% else %}status-done{% endif %}">
+            {% if r.is_role_based %}Yes{% else %}No{% endif %}
+          </span>
+        </td>
+        
+        <td class="th-center">
+          {% if r.smtp_valid is none %}
+            <span class="status-badge status-partial" title="Check unavailable or skipped for freemails">—</span>
+          {% else %}
+            <span class="status-badge {% if r.smtp_valid %}status-done{% else %}status-flag{% endif %}">
+              {% if r.smtp_valid %}Exists{% else %}Fails{% endif %}
+            </span>
+          {% endif %}
+        </td>
+        
+        <td class="th-center">
+          <span class="status-badge {% if r.overall_valid %}status-done{% else %}status-flag{% endif %}" style="font-weight:600;">
+            {% if r.overall_valid %}Pass{% else %}Fail{% endif %}
+          </span>
+        </td>
+        
+        <td style="font-size:12px; color:var(--muted); line-height:1.4;">{{ r.summary }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function startValidating(form) {
+  const btn = document.getElementById('validate-btn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.textContent = 'Validating...';
+  return true;
+}
+</script>
+{% endblock %}

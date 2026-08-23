@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Posting Activity Report{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Posting Activity Report</h1>
+    <div class="subtitle">Facebook + Instagram Posts — By Date Range</div>
+  </div>
+  <div class="toolbar">
+    {% if can_perform('refresh') %}
+    <button class="btn primary" id="check-all" {% if not has_range %}disabled title="Select A From And To Date, Then Click Load, First"{% endif %}>Check All</button>
+    {% endif %}
+  </div>
+</header>
+
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progress-bar-fill" style="width: {{ overall_percent }}%"></div>
+  </div>
+  <div class="progress-text" id="progress-text">{{ overall_percent }}% Complete — {{ total_checkable }} Dealerships</div>
+</div>
+
+<form method="GET" class="search-panel" style="margin-bottom:24px; display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+  <div class="field" style="margin-bottom:0;">
+    <label>FB/IG From</label>
+    <input type="date" name="from" value="{{ from_val }}">
+  </div>
+  <div class="field" style="margin-bottom:0;">
+    <label>FB/IG To</label>
+    <input type="date" name="to" value="{{ to_val }}">
+  </div>
+  <button type="submit" class="submit" style="width:auto; padding:11px 24px;">Load</button>
+</form>
+
+{% if not has_range %}
+  <div class="empty-state" style="margin-bottom:24px;">Select A From And To Date, Then Click "Load", To Enable Checking.</div>
+{% endif %}
+
+<div class="table-wrap">
+  {% if not dealerships %}
+    <div class="empty-state">No Dealerships Added Yet.</div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Dealership</th>
+        <th>FB Posts</th>
+        <th>IG Posts</th>
+        <th>Last Checked</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in dealerships %}
+      <tr id="row-{{ d.id }}">
+        <td class="row-number">{{ loop.index }}</td>
+        <td class="name">{{ d.name }}</td>
+        <td class="metric fb-color" id="fbposts-{{ d.id }}">{{ d.fb_posts_week|number_format }}</td>
+        <td class="metric ig-color" id="igposts-{{ d.id }}">{{ d.ig_posts_week|number_format }}</td>
+        <td class="timestamp" id="ts-{{ d.id }}">
+          {% set checked_dates = [] %}
+          {% if d.fb_posts_checked_at %}
+            {% set _ = checked_dates.append(d.fb_posts_checked_at) %}
+          {% endif %}
+          {% if d.ig_posts_checked_at %}
+            {% set _ = checked_dates.append(d.ig_posts_checked_at) %}
+          {% endif %}
+          {% if checked_dates %}
+            {% set latest_check = checked_dates|sort|last %}
+            {{ latest_check.strftime('%d %b, %H:%M') }}
+          {% else %}
+            never
+          {% endif %}
+        </td>
+        <td class="actions-cell">
+          {% if can_perform('refresh') %}
+          <button class="refresh-btn"
+                  data-has-fb="{% if d.fb_input %}1{% endif %}"
+                  data-has-ig="{% if d.ig_search %}1{% endif %}"
+                  {% if not has_range %}disabled title="Select A From And To Date, Then Click Load, First"{% endif %}
+                  onclick="checkRow({{ d.id }}, this, this.dataset.hasFb === '1', this.dataset.hasIg === '1')">Check</button>
+          {% endif %}
+          
+          {% set p = row_percents[d.id] %}
+          {% if p is not none %}
+            {% set fb_fact = 1 if d.fb_input else 0 %}
+            {% set ig_fact = 1 if d.ig_search else 0 %}
+            {% set applicable_count = fb_fact + ig_fact %}
+            {% set done_count = ((p * applicable_count) / 100)|round|int %}
+            <span class="status-badge {% if p >= 100 %}status-done{% elif p > 0 %}status-partial{% else %}status-pending{% endif %}"
+                  id="status-{{ d.id }}"
+                  data-applicable="{{ applicable_count }}"
+                  data-done="{{ done_count }}">{{ p }}%</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const rangeFrom = {{ from_val|tojson }};
+const rangeTo = {{ to_val|tojson }};
+
+function setRowPercent(id, done, applicable) {
+  const statusEl = document.getElementById(`status-${id}`);
+  if (!statusEl) return;
+  const percent = applicable > 0 ? Math.round((done / applicable) * 100) : 0;
+  statusEl.textContent = `${percent}%`;
+  statusEl.dataset.done = done;
+  statusEl.classList.remove('status-done', 'status-partial', 'status-pending');
+  statusEl.classList.add(percent >= 100 ? 'status-done' : (percent > 0 ? 'status-partial' : 'status-pending'));
+}
+
+function updateOverallProgress() {
+  const badges = document.querySelectorAll('.status-badge');
+  let sum = 0;
+  badges.forEach(b => {
+    const applicable = parseInt(b.dataset.applicable, 10) || 0;
+    const done = parseInt(b.dataset.done, 10) || 0;
+    sum += applicable > 0 ? (done / applicable) * 100 : 0;
+  });
+  const total = badges.length;
+  const percent = total > 0 ? Math.round(sum / total) : 0;
+  document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+  document.getElementById('progress-text').textContent = `${percent}% Complete — ${total} Dealerships`;
+}
+
+async function checkRow(id, btnEl, hasFb, hasIg) {
+  if (!rangeFrom || !rangeTo) {
+    alert('Select A From And To Date, Then Click Load, Before Checking.');
+    return;
+  }
+  if (btnEl) { btnEl.classList.add('loading'); }
+  const errors = [];
+  const applicable = (hasFb ? 1 : 0) + (hasIg ? 1 : 0);
+  let done = 0;
+
+  try {
+    if (hasFb) {
+      const timer = btnEl ? startElapsedTimer(btnEl, 'FB') : null;
+      const r = await fetch(`/check_fb_posts.php?id=${id}&from=${rangeFrom}&to=${rangeTo}`);
+      const d = await r.json();
+      if (timer) stopElapsedTimer(timer);
+      if (d.success) document.getElementById(`fbposts-${id}`).textContent = d.fb_posts_week.toLocaleString();
+      else errors.push('FB: ' + d.message);
+      done++;
+      setRowPercent(id, done, applicable);
+      updateOverallProgress();
+    }
+    if (hasIg) {
+      if (btnEl) btnEl.textContent = `${Math.round((done / applicable) * 100)}%`;
+      const r = await fetch(`/check_ig_posts.php?id=${id}&from=${rangeFrom}&to=${rangeTo}`);
+      const d = await r.json();
+      if (d.success) document.getElementById(`igposts-${id}`).textContent = d.ig_posts_week.toLocaleString();
+      else errors.push('IG: ' + d.message);
+      done++;
+      setRowPercent(id, done, applicable);
+      updateOverallProgress();
+    }
+
+    const tsEl = document.getElementById(`ts-${id}`);
+    if (errors.length) {
+      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}">⚠ error</span>`;
+    } else {
+      tsEl.textContent = 'just now';
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    if (btnEl) { btnEl.classList.remove('loading'); btnEl.textContent = 'Check'; }
+  }
+}
+
+document.getElementById('check-all')?.addEventListener('click', async function () {
+  const rows = document.querySelectorAll('tr[id^="row-"]');
+  this.disabled = true;
+
+  let done = 0;
+  for (const row of rows) {
+    const id = row.id.replace('row-', '');
+    this.textContent = `Checking ${done + 1}/${rows.length}...`;
+
+    const btn = row.querySelector('.refresh-btn');
+    if (btn) {
+      await checkRow(id, btn, btn.dataset.hasFb === '1', btn.dataset.hasIg === '1');
+    }
+    done++;
+  }
+
+  this.textContent = 'Check All';
+  this.disabled = false;
+});
+</script>
+{% endblock %}

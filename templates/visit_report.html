@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}Visit Report{% endblock %}
+
+{% block head %}
+<style>
+:root {
+  --print-font-size: 14px;
+  --print-sr-width: 20px;
+  --print-cell-padding: 3px 4px;
+}
+@page { margin: 16mm 12mm; }
+@media print {
+  .sidebar, .sidebar-toggle, .no-print { display: none !important; }
+  .app-layout { display: block !important; }
+  .main-content { display: block !important; margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
+  body { background: #fff !important; color: #000 !important; }
+  #weak-areas-textarea { display: none !important; }
+  #weak-areas-display { display: block !important; }
+  .print-atomic, .detail-card, .wide-report-table { page-break-inside: avoid; break-inside: avoid; }
+  h2 { page-break-after: avoid; break-after: avoid; }
+  .weak-areas-box { page-break-inside: auto !important; break-inside: auto !important; }
+  .weak-areas-box { border: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; }
+  .detail-grid { display: flex !important; flex-wrap: wrap !important; }
+  .detail-grid > div { flex: 1 1 150px; }
+  body, h1, h2, .subtitle, .stat-label, .stat-value,
+  .wide-report-table, .wide-report-table th, .wide-report-table td,
+  #weak-areas-display, #weak-areas-textarea { font-size: var(--print-font-size) !important; }
+  .crm-table th:first-child, .crm-table td:first-child { width: var(--print-sr-width) !important; max-width: var(--print-sr-width) !important; padding-left: 4px !important; padding-right: 4px !important; }
+  .wide-report-table th, .wide-report-table td { padding: var(--print-cell-padding) !important; }
+  h1 { font-weight: 600; }
+  .wide-report-table th { text-align: center !important; }
+  .wide-report-table td { text-align: center; }
+  .wide-report-table th:first-child, .wide-report-table td:first-child,
+  .wide-report-table td[style*="text-align:left"] { text-align: left !important; }
+  h2 { text-align: left; }
+  .detail-grid { text-align: left; }
+  #weak-areas-display { text-align: justify !important; }
+  #report-content { outline: none !important; }
+}
+#report-content[contenteditable="true"] { outline: 2px dashed var(--accent, #4a90d9); outline-offset: 6px; cursor: text; }
+.signature-block { display:flex; gap:32px; margin-top:40px; flex-wrap:wrap; }
+.signature-line { flex:1; min-width:200px; border-top:1px solid var(--border); padding-top:8px; margin-top:60px; }
+.wide-report-table { border-collapse: collapse; width: 100%; font-size: 11px; table-layout: fixed; }
+.wide-report-table th, .wide-report-table td { border: 1px solid var(--border); padding: 3px 4px; text-align: center; }
+.wide-report-table td { white-space: nowrap; }
+.wide-report-table th { white-space: normal; word-break: break-word; line-height: 1.25; font-size: 10px; max-width: 70px; }
+.wide-report-table th:first-child, .wide-report-table td:first-child { width: 220px; max-width: 220px; white-space: normal; }
+.wide-report-table thead th { background: var(--panel-alt, rgba(128,128,128,0.15)); }
+#weak-areas-textarea { width: 100%; min-height: 140px; font-family: inherit; font-size: 13px; line-height: 1.7; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel, transparent); color: inherit; resize: vertical; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Visit Report</h1>
+  </div>
+  {% if dealership %}
+  <div class="toolbar no-print" style="align-items:center; gap:20px; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; gap:6px;">
+      <label for="print-font-size" style="font-size:12px; white-space:nowrap;">Print Font Size</label>
+      <input type="range" id="print-font-size" min="10" max="18" step="1" value="14" oninput="updatePrintVar('--print-font-size', this.value+'px'); document.getElementById('print-font-size-val').textContent=this.value+'px';">
+      <span id="print-font-size-val" style="font-size:12px; min-width:32px;">14px</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <label for="print-sr-width" style="font-size:12px; white-space:nowrap;">Sr# Column Width</label>
+      <input type="range" id="print-sr-width" min="16" max="60" step="2" value="20" oninput="updatePrintVar('--print-sr-width', this.value+'px'); document.getElementById('print-sr-width-val').textContent=this.value+'px';">
+      <span id="print-sr-width-val" style="font-size:12px; min-width:32px;">20px</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <label for="print-cell-padding" style="font-size:12px; white-space:nowrap;">Table Cell Padding</label>
+      <input type="range" id="print-cell-padding" min="1" max="10" step="1" value="3" oninput="updatePrintVar('--print-cell-padding', this.value+'px '+this.value+'px'); document.getElementById('print-cell-padding-val').textContent=this.value+'px';">
+      <span id="print-cell-padding-val" style="font-size:12px; min-width:32px;">3px</span>
+    </div>
+    <button class="btn primary" onclick="printReport()">Print Report</button>
+  </div>
+  {% endif %}
+</header>
+{% if dealership %}
+  <div class="subtitle no-print" style="margin-top:-20px; margin-bottom:20px;">Print Settings Only Affect The Printed/PDF Output — Adjust Them, Then Click Print Report.</div>
+{% endif %}
+
+<form method="GET" class="search-panel no-print" style="margin-bottom:28px;">
+  <div class="field" style="flex:2;">
+    <label>Dealership</label>
+    <select name="dealership_id" onchange="this.form.submit()" required>
+      <option value="">— Select A Dealership —</option>
+      {% for d in dealerships %}
+        <option value="{{ d.id }}" {% if dealership_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if dealership_id and not dealership %}
+  <div class="error-msg">Dealership Not Found.</div>
+{% elif dealership %}
+  <div class="toolbar no-print" id="format-toolbar-wrap" style="margin-bottom:16px; align-items:center; gap:10px; flex-wrap:wrap; border:1px solid var(--border); border-radius:8px; padding:10px 14px;">
+    <button type="button" class="btn" id="format-mode-btn" onclick="toggleFormatMode()">Enable Formatting</button>
+    <span id="format-toolbar" style="display:none; gap:8px; align-items:center; flex-wrap:wrap;">
+      <button type="button" class="btn" title="Bold" onclick="document.execCommand('bold')" style="font-weight:700;">B</button>
+      <button type="button" class="btn" title="Italic" onclick="document.execCommand('italic')" style="font-style:italic;">I</button>
+      <button type="button" class="btn" title="Underline" onclick="document.execCommand('underline')" style="text-decoration:underline;">U</button>
+      <select title="Font Size" onchange="applyFontSize(this.value); this.selectedIndex=0;">
+        <option value="">Font Size</option>
+        <option value="10">10px</option>
+        <option value="11">11px</option>
+        <option value="12">12px</option>
+        <option value="14">14px</option>
+        <option value="16">16px</option>
+        <option value="18">18px</option>
+        <option value="20">20px</option>
+        <option value="24">24px</option>
+      </select>
+      <button type="button" class="btn" title="Align Left" onclick="document.execCommand('justifyLeft')">Left</button>
+      <button type="button" class="btn" title="Align Center" onclick="document.execCommand('justifyCenter')">Center</button>
+      <button type="button" class="btn" title="Align Right" onclick="document.execCommand('justifyRight')">Right</button>
+      <button type="button" class="btn" title="Justify" onclick="document.execCommand('justifyFull')">Justify</button>
+    </span>
+    <span class="subtitle" style="font-size:11px;">Select Text In The Report Below To Format It — Same Formatting Prints In The PDF. Not Saved Between Visits.</span>
+  </div>
+
+  <div id="report-content">
+    <div class="detail-card" style="margin-bottom:20px;">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+        <img src="/assets/suzuki-logo.png" alt="Suzuki" style="height:40px;">
+      </div>
+      <h2 style="display:flex; justify-content:space-between; align-items:center;">
+        <span>{{ dealership.name }}</span>
+        <span class="subtitle">Report Date: {{ date_str }}</span>
+      </h2>
+    </div>
+
+    <h2 style="font-size:16px; margin-bottom:14px;">Sales — {{ sales_period_label or 'No Data' }}</h2>
+    <div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+      {% if not sales_rows %}
+        <div class="empty-state">No Sales Data Imported For This Dealership Yet.</div>
+      {% else %}
+      <table class="wide-report-table">
+        <thead>
+          <tr>
+            <th>Dealer</th>
+            <th>Target</th>
+            {% for c in sales_column_sequence %}
+              <th>
+                {% if c.type == 'grand_total' %}
+                  Grand Total
+                {% else %}
+                  {{ friendly_product_label(c.name) }}
+                {% endif %}
+              </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:left; font-weight:600;">{{ dealership.name }}</td>
+            <td>{% if sales_summary and sales_summary.target is not none %}{{ sales_summary.target|number_format }}{% else %}—{% endif %}</td>
+            {% for c in sales_column_sequence %}
+              {% if c.type == 'grand_total' %}
+                <td>{% if sales_summary and sales_summary.grand_total is not none %}{{ sales_summary.grand_total|number_format }}{% else %}—{% endif %}</td>
+              {% else %}
+                <td>{{ (sales_pivot[c.name] or 0)|number_format }}</td>
+              {% endif %}
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+
+    <h2 style="font-size:16px; margin-bottom:14px;">Stock</h2>
+    <div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+      {% if not stock_rows %}
+        <div class="empty-state">No Stock Data Imported For This Dealership Yet.</div>
+      {% else %}
+      <table class="wide-report-table">
+        <thead>
+          <tr>
+            <th>Dealer</th>
+            {% for p in stock_master_columns %}
+              <th title="{{ p }}">{{ shorten_product_label(p) }}</th>
+            {% endfor %}
+            <th>Total</th>
+            <th>Available Security Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set stock_total = stock_pivot.values()|sum %}
+          <tr>
+            <td style="text-align:left; font-weight:600;">{{ dealership.name }}</td>
+            {% for p in stock_master_columns %}
+              <td>{{ (stock_pivot[p] or 0)|number_format }}</td>
+            {% endfor %}
+            <td style="font-weight:600;">{{ stock_total|number_format }}</td>
+            <td>{% if dealership.security_amount is not none %}Rs. {{ dealership.security_amount|number_format }}{% else %}—{% endif %}</td>
+          </tr>
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+
+    <h2 style="font-size:16px; margin-bottom:14px;">Ageing (60+ Days)</h2>
+    <div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+      {% if not ageing_by_product %}
+        <div class="empty-state">No Vehicles Aged 60+ Days For This Dealership.</div>
+      {% else %}
+      <table class="wide-report-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            {% for label in ageing_product_labels %}
+              <th>{{ label }}</th>
+            {% endfor %}
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:left; font-weight:600;">Count</td>
+            {% set ageing_counts = [] %}
+            {% for label in ageing_product_labels %}
+              {% set cnt = ageing_by_product[label].count %}
+              <td>{{ cnt|number_format }}</td>
+              {% set _ = ageing_counts.append(cnt) %}
+            {% endfor %}
+            <td style="font-weight:600;">{{ ageing_counts|sum|number_format }}</td>
+          </tr>
+          <tr>
+            <td style="text-align:left; font-weight:600;">Oldest (Days)</td>
+            {% for label in ageing_product_labels %}
+              <td>{{ ageing_by_product[label].oldest_days }}</td>
+            {% endfor %}
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+
+    <div class="print-atomic">
+      <h2 style="font-size:16px; margin-bottom:14px;">CRM &amp; Dealership Performance{% if crm_period_label %} — {{ crm_period_label }}{% endif %}</h2>
+      <div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+        {% if not crm_parameters %}
+          <div class="empty-state">No CRM Parameters Defined Yet.</div>
+        {% elif not crm_score_by_param %}
+          <div class="empty-state">No CRM Scores Imported For This Dealership Yet.</div>
+        {% else %}
+        {% set crm_total_obtained = namespace(val=0) %}
+        {% for p in crm_parameters %}
+          {% if p.max_points != 0.0 %}
+            {% set pt_val = crm_score_by_param[p.id] if p.id in crm_score_by_param else 0 %}
+            {% set crm_total_obtained.val = crm_total_obtained.val + pt_val %}
+          {% endif %}
+        {% endfor %}
+        <table class="wide-report-table crm-table">
+          <thead>
+            <tr>
+              <th>Sr#</th>
+              <th style="text-align:left;">Parameters</th>
+              <th style="text-align:left;">Criteria</th>
+              <th>Max Pts</th>
+              <th>Points Obtained</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in crm_parameters %}
+              {% set is_direct_result = (p.max_points == 0.0) %}
+              {% set obtained = crm_score_by_param[p.id] if p.id in crm_score_by_param else none %}
+              {% set target_max = 100 if is_direct_result else p.max_points %}
+              {% set below_target = (obtained is not none and obtained < target_max) %}
+              
+              {% set criteria_text = namespace(val=p.criteria or '') %}
+              {% set target_field = dealer_target_field_by_calc_key[p.calc_key] if p.calc_key in dealer_target_field_by_calc_key else none %}
+              {% if target_field and dealership[target_field] is not none %}
+                {% set criteria_text.val = criteria_text.val ~ ' (Target: ' ~ dealership[target_field]|number_format ~ ')' %}
+              {% endif %}
+              <tr {% if below_target %}style="color:var(--red); font-weight:600; background:rgba(208,59,59,0.12);"{% endif %}>
+                <td>{{ loop.index }}</td>
+                <td style="text-align:left; white-space:normal;">{{ p.parameter_name }}</td>
+                <td style="text-align:left; white-space:normal;">{{ criteria_text.val }}</td>
+                <td>{% if is_direct_result %}—{% else %}{{ p.max_points|number_format(0) }}{% endif %}</td>
+                <td>
+                  {% if obtained is not none %}
+                    {{ obtained|number_format(1) }}{% if is_direct_result %}%{% endif %}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            <tr style="font-weight:600;">
+              <td></td>
+              <td style="text-align:left; white-space:normal;" colspan="2">TOTAL CRM POINTS</td>
+              <td>{{ total_max_points|number_format(0) }}</td>
+              <td>{{ crm_total_obtained.val|number_format(1) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="print-atomic">
+      <h2 style="font-size:16px; margin-bottom:14px;">Social Media &amp; Reviews</h2>
+      <div class="detail-card" style="margin-bottom:24px;">
+        <div class="detail-grid">
+          <div><div class="stat-label">FB Followers</div><div class="stat-value" style="color:var(--fb)">{{ (dealership.fb_followers or 0)|number_format }}</div></div>
+          <div><div class="stat-label">IG Followers</div><div class="stat-value" style="color:var(--ig)">{{ (dealership.ig_followers or 0)|number_format }}</div></div>
+          <div><div class="stat-label">YT Subscribers</div><div class="stat-value" style="color:var(--yt)">{{ (dealership.yt_subscribers or 0)|number_format }}</div></div>
+          <div><div class="stat-label">FB Posts/Week</div><div class="stat-value">{{ (dealership.fb_posts_week or 0)|number_format }}</div></div>
+          <div><div class="stat-label">IG Posts/Week</div><div class="stat-value">{{ (dealership.ig_posts_week or 0)|number_format }}</div></div>
+          <div><div class="stat-label">Google Reviews</div><div class="stat-value" style="color:var(--gr)">{{ (dealership.google_review_count or 0)|number_format }} ({{ dealership.google_rating or 0 }}★)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="weak-areas-heading" style="font-size:16px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+      <span>Weak Areas</span>
+      <button type="button" class="btn no-print" id="weak-areas-edit-btn" onclick="toggleWeakAreasEdit()" style="font-size:12px; display:none;">Edit</button>
+    </h2>
+    <div class="detail-card weak-areas-box" style="margin-bottom:24px;">
+      <div id="weak-areas-error" class="error-msg" style="margin-bottom:12px; display:none;"></div>
+      <div id="weak-areas-loading" class="subtitle no-print">Generating... <span id="weak-areas-timer">0s</span></div>
+      <div id="weak-areas-display" style="font-size:14px; line-height:1.85; text-align:justify; letter-spacing:0.1px; white-space:pre-wrap;"></div>
+      <textarea id="weak-areas-textarea" name="weak_areas_text" style="display:none;"></textarea>
+    </div>
+
+    <div class="signature-block">
+      <div class="signature-line">DSM Signature</div>
+      <div class="signature-line">Manager Signature</div>
+      <div class="signature-line">Dealer Owner Signature</div>
+    </div>
+
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if dealership %}
+(function() {
+  const loadingEl = document.getElementById('weak-areas-loading');
+  const timerEl = document.getElementById('weak-areas-timer');
+  const errorEl = document.getElementById('weak-areas-error');
+  const displayEl = document.getElementById('weak-areas-display');
+  const editBtn = document.getElementById('weak-areas-edit-btn');
+
+  const startedAt = Date.now();
+  const timerInterval = setInterval(() => {
+    timerEl.textContent = Math.round((Date.now() - startedAt) / 1000) + 's';
+  }, 500);
+
+  fetch('/get_weak_areas.php?dealership_id={{ dealership.id }}')
+    .then(res => res.json())
+    .then(data => {
+      clearInterval(timerInterval);
+      loadingEl.style.display = 'none';
+      if (data.success) {
+        displayEl.textContent = data.text;
+        document.getElementById('weak-areas-textarea').value = data.text;
+        editBtn.style.display = 'inline-block';
+      } else {
+        errorEl.textContent = 'Could Not Generate Weak-Areas Analysis: ' + data.message;
+        errorEl.style.display = 'block';
+      }
+    })
+    .catch(err => {
+      clearInterval(timerInterval);
+      loadingEl.style.display = 'none';
+      errorEl.textContent = 'Could Not Reach The Server To Generate Weak-Areas Analysis.';
+      errorEl.style.display = 'block';
+    });
+})();
+{% endif %}
+
+function toggleWeakAreasEdit() {
+  const display = document.getElementById('weak-areas-display');
+  const textarea = document.getElementById('weak-areas-textarea');
+  const btn = document.getElementById('weak-areas-edit-btn');
+  if (!display || !textarea || !btn) return;
+
+  const isEditing = textarea.style.display !== 'none';
+  if (!isEditing) {
+    textarea.value = display.textContent;
+    display.style.display = 'none';
+    textarea.style.display = 'block';
+    btn.textContent = 'Save';
+    textarea.focus();
+  } else {
+    display.textContent = textarea.value;
+    textarea.style.display = 'none';
+    display.style.display = 'block';
+    btn.textContent = 'Edit';
+  }
+}
+
+function updatePrintVar(name, value) {
+  document.documentElement.style.setProperty(name, value);
+}
+
+function toggleFormatMode() {
+  const el = document.getElementById('report-content');
+  const btn = document.getElementById('format-mode-btn');
+  const toolbar = document.getElementById('format-toolbar');
+  const enabling = el.getAttribute('contenteditable') !== 'true';
+  el.setAttribute('contenteditable', enabling ? 'true' : 'false');
+  toolbar.style.display = enabling ? 'inline-flex' : 'none';
+  btn.textContent = enabling ? 'Disable Formatting' : 'Enable Formatting';
+}
+
+function applyFontSize(px) {
+  if (!px) return;
+  document.execCommand('fontSize', false, '7');
+  document.querySelectorAll('#report-content font[size="7"]').forEach(function (el) {
+    el.removeAttribute('size');
+    el.style.fontSize = px + 'px';
+  });
+}
+
+function printReport() {
+  const textarea = document.getElementById('weak-areas-textarea');
+  if (textarea && textarea.style.display !== 'none') {
+    toggleWeakAreasEdit();
+  }
+  window.print();
+}
+</script>
+{% endblock %}

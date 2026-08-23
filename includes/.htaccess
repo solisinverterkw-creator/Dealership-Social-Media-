@@ -1,0 +1,9 @@
+# This folder is only ever loaded via PHP require_once from the app itself —
+# it should never be reachable directly by URL.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

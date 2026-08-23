@@ -1,0 +1,9 @@
+# SQL dumps/schema are for import into phpMyAdmin only — never meant to be
+# fetched over the web (they can contain real dealership data).
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

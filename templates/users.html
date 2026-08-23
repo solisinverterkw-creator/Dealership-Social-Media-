@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<header>
+  <h1>User Management</h1>
+  <div class="subtitle"><a href="/" style="color:var(--accent)">← Back To Dashboard</a></div>
+</header>
+
+{% if message %}
+  <div class="success-msg">{{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="error-msg">{{ error }}</div>
+{% endif %}
+
+<div class="table-wrap" style="margin-bottom:24px;">
+  <table>
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Dealership(s)</th>
+        <th>Permissions</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr id="user-row-{{ u.id }}">
+        <td class="name">{{ u.username }}</td>
+        <td>{{ 'Super Admin' if u.is_super_admin else 'User' }}</td>
+        <td>{{ '— All (Super Admin) —' if u.is_super_admin else (u.dealership_names or '— Unassigned —') }}</td>
+        <td>
+          {% if u.is_super_admin %}
+            <span class="status-badge status-done">All</span>
+          {% else %}
+            <span class="status-badge {% if u.can_refresh %}status-done{% else %}status-pending{% endif %}">Refresh</span>
+            <span class="status-badge {% if u.can_edit %}status-done{% else %}status-pending{% endif %}">Edit</span>
+            <span class="status-badge {% if u.can_delete %}status-done{% else %}status-pending{% endif %}">Delete</span>
+          {% endif %}
+        </td>
+        <td class="actions-cell">
+          {% if u.id != current_user_id() %}
+            {% if not u.is_super_admin %}
+              <a class="edit-btn" href="/edit_user.php?id={{ u.id }}">Edit</a>
+            {% endif %}
+            <button class="delete-row-btn" onclick="deleteUser({{ u.id }}, {{ u.username|tojson }}, this)">Delete</button>
+          {% else %}
+            <span style="color:var(--muted); font-size:11px;">(You)</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<form method="POST" class="search-panel">
+  <div class="field">
+    <label>New Username</label>
+    <input type="text" name="username" required>
+  </div>
+  <div class="field">
+    <label>Password</label>
+    <input type="text" name="password" required>
+  </div>
+  <div class="field">
+    <label>Dealership(s) (Ignored If Super Admin)</label>
+    <div style="max-height:180px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; padding:10px; background:var(--input-bg);">
+      {% for d in dealerships_list %}
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-bottom:6px; font-size:13px;">
+          <input type="checkbox" name="dealership_ids" value="{{ d.id }}" style="width:auto;">
+          {{ d.name }}
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="field" style="display:flex; align-items:center; gap:8px; flex-direction:row;">
+    <input type="checkbox" name="is_super_admin" id="is_super_admin" style="width:auto;" onchange="togglePermissionFields(this.checked)">
+    <label for="is_super_admin" style="margin:0;">Make Super Admin (Can Manage Other Users)</label>
+  </div>
+
+  <div id="permission-fields">
+    <hr style="border-color:var(--border); margin:8px 0;">
+
+    <div class="permissions-panel" id="permissions-panel">
+      <div class="permissions-panel-header">
+        <h3>Sidebar &amp; Action Permissions</h3>
+        <div class="permissions-toolbar">
+          <button type="button" class="perm-toolbar-btn select-all" onclick="setAllPermissions(true)">✓ Select All</button>
+          <button type="button" class="perm-toolbar-btn clear-all" onclick="setAllPermissions(false)">✕ Clear All</button>
+        </div>
+      </div>
+
+      <div class="perm-group-title">Sidebar Sections — Control Which Menu Items This User Sees</div>
+      <div class="permission-grid">
+        {% for key, section in sidebar_sections.items() %}
+        <label class="permission-card">
+          <input type="checkbox" name="sidebar_sections" value="{{ key }}" checked>
+          <span class="perm-check">✓</span>
+          <span class="perm-label">{{ section.label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="perm-group-title">Action Permissions — What This User Can Perform On Their Assigned Dealerships</div>
+      <div class="permission-grid">
+        <label class="permission-card">
+          <input type="checkbox" name="can_refresh" checked>
+          <span class="perm-check">✓</span>
+          <span class="perm-label">Refresh</span>
+          <span class="perm-desc">Re-Fetch FB/IG/YT/Google Data + Reshare Checks</span>
+        </label>
+        <label class="permission-card">
+          <input type="checkbox" name="can_edit">
+          <span class="perm-check">✓</span>
+          <span class="perm-label">Edit Records</span>
+          <span class="perm-desc">Edit Dealership Info (FB/IG/YT/Google Search Fields)</span>
+        </label>
+        <label class="permission-card">
+          <input type="checkbox" name="can_delete">
+          <span class="perm-check">✓</span>
+          <span class="perm-label">Delete Records</span>
+          <span class="perm-desc">Can Delete A Dealership Permanently</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="submit">Add User</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePermissionFields(isSuperAdmin) {
+  document.getElementById('permission-fields').style.display = isSuperAdmin ? 'none' : '';
+}
+function setAllPermissions(checked) {
+  document.querySelectorAll('#permissions-panel input[type="checkbox"]').forEach(cb => cb.checked = checked);
+}
+
+async function deleteUser(id, username, btnEl) {
+  if (!confirm(`Delete "${username}"?`)) return;
+  btnEl.disabled = true;
+  const res = await fetch('/delete_user.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `id=${id}`,
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById(`user-row-${id}`).remove();
+  } else {
+    alert(data.message || 'Delete Failed.');
+    btnEl.disabled = false;
+  }
+}
+</script>
+{% endblock %}

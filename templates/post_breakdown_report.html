@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Post Breakdown Report{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Post Breakdown Report</h1>
+    <div class="subtitle">Own (Organic) Posts vs Reshared From Suzuki Pakistan — This Month</div>
+  </div>
+</header>
+
+<div class="table-wrap">
+  {% if not rows %}
+    <div class="empty-state">No Dealerships Added Yet.</div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Dealership</th>
+        <th>Own Posts (This Week)</th>
+        <th>Reshared This Month</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="row-number">{{ loop.index }}</td>
+        <td class="name">{{ r.name }}</td>
+        <td class="metric fb-color">{{ r.own_posts|number_format }}</td>
+        <td class="metric" style="color:var(--accent)">
+          {% if r.reshare_count is not none %}{{ r.reshare_count|number_format }}{% else %}—{% endif %}
+        </td>
+        <td class="timestamp">{{ r.reshare_note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<div class="subtitle" style="margin-top:16px; line-height:1.6;">
+  <strong>Own Posts</strong> = dealership's own organic Facebook posts this week (reshared content already excluded — see Posting Activity Report).<br>
+  <strong>Reshared This Month</strong> = posts auto-published from Suzuki Pakistan via Content Syndication.<br>
+  <strong>Direct</strong> pages (linked via Target Pages, published straight through our own Graph API) show an exact count.<br>
+  <strong>Zapier</strong> pages show "—" because Zapier does not report back which specific page received each post — only that the reshare was sent successfully to all connected pages.
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Target Pages{% endblock %}
+
+{% block content %}
+<div class="container narrow">
+  <header>
+    <h1>Target Pages</h1>
+    <div class="subtitle"><a href="/" style="color:var(--accent)">← Back To Dashboard</a></div>
+  </header>
+
+  {% if message %}
+    <div class="success-msg">{{ message }}</div>
+  {% endif %}
+  {% if error %}
+    <div class="error-msg">{{ error }}</div>
+  {% endif %}
+
+  <div class="table-wrap" style="margin-bottom:24px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Page ID</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tp in target_pages %}
+        <tr id="target-row-{{ tp.id }}">
+          <td class="name">{{ tp.name }}</td>
+          <td class="timestamp">{{ tp.page_id }}</td>
+          <td>
+            <span class="status-badge {% if tp.is_active %}status-done{% else %}status-pending{% endif %}" id="status-{{ tp.id }}">
+              {{ 'Active' if tp.is_active else 'Inactive' }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            {% if is_super_admin() %}
+              <button class="refresh-btn" onclick="toggleActive({{ tp.id }}, this)">{{ 'Deactivate' if tp.is_active else 'Activate' }}</button>
+              <button class="delete-row-btn" onclick="deleteTarget({{ tp.id }}, {{ tp.name|tojson }}, this)">Delete</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if not target_pages %}
+      <div class="empty-state">
+        {% if is_super_admin() %}No Target Pages Added Yet.{% else %}No Target Page Linked To Your Dealership Yet. Contact Your Super Admin.{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if is_super_admin() %}
+  <form method="POST" class="search-panel">
+    <div class="field">
+      <label>Dealership Name</label>
+      <input type="text" name="name" placeholder="e.g. Suzuki United Motors" required>
+    </div>
+    <div class="field">
+      <label>Linked Dealership (For Scoped-User Access)</label>
+      <select name="dealership_id">
+        <option value="">— None —</option>
+        {% for d in dealerships_list %}
+          <option value="{{ d.id }}">{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label><span class="dot fb"></span>Facebook Page ID</label>
+      <input type="text" name="page_id" placeholder="100064372222141" required>
+    </div>
+    <div class="field">
+      <label>Page Access Token</label>
+      <input type="text" name="page_access_token" placeholder="Long-lived Page Access Token" required>
+    </div>
+    <button type="submit" class="submit">Add Target Page</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleActive(id, btnEl) {
+  btnEl.disabled = true;
+  const res = await fetch('/toggle_target_page.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `id=${id}`,
+  });
+  const data = await res.json();
+  if (data.success) {
+    const badge = document.getElementById(`status-${id}`);
+    badge.textContent = data.is_active ? 'Active' : 'Inactive';
+    badge.className = 'status-badge ' + (data.is_active ? 'status-done' : 'status-pending');
+    btnEl.textContent = data.is_active ? 'Deactivate' : 'Activate';
+  } else {
+    alert(data.message || 'Failed To Update.');
+  }
+  btnEl.disabled = false;
+}
+
+async function deleteTarget(id, name, btnEl) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  btnEl.disabled = true;
+  const res = await fetch('/delete_target_page.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `id=${id}`,
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById(`target-row-${id}`).remove();
+  } else {
+    alert(data.message || 'Delete Failed.');
+    btnEl.disabled = false;
+  }
+}
+</script>
+{% endblock %}

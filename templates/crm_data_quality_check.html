@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}CRM Data Quality Checker{% endblock %}
+
+{% block head %}
+<style>
+.wide-report-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+.wide-report-table th, .wide-report-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: center; white-space: nowrap; }
+.wide-report-table td.name-cell { text-align: left; font-weight: 600; }
+.wide-report-table thead th { background: var(--panel-alt, rgba(128,128,128,0.15)); }
+.wide-report-table tbody tr:hover { background: rgba(128,128,128,0.08); }
+.flag-bad { color: var(--red); }
+.flag-warn { color: var(--amber, #fab219); }
+.wide-report-table td.flag-bad { font-weight: 600; background: rgba(208,59,59,0.12); }
+.wide-report-table td.flag-warn { font-weight: 600; background: rgba(250,178,25,0.12); }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>CRM Data Quality Checker</h1>
+    <div class="subtitle">Upload Any Raw CRM Enquiry Export To Check Completeness, Validity, Duplicates, And Statistical Anomalies — Nothing Is Saved, This Is A One-Off Check.</div>
+  </div>
+</header>
+
+{% if error %}
+  <div class="error-msg">{{ error }}</div>
+{% endif %}
+
+<form method="POST" enctype="multipart/form-data" class="search-panel" style="margin-bottom:24px;">
+  <input type="hidden" name="action" value="check">
+  <div class="field" style="flex:2;">
+    <label>Raw CRM Enquiry CSV Or Excel (Any Columns — Dealer/Company, Email, Phone, Contact Name Auto-Detected)</label>
+    <input type="file" name="data_file" accept=".csv,.xlsx" required>
+  </div>
+  <button type="submit" class="submit">Check Data Quality</button>
+</form>
+
+{% if report %}
+<div class="detail-card" style="margin-bottom:20px;">
+  <div class="detail-grid">
+    <div><div class="stat-label">Total Rows</div><div class="stat-value">{{ report.total_rows|number_format }}</div></div>
+    <div><div class="stat-label">Dealer Column</div><div class="stat-value" style="font-size:14px;">{{ report.columns_detected.dealer }}</div></div>
+    <div><div class="stat-label">Email Column</div><div class="stat-value" style="font-size:14px;">{{ report.columns_detected.email or 'Not Found' }}</div></div>
+    <div><div class="stat-label">Phone Column</div><div class="stat-value" style="font-size:14px;">{{ report.columns_detected.phone or 'Not Found' }}</div></div>
+    <div><div class="stat-label">Contact Name Column</div><div class="stat-value" style="font-size:14px;">{{ report.columns_detected.name or 'Not Found' }}</div></div>
+    <div><div class="stat-label">Purchase Type Column</div><div class="stat-value" style="font-size:14px;">{{ report.columns_detected.purchase_type or 'Not Found' }}</div></div>
+  </div>
+</div>
+
+<div class="detail-card" style="margin-bottom:20px;">
+  <div class="detail-grid">
+    <div><div class="stat-label">Missing Email</div><div class="stat-value {% if report.total_email_missing > 0 %}flag-bad{% endif %}">{{ report.total_email_missing|number_format }}</div></div>
+    <div><div class="stat-label">Missing Phone</div><div class="stat-value {% if report.total_phone_missing > 0 %}flag-bad{% endif %}">{{ report.total_phone_missing|number_format }}</div></div>
+    <div><div class="stat-label">Missing Both Email &amp; Phone</div><div class="stat-value {% if report.total_no_contact > 0 %}flag-bad{% endif %}">{{ report.total_no_contact|number_format }}</div></div>
+    <div><div class="stat-label">Missing Purchase Type</div><div class="stat-value {% if report.total_purchase_type_missing > 0 %}flag-bad{% endif %}">{{ report.total_purchase_type_missing|number_format }}</div></div>
+    <div><div class="stat-label">Duplicate Emails</div><div class="stat-value {% if report.duplicate_emails|length > 0 %}flag-warn{% endif %}">{{ report.duplicate_emails|length|number_format }}</div></div>
+    <div><div class="stat-label">Duplicate Phones</div><div class="stat-value {% if report.duplicate_phones|length > 0 %}flag-warn{% endif %}">{{ report.duplicate_phones|length|number_format }}</div></div>
+  </div>
+</div>
+
+<div style="margin-bottom:20px; display:flex; gap:12px;">
+  <button type="button" id="export-issues-btn" class="submit" style="width:auto; padding:10px 20px;">
+    Export Flagged Rows (CSV){% if not report.issue_rows %} — None Found{% endif %}
+  </button>
+  <button type="button" id="export-summary-btn" class="submit" style="width:auto; padding:10px 20px;">Export Per-Dealer Summary (CSV)</button>
+</div>
+
+<h2 style="font-size:16px; margin-bottom:14px;">Per-Dealership Data Quality</h2>
+<div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+  <table class="wide-report-table">
+    <thead>
+      <tr>
+        <th>Dealer</th>
+        <th>Total Rows</th>
+        <th>Completeness %</th>
+        <th>Email Valid %</th>
+        <th>Phone Valid %</th>
+        <th>Missing Email</th>
+        <th>Missing Phone</th>
+        <th>Missing Purchase Type</th>
+        <th>Uniqueness %</th>
+        <th>Volume Outlier (Z)</th>
+        <th>Data Quality Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dealer_name, s in report.per_dealer.items() %}
+      <tr>
+        <td class="name-cell">{{ dealer_name }}</td>
+        <td>{{ s.total|number_format }}</td>
+        <td class="{% if s.completeness < 90 %}flag-warn{% endif %}">{{ s.completeness }}%</td>
+        <td class="{% if s.email_validity is not none and s.email_validity < 90 %}flag-bad{% endif %}">
+          {% if s.email_validity is not none %}{{ s.email_validity }}%{% else %}—{% endif %}
+        </td>
+        <td class="{% if s.phone_validity is not none and s.phone_validity < 90 %}flag-bad{% endif %}">
+          {% if s.phone_validity is not none %}{{ s.phone_validity }}%{% else %}—{% endif %}
+        </td>
+        <td class="{% if s.email_missing > 0 %}flag-bad{% endif %}">{{ s.email_missing|number_format }}</td>
+        <td class="{% if s.phone_missing > 0 %}flag-bad{% endif %}">{{ s.phone_missing|number_format }}</td>
+        <td class="{% if s.purchase_type_missing > 0 %}flag-bad{% endif %}">{{ s.purchase_type_missing|number_format }}</td>
+        <td class="{% if s.uniqueness < 90 %}flag-warn{% endif %}">{{ s.uniqueness }}%</td>
+        <td class="{% if dealer_name in report.volume_outliers %}flag-warn{% endif %}">
+          {% if dealer_name in report.volume_outliers %}{{ report.volume_outliers[dealer_name] }}{% else %}—{% endif %}
+        </td>
+        <td class="{% if s.quality_score < 70 %}flag-bad{% elif s.quality_score < 90 %}flag-warn{% endif %}">
+          <strong>{{ s.quality_score }}%</strong>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if report.benford %}
+<h2 style="font-size:16px; margin-bottom:14px;">Benford's Law Check (Numeric Columns)</h2>
+<div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+  <table class="wide-report-table">
+    <thead>
+      <tr><th>Column</th><th>Sample Size</th><th>Chi-Square</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      {% for col, r in report.benford.items() %}
+      <tr>
+        <td class="name-cell">{{ col }}</td>
+        <td>{{ r.sample_size|number_format }}</td>
+        <td>{{ r.chi_square }}</td>
+        <td class="{% if r.deviates %}flag-bad{% endif %}">
+          {% if r.deviates %}Deviates From Benford's Law — Review{% else %}Consistent With Natural Data{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if report.duplicate_emails %}
+<h2 style="font-size:16px; margin-bottom:14px;">Duplicate Emails ({{ report.duplicate_emails|length }})</h2>
+<div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+  <table class="wide-report-table">
+    <thead><tr><th>Email</th><th>Times Used</th><th style="text-align:left;">Contact Names</th></tr></thead>
+    <tbody>
+      {% for email, names in duplicate_emails_sliced %}
+      <tr>
+        <td class="name-cell">{{ email }}</td>
+        <td>{{ names|length }}</td>
+        <td style="text-align:left; white-space:normal;">{{ names|unique|join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if report.duplicate_emails|length > 30 %}
+    <div class="subtitle" style="margin-top:8px;">...And {{ report.duplicate_emails|length - 30 }} More.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if report.duplicate_phones %}
+<h2 style="font-size:16px; margin-bottom:14px;">Duplicate Phone Numbers ({{ report.duplicate_phones|length }})</h2>
+<div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+  <table class="wide-report-table">
+    <thead><tr><th>Phone</th><th>Times Used</th><th style="text-align:left;">Contact Names</th></tr></thead>
+    <tbody>
+      {% for phone, names in duplicate_phones_sliced %}
+      <tr>
+        <td class="name-cell">{{ phone }}</td>
+        <td>{{ names|length }}</td>
+        <td style="text-align:left; white-space:normal;">{{ names|unique|join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if report.duplicate_phones|length > 30 %}
+    <div class="subtitle" style="margin-top:8px;">...And {{ report.duplicate_phones|length - 30 }} More.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if report.issue_rows %}
+<h2 style="font-size:16px; margin-bottom:14px;">Flagged Rows ({{ report.issue_rows|length }}) — Missing Email/Phone/Purchase Type Or Duplicates</h2>
+<div class="table-wrap" style="margin-bottom:24px; overflow-x:auto;">
+  <table class="wide-report-table">
+    <thead><tr><th>Dealer</th><th>Contact Name</th><th>Email</th><th>Phone</th><th>Inquiry No</th><th style="text-align:left;">Issue(s)</th></tr></thead>
+    <tbody>
+      {% for row in report.issue_rows[:200] %}
+      <tr>
+        <td class="name-cell">{{ row.dealer }}</td>
+        <td>{{ row.contact_name or '—' }}</td>
+        <td>{{ row.email or '—' }}</td>
+        <td>{{ row.phone or '—' }}</td>
+        <td>{{ row.inquiry_no or '—' }}</td>
+        <td class="flag-bad" style="text-align:left; white-space:normal;">{{ row.issues }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if report.issue_rows|length > 200 %}
+    <div class="subtitle" style="margin-top:8px;">Showing First 200 Of {{ report.issue_rows|length }} — Use "Export Flagged Rows (CSV)" Above For The Full List.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if report %}
+<script id="issue-rows-data" type="application/json">{{ issue_rows_json|safe }}</script>
+<script id="dealer-summary-data" type="application/json">{{ dealer_summary_json|safe }}</script>
+<script>
+(function () {
+    var csvEscape = function (v) {
+        v = (v === null || v === undefined) ? '' : String(v);
+        return '"' + v.replace(/"/g, '""') + '"';
+    };
+    var downloadCsv = function (headers, rows, filename) {
+        var lines = [headers.map(csvEscape).join(',')];
+        rows.forEach(function (r) { lines.push(r.map(csvEscape).join(',')); });
+        var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    document.getElementById('export-issues-btn')?.addEventListener('click', function () {
+        var rows = JSON.parse(document.getElementById('issue-rows-data').textContent);
+        downloadCsv(
+            ['Dealer', 'Contact Name', 'Email', 'Phone', 'Inquiry No', 'Issue(s)'],
+            rows.map(function (r) { return [r.dealer, r.contact_name, r.email, r.phone, r.inquiry_no, r.issues]; }),
+            'crm_data_quality_flagged_rows.csv'
+        );
+    });
+
+    document.getElementById('export-summary-btn')?.addEventListener('click', function () {
+        var rows = JSON.parse(document.getElementById('dealer-summary-data').textContent);
+        downloadCsv(
+            ['Dealer', 'Total Rows', 'Completeness %', 'Email Valid %', 'Phone Valid %', 'Missing Email', 'Missing Phone', 'Missing Purchase Type', 'Uniqueness %', 'Data Quality Score'],
+            rows.map(function (r) {
+                return [r.dealer, r.total, r.completeness, r.email_validity, r.phone_validity, r.email_missing, r.phone_missing, r.purchase_type_missing, r.uniqueness, r.quality_score];
+            }),
+            'crm_data_quality_dealer_summary.csv'
+        );
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Exchange Token{% endblock %}
+
+{% block content %}
+<div class="container narrow">
+  <header>
+    <h1>Exchange Token</h1>
+    <div class="subtitle"><a href="/target_pages.php" style="color:var(--accent)">← Back To Target Pages</a></div>
+  </header>
+
+  <p class="subtitle" style="margin-bottom:20px;">
+    Paste the short-lived token a dealership generated for you in Graph API Explorer
+    (Page selected, <code>pages_show_list</code>/<code>pages_read_engagement</code>/<code>pages_manage_posts</code>
+    granted). This exchanges it for a long-lived Page token and saves it straight into Target Pages —
+    no manual curl commands needed.
+  </p>
+
+  {% if message %}
+    <div class="success-msg">{{ message }}</div>
+  {% endif %}
+  {% if error %}
+    <div class="error-msg">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST" class="search-panel">
+    <div class="field">
+      <label>Dealership Name</label>
+      <input type="text" name="name" placeholder="e.g. Suzuki United Motors" value="{{ name or '' }}" required>
+    </div>
+    <div class="field">
+      <label>Linked Dealership (For Scoped-User Access)</label>
+      <select name="dealership_id">
+        <option value="">— None —</option>
+        {% for d in dealerships_list %}
+          <option value="{{ d.id }}" {% if dealership_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label><span class="dot fb"></span>Facebook Page ID</label>
+      <input type="text" name="page_id" placeholder="100064372222141" value="{{ page_id or '' }}" required>
+    </div>
+    <div class="field">
+      <label>Short-Lived Token (From Graph API Explorer)</label>
+      <input type="text" name="short_token" placeholder="EAAOkXMt..." value="{{ short_token or '' }}" required>
+    </div>
+    <button type="submit" class="submit">Exchange &amp; Save As Target Page</button>
+  </form>
+</div>
+{% endblock %}

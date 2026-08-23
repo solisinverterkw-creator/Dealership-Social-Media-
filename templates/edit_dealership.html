@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Dealership{% endblock %}
+
+{% block content %}
+<div class="container narrow">
+  <header>
+    <h1>Edit Dealership</h1>
+    <div class="subtitle"><a href="/" style="color:var(--accent)">← Back To Dashboard</a></div>
+  </header>
+
+  {% if message %}
+    <div class="success-msg">{{ message }}</div>
+  {% endif %}
+  {% if not can_perform('edit') %}
+    <div class="subtitle" style="margin-bottom:16px;">Read-Only — You Do Not Have Permission To Edit This Dealership.</div>
+  {% endif %}
+
+  {% set readonly = "" if can_perform('edit') else "disabled" %}
+  <form method="POST" class="search-panel">
+    <input type="hidden" name="id" value="{{ d.id }}">
+    <div class="field">
+      <label>Dealership Name</label>
+      <input type="text" name="name" value="{{ d.name }}" required {{ readonly }}>
+    </div>
+    <div class="field">
+      <label><span class="dot fb"></span>Facebook Page (exact URL/username)</label>
+      <input type="text" name="fb_input" value="{{ d.fb_input or '' }}" placeholder="facebook.com/UnitedMotors" {{ readonly }}>
+    </div>
+    <div class="field">
+      <label><span class="dot ig"></span>Instagram Profile (URL or @username)</label>
+      <input type="text" name="ig_search" value="{{ d.ig_search or '' }}" placeholder="instagram.com/unitedmotors" {{ readonly }}>
+    </div>
+    <div class="field">
+      <label><span class="dot yt"></span>YouTube Channel Name</label>
+      <input type="text" name="yt_search" value="{{ d.yt_search or '' }}" placeholder="United Motors Official" {{ readonly }}>
+    </div>
+    <div class="field">
+      <label><span class="dot gr"></span>Google Business Name + City</label>
+      <input type="text" name="google_search" value="{{ d.google_search or '' }}" placeholder="United Motors Multan" {{ readonly }}>
+    </div>
+
+    {% if is_super_admin() %}
+    <hr style="border-color:var(--border); margin:8px 0;">
+    <div class="subtitle" style="margin-bottom:4px;">Graph API Access (Super Admin Only) — Leave Blank To Keep Using The Scraper</div>
+    <div class="field">
+      <label><span class="dot fb"></span>Facebook Page ID (Numeric)</label>
+      <input type="text" name="fb_page_id" value="{{ d.fb_page_id or '' }}" placeholder="e.g. 100063955213535">
+    </div>
+    <div class="field">
+      <label><span class="dot fb"></span>Facebook Page Access Token (Long-Lived / System User)</label>
+      <input type="text" name="fb_page_access_token" value="{{ d.fb_page_access_token or '' }}" placeholder="Paste token here once granted admin access">
+    </div>
+    {% if d.ig_business_account_id %}
+    <div class="field">
+      <label><span class="dot ig"></span>Instagram Business Account ID (Auto-Resolved)</label>
+      <input type="text" value="{{ d.ig_business_account_id }}" disabled>
+    </div>
+    {% endif %}
+
+    <hr style="border-color:var(--border); margin:8px 0;">
+    <div class="subtitle" style="margin-bottom:4px;">Targets (Super Admin Only)</div>
+    <div class="field">
+      <label><span class="dot fb"></span>FB Followers Target</label>
+      <input type="number" name="fb_target" min="0" value="{{ d.fb_target or 0 }}">
+    </div>
+    <div class="field">
+      <label><span class="dot ig"></span>IG Followers Target</label>
+      <input type="number" name="ig_target" min="0" value="{{ d.ig_target or 0 }}">
+    </div>
+    <div class="field">
+      <label><span class="dot yt"></span>YT Subscribers Target</label>
+      <input type="number" name="yt_target" min="0" value="{{ d.yt_target or 0 }}">
+    </div>
+    <div class="field">
+      <label><span class="dot gr"></span>Google Reviews Target</label>
+      <input type="number" name="google_review_target" min="0" value="{{ d.google_review_target or 0 }}">
+    </div>
+    <div class="field" style="display:flex; flex-direction:row; align-items:center; gap:8px;">
+      <input type="checkbox" name="apply_targets_all" value="1" id="apply_targets_all" style="width:auto;">
+      <label for="apply_targets_all" style="margin:0;">Apply These Targets To All Dealerships</label>
+    </div>
+
+    <hr style="border-color:var(--border); margin:8px 0;">
+    <div class="subtitle" style="margin-bottom:4px;">Digital Enquiry Targets (Super Admin Only) — Dealership-Specific, Reviewed Every ~6 Months, Never Applied To All</div>
+    <div class="field">
+      <label>Digital Enquiry Target</label>
+      <input type="number" name="digital_enquiry_target" min="0" value="{{ d.digital_enquiry_target or '' }}">
+    </div>
+    <div class="field">
+      <label>Digital Enquiry Conversion Target</label>
+      <input type="number" name="digital_enquiry_conversion_target" min="0" value="{{ d.digital_enquiry_conversion_target or '' }}">
+    </div>
+    {% endif %}
+
+    {% if can_perform('edit') %}
+    <button type="submit" class="submit">Save Changes</button>
+    {% endif %}
+  </form>
+
+  {% if can_perform('delete') %}
+  <button type="button" class="delete-btn" onclick="deleteDealership({{ d.id }}, {{ d.name|tojson }})">Delete Dealership</button>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deleteDealership(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  const res = await fetch('/delete_dealership.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `id=${id}`,
+  });
+  const data = await res.json();
+  if (data.success) {
+    window.location.href = '/';
+  } else {
+    alert('Delete Failed.');
+  }
+}
+</script>
+{% endblock %}

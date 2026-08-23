@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\Users\\\\WASIMJ~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--dealership-30-dashboard\\\\2f0b2db2-0112-4b91-b186-116f61978e25\\\\scratchpad\\\\test_circuit_breaker.php\")",
+      "WebFetch(domain:docs.brightdata.com)",
+      "PowerShell(Add-Type -AssemblyName System.IO.Compression.FileSystem; $z = [System.IO.Compression.ZipFile]::OpenRead\\(\"d:\\\\dealership-30-dashboard\\\\deploy_upload.zip\"\\); $z.Entries | Select-Object FullName | Sort-Object FullName; $z.Dispose\\(\\))",
+      "PowerShell(& 'C:\\\\xampp\\\\php\\\\php.exe' -l 'd:\\\\dealership-30-dashboard\\\\refresh_fb.php')",
+      "PowerShell(& 'C:\\\\xampp\\\\php\\\\php.exe' -l 'd:\\\\dealership-30-dashboard\\\\refresh_ig.php')",
+      "PowerShell(& 'd:\\\\dealership-30-dashboard\\\\build_deploy_zip.ps1')"
+    ]
+  }
+}

@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Ageing Report{% endblock %}
+
+{% block head %}
+<style>
+.wide-report-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+.wide-report-table th, .wide-report-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: center; }
+.wide-report-table td.name-cell { text-align: left; font-weight: 600; }
+.wide-report-table thead th { background: var(--panel-alt, rgba(128,128,128,0.15)); }
+.wide-report-table tbody tr:hover { background: rgba(128,128,128,0.08); }
+.sortable-table thead th { cursor: pointer; user-select: none; }
+.sortable-table thead th:hover { background: rgba(128,128,128,0.25); }
+.age-alert-red { color: var(--red); font-weight: 600; }
+.age-alert-orange { color: var(--amber); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Ageing Report</h1>
+    <div class="subtitle">Undelivered Stock Ageing Audit (60+ Days) — Measured Against Month-End ({{ month_end_str }})</div>
+  </div>
+</header>
+
+{% if message %}
+  <div class="success-msg">{{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="error-msg">{{ error }}</div>
+{% endif %}
+{% if import_errors %}
+  <div class="error-msg">
+    {{ import_errors|length }} Row(s) Skipped:<br>
+    {% for err in import_errors[:20] %}
+      {{ err }}<br>
+    {% endfor %}
+    {% if import_errors|length > 20 %}
+      <br>...
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if is_super_admin() %}
+<div class="search-panel no-print" style="margin-bottom:28px; display:flex; gap:20px; flex-wrap:wrap;">
+  <form method="POST" enctype="multipart/form-data" style="flex:1; min-width:280px; display:flex; flex-direction:column; gap:10px;">
+    <input type="hidden" name="action" value="import_csv">
+    <div class="field" style="margin:0;">
+      <label>1. Import Ageing Delivery Dates (CSV/Excel)</label>
+      <input type="file" name="ageing_csv" accept=".csv,.xlsx" required>
+    </div>
+    <button type="submit" class="submit" style="margin-top:auto;">Import Ageing Dates</button>
+  </form>
+
+  <form method="POST" enctype="multipart/form-data" style="flex:1; min-width:280px; display:flex; flex-direction:column; gap:10px;">
+    <input type="hidden" name="action" value="import_stock_csv">
+    <div class="field" style="margin:0;">
+      <label>2. Import Current Stock Snapshot (CSV/Excel)</label>
+      <input type="file" name="stock_chassis_csv" accept=".csv,.xlsx" required>
+    </div>
+    <button type="submit" class="submit" style="margin-top:auto;">Import Stock Snapshot</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="stat-cards" style="margin-bottom:24px;">
+  <div class="stat-card">
+    <div class="stat-label">Total Ageing Dates Loaded</div>
+    <div class="stat-value">{{ ageing_records_count|number_format }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Stock Snapshot Chassis</div>
+    <div class="stat-value">{{ stock_chassis_count|number_format }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Aged Vehicles Found (60+ Days)</div>
+    <div class="stat-value" style="color:var(--red);">{{ total_aged_count }}</div>
+  </div>
+</div>
+
+{% if has_data %}
+<form method="GET" class="search-panel no-print" style="margin-bottom:24px; display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+  <div class="field" style="margin:0;">
+    <label>Region Filter</label>
+    <select name="region" onchange="this.form.submit()">
+      <option value="">-- All Regions --</option>
+      {% for reg in regions %}
+        <option value="{{ reg }}" {% if reg == selected_region %}selected{% endif %}>{{ reg }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field" style="margin:0;">
+    <label>Dealership Filter</label>
+    <select name="dealership_id" onchange="this.form.submit()">
+      <option value="">-- All Dealerships --</option>
+      {% for d in dealerships_filter %}
+        <option value="{{ d.id }}" {% if d.id|string == selected_dealership_id %}selected{% endif %}>{{ d.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <a href="{{ url_for('export_ageing_report') }}" class="btn">Export CSV</a>
+</form>
+
+<h2>Ageing Summary By Dealership</h2>
+<div class="table-wrap" style="margin-bottom:32px;">
+  <table class="wide-report-table sortable-table">
+    <thead>
+      <tr>
+        <th>Sr#</th>
+        <th>Dealership</th>
+        <th>Region</th>
+        <th>60 - 89 Days</th>
+        <th>90+ Days</th>
+        <th>Total Aged (60+ Days)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, s in summary_pivot.items() %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td class="name-cell">{{ name }}</td>
+        <td>{{ s.region or '—' }}</td>
+        <td>{{ s.tier1 }}</td>
+        <td>{{ s.tier2 }}</td>
+        <td style="font-weight:600; color:var(--red);">{{ s.total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Ageing Detail By Vehicle</h2>
+<div class="table-wrap">
+  <table class="wide-report-table sortable-table" id="ageing-detail-table">
+    <thead>
+      <tr>
+        <th>Sr#</th>
+        <th>Dealership</th>
+        <th>Product/Model</th>
+        <th>Chassis Number</th>
+        <th>Delivery Date</th>
+        <th>Days Aged</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in filtered_rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td class="name-cell">{{ r.dealership_name }}</td>
+        <td>{{ friendly_product_label(r.product_name) }}</td>
+        <td style="font-family:'IBM Plex Mono', monospace; font-size:11px;">{{ r.chassis_number }}</td>
+        <td>{{ r.delivery_date.strftime('%Y-%m-%d') }}</td>
+        <td class="{% if r.days_aged >= 90 %}age-alert-red{% else %}age-alert-orange{% endif %}">
+          {{ r.days_aged }} days
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty-state">No Aged Vehicles Found — Verify That Both Datasets (Ageing dates + Stock snapshot) Have Been Imported.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function makeSortableTables(selector) {
+  document.querySelectorAll(selector).forEach(table => {
+    const headers = Array.from(table.querySelectorAll('thead th'));
+    headers.forEach((th, colIndex) => {
+      th.addEventListener('click', () => {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const nextDir = th.getAttribute('data-sort-dir') === 'asc' ? 'desc' : 'asc';
+
+        headers.forEach(h => {
+          h.removeAttribute('data-sort-dir');
+          h.textContent = h.textContent.replace(/ [▲▼]$/, '');
+        });
+        th.setAttribute('data-sort-dir', nextDir);
+        th.textContent += nextDir === 'asc' ? ' ▲' : ' ▼';
+
+        const cellValue = (row) => {
+          const cell = row.children[colIndex];
+          if (!cell) return '';
+          return (cell.getAttribute('data-sort-value') || cell.textContent || '').trim();
+        };
+
+        rows.sort((a, b) => {
+          const va = cellValue(a);
+          const vb = cellValue(b);
+          const na = parseFloat(va.replace(/,/g, ''));
+          const nb = parseFloat(vb.replace(/,/g, ''));
+          const bothNumeric = va !== '' && vb !== '' && !isNaN(na) && !isNaN(nb);
+          const cmp = bothNumeric ? na - nb : va.localeCompare(vb, undefined, { numeric: true, sensitivity: 'base' });
+          return nextDir === 'asc' ? cmp : -cmp;
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+      });
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded', () => makeSortableTables('.sortable-table'));
+</script>
+{% endblock %}

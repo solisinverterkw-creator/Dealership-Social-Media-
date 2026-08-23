@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}ROSP - Dealers Social Media{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1 class="brand-h1">ROSP - Dealers Social Media</h1>
+    <div class="subtitle">{{ dealerships|length }} Dealerships · Facebook, Instagram, YouTube, Google Reviews</div>
+  </div>
+  <div class="toolbar">
+    {% if is_super_admin() %}
+    <a href="{{ url_for('add_dealership') }}" class="btn">+ Add Dealership</a>
+    {% endif %}
+    <a href="{{ url_for('export_csv') }}" class="btn">Export CSV</a>
+    {% if can_perform('refresh') %}
+    <button class="btn primary" id="refresh-all">Refresh All (FB+IG+YT+Google)</button>
+    {% endif %}
+    <a href="{{ url_for('logout') }}" class="btn">Logout</a>
+  </div>
+</header>
+
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progress-bar-fill" style="width: {{ overall_percent }}%"></div>
+  </div>
+  <div class="progress-text" id="progress-text">{{ overall_percent }}% Complete — {{ dealerships|length }} Dealerships</div>
+</div>
+
+<div class="feature-cards">
+  <a href="{{ url_for('social_report') }}" class="feature-card">
+    <div class="feature-card-title" style="color:var(--fb)">Social Media Report</div>
+    <div class="feature-card-desc">Compare All Dealerships — Rankings, Totals & Detail View</div>
+  </a>
+  <a href="{{ url_for('posting_activity') }}" class="feature-card">
+    <div class="feature-card-title" style="color:var(--ig)">Posting Activity</div>
+    <div class="feature-card-desc">Facebook & Instagram Post Counts By Date Range</div>
+  </a>
+  <a href="{{ url_for('yt_monthly') }}" class="feature-card">
+    <div class="feature-card-title" style="color:var(--yt)">YT Monthly Videos</div>
+    <div class="feature-card-desc">YouTube Uploads Per Month, Across All Dealerships</div>
+  </a>
+  {% if is_super_admin() %}
+  <a href="{{ url_for('users') }}" class="feature-card">
+    <div class="feature-card-title" style="color:var(--amber)">User Management</div>
+    <div class="feature-card-desc">Add Or Remove Dashboard Users</div>
+  </a>
+  {% endif %}
+</div>
+
+<div class="stat-cards">
+  <div class="stat-card-icon">
+    <div class="badge" style="background:rgba(57,135,229,0.15); color:var(--fb);">📘</div>
+    <div class="stat-value" style="color:var(--fb)">{{ total_fb_followers|number_format }}</div>
+    <div class="stat-label">Total FB Followers</div>
+    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--fb)">View All →</a>
+  </div>
+  <div class="stat-card-icon">
+    <div class="badge" style="background:rgba(213,81,129,0.15); color:var(--ig);">📷</div>
+    <div class="stat-value" style="color:var(--ig)">{{ total_ig_followers|number_format }}</div>
+    <div class="stat-label">Total IG Followers</div>
+    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--ig)">View All →</a>
+  </div>
+  <div class="stat-card-icon">
+    <div class="badge" style="background:rgba(230,103,103,0.15); color:var(--yt);">▶️</div>
+    <div class="stat-value" style="color:var(--yt)">{{ total_yt_subs|number_format }}</div>
+    <div class="stat-label">Total YT Subscribers</div>
+    <a href="{{ url_for('yt_monthly') }}" class="stat-link" style="color:var(--yt)">View All →</a>
+  </div>
+  <div class="stat-card-icon">
+    <div class="badge" style="background:rgba(25,158,112,0.15); color:var(--gr);">⭐</div>
+    <div class="stat-value" style="color:var(--gr)">{{ total_google_reviews|number_format }}</div>
+    <div class="stat-label">Total Google Reviews</div>
+    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--gr)">View All →</a>
+  </div>
+</div>
+
+<div class="chart-cards">
+  <div class="chart-card">
+    <h3>YouTube Videos Per Month</h3>
+    <div class="chart-subtitle">Last 6 Months{% if is_super_admin() %} — All Dealerships{% endif %}</div>
+    {{ yt_chart_html|safe }}
+  </div>
+  <div class="chart-card">
+    <h3>FB vs IG Posts This Week</h3>
+    <div class="chart-subtitle">Last Checked Values{% if is_super_admin() %} — All Dealerships{% endif %}</div>
+    {{ comparison_chart_html|safe }}
+    <div class="chart-legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--fb)"></span>Facebook</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--ig)"></span>Instagram</span>
+    </div>
+  </div>
+</div>
+
+{% if dealerships %}
+<div class="search-bar">
+  <input type="text" id="search-input" placeholder="Search Dealerships By Name..." oninput="filterRows(this.value)">
+  <span id="search-count" class="search-count"></span>
+</div>
+{% endif %}
+
+<div class="table-wrap">
+  {% if not dealerships %}
+    <div class="empty-state">No Dealerships Added Yet. Click "+ Add Dealership" To Get Started.</div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Dealership</th>
+        <th>FB Followers</th>
+        <th>IG Followers</th>
+        <th>YT Subscribers</th>
+        <th>Google Reviews</th>
+        <th>Last Refreshed</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in dealerships %}
+      <tr id="row-{{ d.id }}">
+        <td class="row-number">{{ loop.index }}</td>
+        <td class="name">{{ d.name }}</td>
+        <td class="metric fb-color" id="fb-{{ d.id }}">{{ d.fb_followers|number_format }}</td>
+        <td class="metric ig-color" id="ig-{{ d.id }}">{{ d.ig_followers|number_format }}</td>
+        <td class="metric yt-color" id="yt-{{ d.id }}">{{ d.yt_subscribers|number_format }}</td>
+        <td class="metric gr-color" id="gr-{{ d.id }}">
+          {{ d.google_review_count|number_format }} <span style="color:var(--muted)">({{ d.google_rating }}★)</span>
+        </td>
+        <td class="timestamp" id="ts-{{ d.id }}">
+          {% if d.last_refreshed %}
+            {{ d.last_refreshed.strftime('%d %b, %H:%M') }}
+          {% else %}
+            never
+          {% endif %}
+        </td>
+        <td class="actions-cell">
+          {% if can_perform('refresh') %}
+          <button class="refresh-btn"
+                  data-has-fb="{% if d.fb_input %}1{% endif %}"
+                  data-has-ig="{% if d.ig_search %}1{% endif %}"
+                  data-has-yt="{% if d.yt_search %}1{% endif %}"
+                  data-has-gr="{% if d.google_search %}1{% endif %}"
+                  onclick="refreshOne({{ d.id }}, this)">Refresh</button>
+          {% endif %}
+          
+          {% set p = row_percents[d.id] %}
+          <span class="status-badge {% if p >= 100 %}status-done{% elif p > 0 %}status-partial{% else %}status-pending{% endif %}" id="status-{{ d.id }}">{{ p }}%</span>
+          
+          {% if can_perform('edit') %}
+          <a class="edit-btn" href="{{ url_for('edit_dealership', id=d.id) }}">Edit</a>
+          {% endif %}
+          
+          {% if can_perform('delete') %}
+          <button class="delete-row-btn" onclick="deleteDealership({{ d.id }}, '{{ d.name|escapejs }}', this)">Delete</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setRowPercent(id, done, applicable) {
+  const statusEl = document.getElementById(`status-${id}`);
+  if (!statusEl) return;
+  const percent = applicable > 0 ? Math.round((done / applicable) * 100) : 0;
+  statusEl.textContent = `${percent}%`;
+  statusEl.classList.remove('status-done', 'status-partial', 'status-pending');
+  statusEl.classList.add(percent >= 100 ? 'status-done' : (percent > 0 ? 'status-partial' : 'status-pending'));
+}
+
+function updateOverallProgress() {
+  const badges = document.querySelectorAll('.status-badge');
+  let sum = 0;
+  badges.forEach(b => sum += parseInt(b.textContent, 10) || 0);
+  const total = badges.length;
+  const percent = total > 0 ? Math.round(sum / total) : 0;
+  document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+  document.getElementById('progress-text').textContent = `${percent}% Complete — ${total} Dealerships`;
+}
+
+async function pollRefreshStatus(id, metric, maxWaitMs = 300000, intervalMs = 3000) {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    const r = await fetch(`/refresh_status.php?id=${id}&metric=${metric}`);
+    const d = await r.json();
+    if (d.status === 'done') return { success: true, ...d };
+    if (d.status === 'error') return { success: false, ...d };
+  }
+  return { success: false, message: 'Timed Out Waiting For Background Refresh.' };
+}
+
+async function refreshOne(id, btnEl) {
+  const hasFb = btnEl?.dataset.hasFb === '1';
+  const hasIg = btnEl?.dataset.hasIg === '1';
+  const hasYt = btnEl?.dataset.hasYt === '1';
+  const hasGr = btnEl?.dataset.hasGr === '1';
+  const applicable = (hasFb ? 1 : 0) + (hasIg ? 1 : 0) + (hasYt ? 1 : 0) + (hasGr ? 1 : 0);
+  const errors = [];
+  let done = 0;
+
+  if (btnEl) { btnEl.classList.add('loading'); btnEl.textContent = '...'; }
+
+  try {
+    if (hasFb) {
+      const timer = btnEl ? startElapsedTimer(btnEl, 'FB') : null;
+      const r = await fetch(`/refresh_fb.php?id=${id}`);
+      let d = await r.json();
+      if (d.status === 'started') d = await pollRefreshStatus(id, 'fb');
+      if (timer) stopElapsedTimer(timer);
+      if (btnEl) btnEl.textContent = '...';
+      if (d.success) document.getElementById(`fb-${id}`).textContent = d.fb_followers.toLocaleString();
+      else errors.push('FB: ' + d.message);
+      done++; setRowPercent(id, done, applicable); updateOverallProgress();
+    }
+    if (hasIg) {
+      const timer = btnEl ? startElapsedTimer(btnEl, 'IG') : null;
+      const r = await fetch(`/refresh_ig.php?id=${id}`);
+      let d = await r.json();
+      if (d.status === 'started') d = await pollRefreshStatus(id, 'ig');
+      if (timer) stopElapsedTimer(timer);
+      if (btnEl) btnEl.textContent = '...';
+      if (d.success) document.getElementById(`ig-${id}`).textContent = d.ig_followers.toLocaleString();
+      else errors.push('IG: ' + d.message);
+      done++; setRowPercent(id, done, applicable); updateOverallProgress();
+    }
+    if (hasYt) {
+      const r = await fetch(`/refresh_yt.php?id=${id}`);
+      const d = await r.json();
+      if (d.success) document.getElementById(`yt-${id}`).textContent = d.yt_subscribers.toLocaleString();
+      else errors.push('YT: ' + d.message);
+      done++; setRowPercent(id, done, applicable); updateOverallProgress();
+    }
+    if (hasGr) {
+      const r = await fetch(`/refresh_gr.php?id=${id}`);
+      const d = await r.json();
+      if (d.success) document.getElementById(`gr-${id}`).innerHTML = `${d.google_review_count.toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
+      else errors.push('Google: ' + d.message);
+      done++; setRowPercent(id, done, applicable); updateOverallProgress();
+    }
+
+    const tsEl = document.getElementById(`ts-${id}`);
+    if (errors.length) {
+      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}">⚠ error</span>`;
+    } else {
+      tsEl.textContent = 'just now';
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    if (btnEl) { btnEl.classList.remove('loading'); btnEl.textContent = 'Refresh'; }
+  }
+}
+
+async function deleteDealership(id, name, btnEl) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '...'; }
+  const res = await fetch(`/delete_dealership.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `id=${id}`,
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById(`row-${id}`).remove();
+  } else {
+    alert('Delete Failed.');
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Delete'; }
+  }
+}
+
+function filterRows(query) {
+  const q = query.trim().toLowerCase();
+  const rows = document.querySelectorAll('tr[id^="row-"]');
+  let visible = 0;
+  rows.forEach(row => {
+    const name = row.querySelector('.name').textContent.toLowerCase();
+    const match = name.includes(q);
+    row.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  const countEl = document.getElementById('search-count');
+  countEl.textContent = q ? `Showing ${visible} / ${rows.length}` : '';
+}
+
+document.getElementById('refresh-all')?.addEventListener('click', async function () {
+  const rows = Array.from(document.querySelectorAll('tr[id^="row-"]')).filter(r => r.style.display !== 'none');
+  this.disabled = true;
+
+  let done = 0;
+  for (const row of rows) {
+    const id = row.id.replace('row-', '');
+    this.textContent = `Refreshing ${done + 1}/${rows.length}...`;
+
+    const btn = row.querySelector('.refresh-btn');
+    await refreshOne(id, btn);
+    done++;
+  }
+
+  this.textContent = 'Refresh All (FB+IG+YT+Google)';
+  this.disabled = false;
+});
+</script>
+{% endblock %}

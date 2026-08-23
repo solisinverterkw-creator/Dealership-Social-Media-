@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User{% endblock %}
+
+{% block content %}
+<header>
+  <h1>Edit User — {{ user.username }}</h1>
+  <div class="subtitle"><a href="/users.php" style="color:var(--accent)">← Back To User Management</a></div>
+</header>
+
+{% if message %}
+  <div class="{% if message.startswith('Error') %}error-msg{% else %}success-msg{% endif %}">{{ message }}</div>
+{% endif %}
+
+<form method="POST" class="search-panel">
+  <input type="hidden" name="id" value="{{ user.id }}">
+  <div class="field">
+    <label>Dealership(s)</label>
+    <div style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; padding:10px; background:var(--input-bg);">
+      {% for d in dealerships_list %}
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-bottom:6px; font-size:13px;">
+          <input type="checkbox" name="dealership_ids" value="{{ d.id }}" style="width:auto;" {% if d.id in assigned_ids %}checked{% endif %}>
+          {{ d.name }}
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <hr style="border-color:var(--border); margin:8px 0;">
+  <div class="field">
+    <label>Reset Password (Leave Blank To Keep Current Password)</label>
+    <input type="text" name="new_password" placeholder="New password — min. 6 characters" minlength="6">
+  </div>
+
+  <hr style="border-color:var(--border); margin:8px 0;">
+
+  <div class="permissions-panel" id="permissions-panel">
+    <div class="permissions-panel-header">
+      <h3>Sidebar &amp; Action Permissions</h3>
+      <div class="permissions-toolbar">
+        <button type="button" class="perm-toolbar-btn select-all" onclick="setAllPermissions(true)">✓ Select All</button>
+        <button type="button" class="perm-toolbar-btn clear-all" onclick="setAllPermissions(false)">✕ Clear All</button>
+      </div>
+    </div>
+
+    <div class="perm-group-title">Sidebar Sections — Control Which Menu Items This User Sees</div>
+    <div class="permission-grid">
+      {% for key, section in sidebar_sections.items() %}
+      <label class="permission-card">
+        <input type="checkbox" name="sidebar_sections" value="{{ key }}" {% if key in assigned_sections %}checked{% endif %}>
+        <span class="perm-check">✓</span>
+        <span class="perm-label">{{ section.label }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div class="perm-group-title">Action Permissions — What This User Can Perform On Their Assigned Dealerships</div>
+    <div class="permission-grid">
+      <label class="permission-card">
+        <input type="checkbox" name="can_refresh" {% if user.can_refresh %}checked{% endif %}>
+        <span class="perm-check">✓</span>
+        <span class="perm-label">Refresh</span>
+        <span class="perm-desc">Re-Fetch FB/IG/YT/Google Data + Reshare Checks</span>
+      </label>
+      <label class="permission-card">
+        <input type="checkbox" name="can_edit" {% if user.can_edit %}checked{% endif %}>
+        <span class="perm-check">✓</span>
+        <span class="perm-label">Edit Records</span>
+        <span class="perm-desc">Edit Dealership Info (FB/IG/YT/Google Search Fields)</span>
+      </label>
+      <label class="permission-card">
+        <input type="checkbox" name="can_delete" {% if user.can_delete %}checked{% endif %}>
+        <span class="perm-check">✓</span>
+        <span class="perm-label">Delete Records</span>
+        <span class="perm-desc">Can Delete A Dealership Permanently</span>
+      </label>
+    </div>
+  </div>
+
+  <button type="submit" class="submit">Save Changes</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setAllPermissions(checked) {
+  document.querySelectorAll('#permissions-panel input[type="checkbox"]').forEach(cb => cb.checked = checked);
+}
+</script>
+{% endblock %}

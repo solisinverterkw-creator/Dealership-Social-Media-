@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}YouTube Monthly Videos{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>YouTube Monthly Video Uploads</h1>
+    <div class="subtitle">How Many Videos Were Uploaded Each Month — Filter By Date Range</div>
+  </div>
+</header>
+
+{% if not dealerships %}
+  <div class="empty-state">No Dealership Has A YouTube Channel Set.</div>
+{% else %}
+
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progress-bar-fill" style="width: {{ overall_percent }}%"></div>
+  </div>
+  <div class="progress-text" id="progress-text">{{ overall_percent }}% Complete — {{ dealerships|length }} Dealerships</div>
+</div>
+
+<form method="GET" class="search-panel" style="margin-bottom:24px; display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+  <div class="field" style="margin-bottom:0;">
+    <label>From</label>
+    <input type="date" name="from" value="{{ from_val }}">
+  </div>
+  <div class="field" style="margin-bottom:0;">
+    <label>To</label>
+    <input type="date" name="to" value="{{ to_val }}">
+  </div>
+  <button type="submit" class="submit" style="width:auto; padding:11px 24px;">Load</button>
+</form>
+
+<header style="margin-bottom:14px;">
+  <div>
+    <h1 style="font-size:16px;">All Dealerships — {{ from_formatted }} To {{ to_formatted }}</h1>
+    <div class="subtitle">— Means This Dealership's Data For That Month Hasn't Been Checked Yet</div>
+  </div>
+  <div class="toolbar">
+    {% if can_perform('refresh') %}
+    <button class="btn primary" id="load-all">Load All (Fetch Missing Data)</button>
+    {% endif %}
+  </div>
+</header>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Dealership</th>
+        {% for m in month_keys %}
+          <th>{{ month_labels[m] }}</th>
+        {% endfor %}
+        <th>Total</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in dealerships %}
+      <tr id="yt-row-{{ d.id }}">
+        <td class="row-number">{{ loop.index }}</td>
+        <td class="name">{{ d.name }}</td>
+        {% set row_total = namespace(val=0) %}
+        {% for m in month_keys %}
+          {% set val = cached_map[d.id][m] if d.id in cached_map and m in cached_map[d.id] else none %}
+          <td class="metric yt-color" id="ytcell-{{ d.id }}-{{ m }}">
+            {% if val is not none %}
+              {{ val|number_format }}
+              {% set row_total.val = row_total.val + val %}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        {% endfor %}
+        <td class="metric" id="yttotal-{{ d.id }}">{{ row_total.val|number_format }}</td>
+        <td class="actions-cell">
+          {% if can_perform('refresh') %}
+          <button class="refresh-btn" onclick="checkOne({{ d.id }}, this)">Check</button>
+          {% endif %}
+          
+          {% set p = row_percents[d.id] %}
+          <span class="status-badge {% if p >= 100 %}status-done{% elif p > 0 %}status-partial{% else %}status-pending{% endif %}" id="status-{{ d.id }}">{{ p }}%</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const monthKeys = {{ month_keys|tojson }};
+const rangeFrom = {{ from_val|tojson }};
+const rangeTo = {{ to_val|tojson }};
+
+function updateOverallProgress() {
+  const badges = document.querySelectorAll('.status-badge');
+  let sum = 0;
+  badges.forEach(b => sum += parseInt(b.textContent, 10) || 0);
+  const total = badges.length;
+  const percent = total > 0 ? Math.round(sum / total) : 0;
+  document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+  document.getElementById('progress-text').textContent = `${percent}% Complete — ${total} Dealerships`;
+}
+
+async function loadDealership(id) {
+  const res = await fetch(`/check_yt_monthly.php?id=${id}&from=${rangeFrom}&to=${rangeTo}`);
+  const data = await res.json();
+  if (!data.success) return false;
+
+  let total = 0;
+  for (const m of monthKeys) {
+    const count = data.breakdown[m] ?? 0;
+    total += count;
+    const cell = document.getElementById(`ytcell-${id}-${m}`);
+    if (cell) cell.textContent = count.toLocaleString();
+  }
+  const totalCell = document.getElementById(`yttotal-${id}`);
+  if (totalCell) totalCell.textContent = total.toLocaleString();
+
+  const statusEl = document.getElementById(`status-${id}`);
+  if (statusEl) {
+    statusEl.textContent = '100%';
+    statusEl.classList.remove('status-pending', 'status-partial');
+    statusEl.classList.add('status-done');
+  }
+  updateOverallProgress();
+  return true;
+}
+
+async function checkOne(id, btnEl) {
+  if (btnEl) { btnEl.classList.add('loading'); btnEl.textContent = '...'; }
+  await loadDealership(id);
+  if (btnEl) { btnEl.classList.remove('loading'); btnEl.textContent = 'Check'; }
+}
+
+document.getElementById('load-all')?.addEventListener('click', async function () {
+  const rows = document.querySelectorAll('tr[id^="yt-row-"]');
+  this.disabled = true;
+
+  let done = 0;
+  for (const row of rows) {
+    const id = row.id.replace('yt-row-', '');
+    this.textContent = `Loading ${done + 1}/${rows.length}...`;
+    await loadDealership(id);
+    done++;
+  }
+
+  this.textContent = 'Load All (Fetch Missing Data)';
+  this.disabled = false;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Reshare Compliance Report{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Reshare Compliance Report</h1>
+    <div class="subtitle">Own Posts vs Reshares Of Suzuki Pakistan's Source Posts — Checked On Demand</div>
+  </div>
+  <div class="toolbar">
+    {% if is_super_admin() %}
+      <button class="btn" id="refresh-source-btn" onclick="refreshSource()" {% if not has_range %}disabled title="Select A Tracking From And To Date, Then Click Load, First"{% endif %}>Refresh Source Posts</button>
+    {% endif %}
+    {% if can_perform('refresh') %}
+      <button class="btn primary" id="check-all-btn" onclick="checkAll()" {% if not has_range %}disabled title="Select A Tracking From And To Date, Then Click Load, First"{% endif %}>Check Now (All Dealerships)</button>
+    {% endif %}
+    {% if has_range %}
+      <a class="btn" href="{{ url_for('export_reshare_compliance', type='summary', from_val=from_val, to_val=to_val) }}">Export Summary CSV</a>
+    {% endif %}
+  </div>
+</header>
+
+<div class="progress-wrap" id="check-progress-wrap" style="display:none;">
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="check-progress-fill" style="width:0%"></div>
+  </div>
+  <div class="progress-text" id="check-progress-text"></div>
+</div>
+
+<form method="GET" class="search-panel" style="margin-bottom:24px; display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+  <div class="field" style="margin-bottom:0;">
+    <label>Tracking From</label>
+    <input type="date" name="from" value="{{ from_val }}">
+  </div>
+  <div class="field" style="margin-bottom:0;">
+    <label>Tracking To</label>
+    <input type="date" name="to" value="{{ to_val }}">
+  </div>
+  <button type="submit" class="submit" style="width:auto; padding:11px 24px;">Load</button>
+</form>
+
+{% if missing %}
+<div class="table-wrap" style="margin-bottom:24px; border-color:var(--red);">
+  <div style="padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+    <span style="font-weight:600; color:var(--red);">⚠ Missed Reshares ({{ missing|length }})</span>
+    <a class="btn" href="{{ url_for('export_reshare_compliance', type='missed', from_val=from_val, to_val=to_val) }}">Export CSV</a>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Dealership</th>
+        <th>Source Post (Snippet)</th>
+        <th>First Seen</th>
+        <th>Pending</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in missing %}
+      <tr>
+        <td class="name">{{ m.dealership_name }}</td>
+        <td>{{ m.message_snippet[:80] }}{% if m.message_snippet|length > 80 %}…{% endif %}</td>
+        <td class="timestamp">{{ m.published_at.strftime('%d %b, %H:%M') }}</td>
+        <td><span class="status-badge status-flag">{{ hours_ago(m.published_at) }}h</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="table-wrap">
+  {% if not has_range %}
+    <div class="empty-state">Select A Tracking From And To Date, Then Click "Load", To View This Report.</div>
+  {% elif not rows %}
+    <div class="empty-state">No Dealerships Added Yet.</div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Dealership</th>
+        <th>Own Posts (Selected Range)</th>
+        <th>Source Posts Tracked</th>
+        <th>Reshared</th>
+        <th>Missed</th>
+        <th>Last Checked</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr id="reshare-row-{{ r.id }}">
+        <td class="row-number">{{ loop.index }}</td>
+        <td class="name">{{ r.name }}</td>
+        <td class="metric fb-color" id="own-{{ r.id }}">
+          {% if r.own_posts is not none %}{{ r.own_posts|number_format }}{% else %}—{% endif %}
+        </td>
+        <td class="metric" id="tracked-{{ r.id }}">{{ r.tracked|number_format }}</td>
+        <td class="metric" style="color:var(--green)" id="reshared-{{ r.id }}">{{ r.reshared|number_format }}</td>
+        <td class="metric" id="missed-{{ r.id }}">
+          {% if r.missed > 0 %}
+            <span class="status-badge status-flag">{{ r.missed }}</span>
+          {% else %}
+            <span class="status-badge status-done">0</span>
+          {% endif %}
+        </td>
+        <td class="timestamp" id="checked-{{ r.id }}">
+          {% if r.last_checked_at %}
+            {{ r.last_checked_at.strftime('%d %b, %H:%M') }}
+          {% else %}
+            never
+          {% endif %}
+        </td>
+        <td class="actions-cell">
+          {% if can_perform('refresh') %}
+          <button class="refresh-btn" onclick="checkOne({{ r.id }}, this)">Check</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+{% if has_range %}
+<div class="subtitle" style="margin-top:16px; line-height:1.6;">
+  <strong>Own Posts</strong> = dealership's own posts in the selected range that are NOT reshares of a tracked source post — computed fresh, fully paginated over the range, each time "Check" runs. Shows "—" until checked for this exact range.<br>
+  <strong>Tracked</strong> = Suzuki Pakistan source posts published between {{ from_formatted }} and {{ to_formatted }} (click "Refresh Source Posts" to (re)populate this list for the range above).<br>
+  <strong>Reshared</strong> = of those, how many were found (by text match) anywhere on the dealership's page in this same range.<br>
+  <strong>Missed</strong> = source posts still not found on the dealership's page {{ grace_hours }}+ hours after they were published.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const pageFrom = {{ from_val|tojson }};
+const pageTo = {{ to_val|tojson }};
+
+function currentRange() {
+  const fromInput = document.querySelector('input[name="from"]');
+  const toInput = document.querySelector('input[name="to"]');
+  return {
+    from: (fromInput && fromInput.value) || pageFrom,
+    to: (toInput && toInput.value) || pageTo,
+  };
+}
+
+function reloadPreservingRange() {
+  const { from, to } = currentRange();
+  window.location.href = `/reshare_compliance_report.php?from=${from}&to=${to}`;
+}
+
+async function pollJobStatus(jobKey, metric, maxWaitMs = 300000, intervalMs = 3000) {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    const r = await fetch(`/refresh_status.php?id=${encodeURIComponent(jobKey)}&metric=${metric}`);
+    const d = await r.json();
+    if (d.status === 'done') return { success: true, ...d };
+    if (d.status === 'error') return { success: false, ...d };
+  }
+  return { success: false, message: 'Timed Out Waiting For Background Check.' };
+}
+
+async function checkOne(id, btnEl, reload = true) {
+  if (btnEl) { btnEl.classList.add('loading'); btnEl.disabled = true; }
+  const timer = btnEl ? startElapsedTimer(btnEl, 'Checking') : null;
+  try {
+    const { from, to } = currentRange();
+    const r = await fetch(`/check_reshare_dealership.php?id=${id}&from=${from}&to=${to}`);
+    let d = await r.json();
+    if (d.status === 'started') {
+      d = await pollJobStatus(`${id}_${from}_${to}`, 'reshare_check');
+    }
+    if (!d.success) {
+      alert(`Dealership ${id}: ${d.message}`);
+      return;
+    }
+    if (reload) {
+      reloadPreservingRange();
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    if (timer) stopElapsedTimer(timer);
+    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; btnEl.textContent = 'Check'; }
+  }
+}
+
+async function refreshSource() {
+  const btn = document.getElementById('refresh-source-btn');
+  btn.disabled = true;
+  const timer = startElapsedTimer(btn, 'Refreshing');
+  try {
+    const { from, to } = currentRange();
+    const r = await fetch(`/refresh_reshare_source.php?from=${from}&to=${to}`);
+    let d = await r.json();
+    if (d.status === 'started') {
+      d = await pollJobStatus(`${from}_${to}`, 'reshare_source');
+    }
+    if (d.success) {
+      alert(`Source posts refreshed — ${d.tracked} tracked, ${d.new_posts} new.`);
+    } else {
+      alert(`Failed: ${d.message}`);
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    stopElapsedTimer(timer);
+    btn.disabled = false;
+    btn.textContent = 'Refresh Source Posts';
+  }
+}
+
+async function checkAll() {
+  const rows = Array.from(document.querySelectorAll('tr[id^="reshare-row-"]'));
+  if (rows.length === 0) return;
+
+  const btn = document.getElementById('check-all-btn');
+  const progressWrap = document.getElementById('check-progress-wrap');
+  const progressFill = document.getElementById('check-progress-fill');
+  const progressText = document.getElementById('check-progress-text');
+
+  btn.disabled = true;
+  progressWrap.style.display = '';
+
+  let done = 0;
+  for (const row of rows) {
+    const id = row.id.replace('reshare-row-', '');
+    progressText.textContent = `Checking ${done + 1}/${rows.length}...`;
+    const checkBtn = row.querySelector('.refresh-btn');
+    await checkOne(id, checkBtn, false);
+    done++;
+    progressFill.style.width = `${Math.round((done / rows.length) * 100)}%`;
+  }
+
+  progressText.textContent = `Done — ${rows.length} dealership(s) checked. Reloading...`;
+  reloadPreservingRange();
+}
+</script>
+{% endblock %}

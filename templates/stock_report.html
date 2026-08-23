@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Report{% endblock %}
+
+{% block head %}
+<style>
+.wide-report-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+.wide-report-table th, .wide-report-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: center; white-space: nowrap; }
+.wide-report-table td.name-cell { text-align: left; font-weight: 600; }
+.wide-report-table thead th { background: var(--panel-alt, rgba(128,128,128,0.15)); }
+.wide-report-table tbody tr:hover { background: rgba(128,128,128,0.08); }
+.sortable-table thead th { cursor: pointer; user-select: none; }
+.sortable-table thead th:hover { background: rgba(128,128,128,0.25); }
+.security-column { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-align: right; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Stock Report — {{ date_str }}</h1>
+    <div class="subtitle">Current Physical Stock snapshot Per Dealership — Imported From CSV/Excel</div>
+  </div>
+</header>
+
+{% if message %}
+  <div class="success-msg">{{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="error-msg">{{ error }}</div>
+{% endif %}
+{% if import_errors %}
+  <div class="error-msg">
+    {{ import_errors|length }} Row(s) Skipped:<br>
+    {% for err in import_errors[:20] %}
+      {{ err }}<br>
+    {% endfor %}
+    {% if import_errors|length > 20 %}
+      <br>...
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if is_super_admin() %}
+<form method="POST" enctype="multipart/form-data" class="search-panel no-print" style="margin-bottom:28px;">
+  <input type="hidden" name="action" value="import_csv">
+  <div class="field" style="flex:2;">
+    <label>Stock CSV Or Excel</label>
+    <input type="file" name="stock_csv" accept=".csv,.xlsx" required>
+  </div>
+  <button type="submit" class="submit">Import CSV</button>
+</form>
+{% endif %}
+
+{% if has_data %}
+<form method="GET" class="search-panel no-print" style="margin-bottom:24px; display:flex; gap:16px; align-items:flex-end;">
+  <div class="field">
+    <label>Region Filter</label>
+    <select name="region" onchange="this.form.submit()">
+      <option value="">-- All Regions --</option>
+      {% for reg in regions %}
+        <option value="{{ reg }}" {% if reg == selected_region %}selected{% endif %}>{{ reg }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="wide-report-table sortable-table" id="stock-report-table">
+    <thead>
+      <tr>
+        <th>Sr#</th>
+        <th>Dealer</th>
+        <th>Region</th>
+        <th>Security Deposit</th>
+        {% for c in column_sequence %}
+          <th>
+            {% if c.type == 'grand_total' %}
+              Grand Total
+            {% else %}
+              {{ friendly_product_label(c.name) }}
+            {% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for dealership_name, products in pivot.items() %}
+        {% set d_id = products.__id %}
+        {% set sec_val = security_by_dealership[d_id] if d_id in security_by_dealership else none %}
+        {% set reg_val = region_by_dealership[d_id] if d_id in region_by_dealership else none %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="name-cell">{{ dealership_name }}</td>
+          <td>{{ reg_val or '—' }}</td>
+          <td class="security-column" data-sort-value="{{ sec_val or 0 }}">
+            {% if sec_val is not none %}
+              Rs. {{ sec_val|number_format }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          {% for c in column_sequence %}
+            {% if c.type == 'grand_total' %}
+              {% set total_val = 0 %}
+              {% for p_name in product_names %}
+                {% set total_val = total_val + (products[p_name] or 0) %}
+              {% endfor %}
+              <td style="font-weight:600;">{{ total_val|number_format }}</td>
+            {% else %}
+              <td>{{ (products[c.name] or 0)|number_format }}</td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty-state">No Stock Data Available Yet — Import A CSV Above.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function makeSortableTables(selector) {
+  document.querySelectorAll(selector).forEach(table => {
+    const headers = Array.from(table.querySelectorAll('thead th'));
+    headers.forEach((th, colIndex) => {
+      th.addEventListener('click', () => {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const nextDir = th.getAttribute('data-sort-dir') === 'asc' ? 'desc' : 'asc';
+
+        headers.forEach(h => {
+          h.removeAttribute('data-sort-dir');
+          h.textContent = h.textContent.replace(/ [▲▼]$/, '');
+        });
+        th.setAttribute('data-sort-dir', nextDir);
+        th.textContent += nextDir === 'asc' ? ' ▲' : ' ▼';
+
+        const cellValue = (row) => {
+          const cell = row.children[colIndex];
+          if (!cell) return '';
+          return (cell.getAttribute('data-sort-value') || cell.textContent || '').trim();
+        };
+
+        rows.sort((a, b) => {
+          const va = cellValue(a);
+          const vb = cellValue(b);
+          const na = parseFloat(va.replace(/,/g, ''));
+          const nb = parseFloat(vb.replace(/,/g, ''));
+          const bothNumeric = va !== '' && vb !== '' && !isNaN(na) && !isNaN(nb);
+          const cmp = bothNumeric ? na - nb : va.localeCompare(vb, undefined, { numeric: true, sensitivity: 'base' });
+          return nextDir === 'asc' ? cmp : -cmp;
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+      });
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded', () => makeSortableTables('.sortable-table'));
+</script>
+{% endblock %}

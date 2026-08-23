@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Add Dealership{% endblock %}
+
+{% block content %}
+<div class="container narrow">
+  <header>
+    <h1>Add Dealership</h1>
+    <div class="subtitle"><a href="/" style="color:var(--accent)">← Back To Dashboard</a></div>
+  </header>
+
+  {% if message %}
+    <div class="success-msg">{{ message }}</div>
+  {% endif %}
+
+  <form method="POST" class="search-panel">
+    <div class="field">
+      <label>Dealership Name</label>
+      <input type="text" name="name" placeholder="e.g. United Motors" required>
+    </div>
+    <div class="field">
+      <label><span class="dot fb"></span>Facebook Page (exact URL/username)</label>
+      <input type="text" name="fb_input" placeholder="facebook.com/UnitedMotors">
+    </div>
+    <div class="field">
+      <label><span class="dot ig"></span>Instagram Profile (URL or @username)</label>
+      <input type="text" name="ig_search" placeholder="instagram.com/unitedmotors">
+    </div>
+    <div class="field">
+      <label><span class="dot yt"></span>YouTube Channel Name</label>
+      <input type="text" name="yt_search" placeholder="United Motors Official">
+    </div>
+    <div class="field">
+      <label><span class="dot gr"></span>Google Business Name + City</label>
+      <input type="text" name="google_search" placeholder="United Motors Multan">
+    </div>
+
+    <hr style="border-color:var(--border); margin:8px 0;">
+    <div class="subtitle" style="margin-bottom:4px;">Targets (Optional)</div>
+    <div class="field">
+      <label><span class="dot fb"></span>FB Followers Target</label>
+      <input type="number" name="fb_target" min="0" placeholder="0">
+    </div>
+    <div class="field">
+      <label><span class="dot ig"></span>IG Followers Target</label>
+      <input type="number" name="ig_target" min="0" placeholder="0">
+    </div>
+    <div class="field">
+      <label><span class="dot yt"></span>YT Subscribers Target</label>
+      <input type="number" name="yt_target" min="0" placeholder="0">
+    </div>
+    <div class="field">
+      <label><span class="dot gr"></span>Google Reviews Target</label>
+      <input type="number" name="google_review_target" min="0" placeholder="0">
+    </div>
+
+    <button type="submit" class="submit">Add Dealership</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}CRM Parameters{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>CRM Parameters</h1>
+    <div class="subtitle">One Shared Scorecard Template (Parameters, Criteria, Max Points) — Used For Every Dealership's CRM Report. Total Max Points: {{ total_max_points|number_format }}</div>
+  </div>
+</header>
+
+{% if message %}
+  <div class="success-msg">{{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="error-msg">{{ error }}</div>
+{% endif %}
+{% if import_errors %}
+  <div class="error-msg">
+    {{ import_errors|length }} Row(s) Skipped:<br>
+    {% for err in import_errors[:20] %}
+      {{ err }}<br>
+    {% endfor %}
+    {% if import_errors|length > 20 %}
+      <br>...
+    {% endif %}
+  </div>
+{% endif %}
+
+<form method="GET" class="search-panel" style="margin-bottom:16px;">
+  <div class="field">
+    <label>Raw Data / Calculation Month</label>
+    <input type="month" name="period" value="{{ selected_period }}" onchange="this.form.submit()">
+  </div>
+</form>
+
+<details style="margin-bottom:20px;">
+  <summary style="cursor:pointer; font-size:13px; color:var(--muted);">Dealership Names ({{ dealership_count }}) — Use These Exact Names In Your Raw Data Excel's "Dealer Name" Column</summary>
+  <div class="detail-card" style="margin-top:10px; column-count:3; column-gap:24px; font-size:12px; line-height:1.9;">
+    {% for name in dealership_names %}
+      <div>{{ name }}</div>
+    {% endfor %}
+  </div>
+</details>
+
+<div class="table-wrap" style="margin-bottom:24px;">
+  {% if not parameters %}
+    <div class="empty-state">No Parameters Yet — Add One Below.</div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Parameter</th>
+        <th>Criteria</th>
+        <th class="th-center">Max Points</th>
+        <th></th>
+        <th>Raw Data ({{ period_label }})</th>
+        <th>Calculated Scores</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in parameters %}
+      <tr id="param-row-{{ p.id }}">
+        <form method="POST">
+          <input type="hidden" name="action" value="update">
+          <input type="hidden" name="id" value="{{ p.id }}">
+          <td><input type="number" name="display_order" value="{{ p.display_order }}" style="width:50px;"></td>
+          <td><input type="text" name="parameter_name" value="{{ p.parameter_name }}" style="width:100%;"></td>
+          <td><textarea name="criteria" rows="2" style="width:100%;">{{ p.criteria or '' }}</textarea></td>
+          <td class="th-center"><input type="number" step="0.01" name="max_points" value="{{ p.max_points }}" style="width:70px; text-align:center;"></td>
+          <td class="actions-cell">
+            <button type="submit" class="refresh-btn">Save</button>
+        </form>
+            <button class="delete-row-btn" onclick="deleteParameter({{ p.id }}, {{ p.parameter_name|tojson }})">Delete</button>
+          </td>
+        <td style="text-align:left; white-space:nowrap;">
+          <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">{{ raw_count_by_param[p.id] or 0 }} / {{ dealership_count }} Uploaded</div>
+          <input type="file" id="raw-file-{{ p.id }}" accept=".csv,.xlsx" style="width:140px; font-size:11px;">
+          <button type="button" class="refresh-btn" onclick="uploadRawData({{ p.id }})" style="font-size:11px;">Upload</button>
+        </td>
+        <td style="text-align:left; white-space:nowrap;">
+          <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">
+            {{ score_count_by_param[p.id] or 0 }} / {{ dealership_count }} Calculated
+          </div>
+          <button type="button" class="refresh-btn" onclick="recalculate({{ p.id }}, {{ p.parameter_name|tojson }})" style="font-size:11px;">Recalculate</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<h2 style="font-size:16px; margin-bottom:14px;">Add Parameter</h2>
+<form method="POST" class="search-panel">
+  <input type="hidden" name="action" value="add">
+  <div class="field" style="flex:2;">
+    <label>Parameter Name</label>
+    <input type="text" name="parameter_name" placeholder="e.g. Timely Follow-Up (20 Min Std)" required>
+  </div>
+  <div class="field" style="flex:3;">
+    <label>Criteria (Scoring Bands, Free Text)</label>
+    <input type="text" name="criteria" placeholder="e.g. Within time~20 | +20 min~15 | +40~10">
+  </div>
+  <div class="field">
+    <label>Max Points</label>
+    <input type="number" step="0.01" name="max_points" placeholder="20" required>
+  </div>
+  <button type="submit" class="submit">Add Parameter</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CRM_SELECTED_PERIOD = {{ selected_period|tojson }};
+
+async function deleteParameter(id, name) {
+  if (!confirm(`Delete "${name}"? Any imported scores for it will also be removed.`)) return;
+  const res = await fetch('/crm_parameters.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `action=delete&id=${id}`,
+  });
+  if (res.ok) {
+    document.getElementById(`param-row-${id}`).remove();
+  }
+}
+
+async function uploadRawData(parameterId) {
+  const fileInput = document.getElementById(`raw-file-${parameterId}`);
+  if (!fileInput.files.length) {
+    alert('Choose A CSV Or Excel File First.');
+    return;
+  }
+  const formData = new FormData();
+  formData.append('action', 'import_raw');
+  formData.append('crm_parameter_id', parameterId);
+  formData.append('period_month', CRM_SELECTED_PERIOD);
+  formData.append('raw_file', fileInput.files[0]);
+
+  const res = await fetch('/crm_parameters.php', { method: 'POST', body: formData });
+  const data = await res.json().catch(() => null);
+  alert(data ? data.message : 'Upload Failed.');
+  window.location.href = `/crm_parameters.php?period=${encodeURIComponent(CRM_SELECTED_PERIOD)}`;
+}
+
+async function recalculate(parameterId, name) {
+  const formData = new FormData();
+  formData.append('action', 'recalculate');
+  formData.append('crm_parameter_id', parameterId);
+  formData.append('period_month', CRM_SELECTED_PERIOD);
+
+  const res = await fetch('/crm_parameters.php', { method: 'POST', body: formData });
+  const data = await res.json().catch(() => null);
+  alert(data ? data.message : 'Recalculate Failed.');
+  window.location.href = `/crm_parameters.php?period=${encodeURIComponent(CRM_SELECTED_PERIOD)}`;
+}
+</script>
+{% endblock %}

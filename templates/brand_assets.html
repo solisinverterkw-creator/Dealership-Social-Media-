@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Brand Assets{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Brand Assets</h1>
+    <div class="subtitle">Reference Vehicles, Logo Variants & Tagline — Used To Check Dealership Post Submissions</div>
+  </div>
+</header>
+
+{% if message %}
+  <div class="success-msg">{{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="error-msg">{{ error }}</div>
+{% endif %}
+
+<h2 style="font-size:16px; margin-bottom:14px;">Brand Identity</h2>
+<form method="POST" enctype="multipart/form-data" class="search-panel" style="margin-bottom:28px;">
+  <input type="hidden" name="action" value="save_identity">
+  <div class="field">
+    <label>Logo — Light Variant (use on dark backgrounds)</label>
+    {% if identity and identity.logo_light_path %}
+      <img src="/{{ identity.logo_light_path }}" style="height:40px; margin-bottom:8px; background:#222; padding:4px; border-radius:4px; display:block;">
+    {% endif %}
+    <input type="file" name="logo_light" accept=".jpg,.jpeg,.png,.webp">
+  </div>
+  <div class="field">
+    <label>Logo — Dark Variant (use on light backgrounds)</label>
+    {% if identity and identity.logo_dark_path %}
+      <img src="/{{ identity.logo_dark_path }}" style="height:40px; margin-bottom:8px; background:#eee; padding:4px; border-radius:4px; display:block;">
+    {% endif %}
+    <input type="file" name="logo_dark" accept=".jpg,.jpeg,.png,.webp">
+  </div>
+  <div class="field">
+    <label>Logo — Red &amp; Blue Variant (use when background is white)</label>
+    {% if identity and identity.logo_white_bg_path %}
+      <img src="/{{ identity.logo_white_bg_path }}" style="height:40px; margin-bottom:8px; background:#fff; padding:4px; border-radius:4px; border:1px solid var(--border); display:block;">
+    {% endif %}
+    <input type="file" name="logo_white_bg" accept=".jpg,.jpeg,.png,.webp">
+  </div>
+  <div class="field">
+    <label>Tagline</label>
+    <input type="text" name="tagline" value="{{ identity.tagline or '' }}" placeholder="e.g. Way of Life!">
+  </div>
+  <div class="field">
+    <label>Primary Brand Color</label>
+    <input type="text" name="primary_color" value="{{ identity.primary_color or '' }}" placeholder="e.g. #DA020E — Suzuki Red">
+  </div>
+  <div class="field">
+    <label>Secondary Brand Color</label>
+    <input type="text" name="secondary_color" value="{{ identity.secondary_color or '' }}" placeholder="e.g. #000000 — Black">
+  </div>
+  <div class="field">
+    <label>Official Website URL</label>
+    <input type="text" name="website_url" value="{{ identity.website_url or '' }}" placeholder="e.g. https://www.suzukipakistan.com">
+  </div>
+  <button type="submit" class="submit">Save Brand Identity</button>
+</form>
+
+<h2 style="font-size:16px; margin-bottom:14px;">Approved Vehicle Models</h2>
+<div class="subtitle" style="margin-bottom:14px;">Add Up To {{ max_images }} Reference Photos Per Model — Different Angles/Parts (Front, Rear, Rim, Bumper, Side Mirror, Fuel Tank Cap, Etc.) So The Checker Can Catch A Mismatched Part.</div>
+
+{% if not vehicles %}
+  <div class="empty-state" style="margin-bottom:24px;">No Vehicle References Added Yet.</div>
+{% else %}
+  {% for v in vehicles %}
+  <div class="detail-card" id="vehicle-row-{{ v.id }}" style="margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div><span class="name">{{ v.name }}</span> — {{ v.color }} <span class="subtitle">({{ v.images|length }}/{{ max_images }} Photos)</span></div>
+      <button class="delete-row-btn" onclick="deleteVehicle({{ v.id }}, this)">Delete Model</button>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+      {% for img in v.images %}
+      <div style="position:relative;" id="vehicle-img-{{ img.id }}">
+        <img src="/{{ img.image_path }}" style="height:70px; border-radius:4px; border:1px solid var(--border);">
+        <button onclick="deleteVehicleImage({{ img.id }}, this)" title="Delete This Photo" style="position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%; border:none; background:var(--red); color:#fff; cursor:pointer; font-size:12px; line-height:1;">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% if v.images|length < max_images %}
+    <form method="POST" enctype="multipart/form-data" style="display:flex; gap:8px; align-items:center;">
+      <input type="hidden" name="action" value="add_images">
+      <input type="hidden" name="vehicle_id" value="{{ v.id }}">
+      <input type="file" name="reference_images" accept=".jpg,.jpeg,.png,.webp" multiple style="flex:1;" required>
+      <button type="submit" class="submit" style="width:auto; padding:8px 16px;">Add More Photos</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% endif %}
+
+<form method="POST" enctype="multipart/form-data" class="search-panel">
+  <input type="hidden" name="action" value="add_vehicle">
+  <div class="field">
+    <label>Model Name</label>
+    <input type="text" name="name" placeholder="e.g. Suzuki Alto" required>
+  </div>
+  <div class="field">
+    <label>Color</label>
+    <input type="text" name="color" placeholder="e.g. Pearl White" required>
+  </div>
+  <div class="field" style="flex:2;">
+    <label>Reference Photos (Select Up To {{ max_images }} At Once — Front, Rear, Rim, Bumper, Side Mirror, Fuel Tank Cap, Etc.)</label>
+    <input type="file" name="reference_images" accept=".jpg,.jpeg,.png,.webp" multiple required>
+  </div>
+  <button type="submit" class="submit">Add Vehicle Reference</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deleteVehicle(id, btnEl) {
+  if (!confirm('Delete This Vehicle Reference?')) return;
+  btnEl.disabled = true;
+  const res = await fetch('/delete_vehicle_model.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `id=${id}`,
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById(`vehicle-row-${id}`).remove();
+  } else {
+    alert(data.message || 'Delete Failed.');
+    btnEl.disabled = false;
+  }
+}
+
+async function deleteVehicleImage(id, btnEl) {
+  if (!confirm('Delete This Reference Photo?')) return;
+  btnEl.disabled = true;
+  const res = await fetch('/delete_vehicle_image.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `id=${id}`,
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById(`vehicle-img-${id}`).remove();
+  } else {
+    alert(data.message || 'Delete Failed.');
+    btnEl.disabled = false;
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Follower Activity Report{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Follower Activity Report</h1>
+    <div class="subtitle">Followers + Posting Activity Side By Side — Spot High-Follower, No-Activity Pages</div>
+  </div>
+  <div class="toolbar">
+    {% if can_perform('refresh') %}
+    <button class="btn primary" id="check-all">Check All</button>
+    {% endif %}
+  </div>
+</header>
+
+<form method="GET" class="search-panel" style="margin-bottom:24px; display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+  <div class="field" style="margin-bottom:0;">
+    <label>Activity Since</label>
+    <input type="date" name="from" value="{{ from_val }}">
+  </div>
+  <div class="field" style="margin-bottom:0;">
+    <label>Activity Until</label>
+    <input type="date" name="to" value="{{ to_val }}">
+  </div>
+  <button type="submit" class="submit" style="width:auto; padding:11px 24px;">Load</button>
+</form>
+
+<div class="detail-card" id="no-activity-card">
+  <h2>No Activity Since {{ from_formatted }} — <span id="no-activity-count">{{ no_activity|length }}</span> Dealership<span id="no-activity-plural">{% if no_activity|length == 1 %}{% else %}s{% endif %}</span></h2>
+  <div id="no-activity-names" style="font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--red); line-height:1.8;">
+    {% if no_activity %}
+      {% for nd in no_activity %}{{ loop.index0 and ', ' or '' }}{{ nd.name }} ({{ (nd.fb_followers + nd.ig_followers)|number_format }} Followers){% endfor %}
+    {% else %}
+      None — Click "Check All" To Verify This Range.
+    {% endif %}
+  </div>
+</div>
+
+<div class="table-wrap">
+  {% if not dealerships %}
+    <div class="empty-state">No Dealerships With Facebook Or Instagram Set.</div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Dealership</th>
+        <th>FB Followers</th>
+        <th>IG Followers</th>
+        <th>FB Posts</th>
+        <th>IG Posts</th>
+        <th>FB Engagement</th>
+        <th>IG Engagement</th>
+        <th>Status</th>
+        <th>Last Checked</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in dealerships %}
+      {% set status = activity_status(d) %}
+      <tr id="row-{{ d.id }}" data-name="{{ d.name }}" data-followers="{{ d.fb_followers + d.ig_followers }}" data-fb-followers="{{ d.fb_followers }}" data-ig-followers="{{ d.ig_followers }}">
+        <td class="row-number">{{ loop.index }}</td>
+        <td class="name">{{ d.name }}</td>
+        <td class="metric fb-color">{{ d.fb_followers|number_format }}</td>
+        <td class="metric ig-color">{{ d.ig_followers|number_format }}</td>
+        <td class="metric fb-color" id="fbposts-{{ d.id }}">{{ d.fb_posts_week|number_format }}</td>
+        <td class="metric ig-color" id="igposts-{{ d.id }}">{{ d.ig_posts_week|number_format }}</td>
+        
+        {% set fb_checked = d.fb_input and d.fb_posts_checked_at %}
+        {% set ig_checked = d.ig_search and d.ig_posts_checked_at %}
+        {% set fb_rate = engagement_rate(d.fb_engagement_avg, d.fb_followers, fb_checked) %}
+        {% set ig_rate = engagement_rate(d.ig_engagement_avg, d.ig_followers, ig_checked) %}
+        
+        <td>
+          <span class="status-badge {{ engagement_badge_class(fb_rate, d.fb_followers) }}" id="fbeng-{{ d.id }}" data-followers="{{ d.fb_followers }}">
+            {{ engagement_badge_label(fb_rate, d.fb_followers) }}
+          </span>
+        </td>
+        <td>
+          <span class="status-badge {{ engagement_badge_class(ig_rate, d.ig_followers) }}" id="igeng-{{ d.id }}" data-followers="{{ d.ig_followers }}">
+            {{ engagement_badge_label(ig_rate, d.ig_followers) }}
+          </span>
+        </td>
+        <td>
+          <span class="status-badge {% if status == 'inactive' %}status-pending{% elif status == 'active' %}status-done{% else %}status-partial{% endif %}" id="activity-{{ d.id }}">
+            {% if status == 'inactive' %}No Activity{% elif status == 'active' %}Active{% else %}Not Checked{% endif %}
+          </span>
+        </td>
+        <td class="timestamp" id="ts-{{ d.id }}">
+          {% set checked_dates = [] %}
+          {% if d.fb_posts_checked_at %}
+            {% set _ = checked_dates.append(d.fb_posts_checked_at) %}
+          {% endif %}
+          {% if d.ig_posts_checked_at %}
+            {% set _ = checked_dates.append(d.ig_posts_checked_at) %}
+          {% endif %}
+          {% if checked_dates %}
+            {% set latest_check = checked_dates|sort|last %}
+            {{ latest_check.strftime('%d %b, %H:%M') }}
+          {% else %}
+            never
+          {% endif %}
+        </td>
+        <td>
+          {% if can_perform('refresh') %}
+          <button class="refresh-btn"
+                  data-has-fb="{% if d.fb_input %}1{% endif %}"
+                  data-has-ig="{% if d.ig_search %}1{% endif %}"
+                  onclick="checkRow({{ d.id }}, this, this.dataset.hasFb === '1', this.dataset.hasIg === '1')">Check</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const rangeFrom = {{ from_val|tojson }};
+const rangeTo = {{ to_val|tojson }};
+
+function refreshNoActivitySummary() {
+  const rows = Array.from(document.querySelectorAll('tr[id^="row-"]'));
+  const inactive = rows
+    .filter(row => {
+      const badge = row.querySelector('[id^="activity-"]');
+      return badge && badge.textContent.trim() === 'No Activity';
+    })
+    .map(row => ({ name: row.dataset.name, followers: parseInt(row.dataset.followers, 10) || 0 }))
+    .sort((a, b) => b.followers - a.followers);
+
+  document.getElementById('no-activity-count').textContent = inactive.length;
+  document.getElementById('no-activity-plural').textContent = inactive.length === 1 ? '' : 's';
+  document.getElementById('no-activity-names').textContent = inactive.length
+    ? inactive.map(x => `${x.name} (${x.followers.toLocaleString()} Followers)`).join(', ')
+    : 'None Found In This Range.';
+}
+
+function setActivityStatus(id, fbPosts, igPosts, hasFb, hasIg) {
+  const badge = document.getElementById(`activity-${id}`);
+  if (!badge) return;
+  const total = (hasFb ? fbPosts : 0) + (hasIg ? igPosts : 0);
+  badge.className = 'status-badge ' + (total === 0 ? 'status-pending' : 'status-done');
+  badge.textContent = total === 0 ? 'No Activity' : 'Active';
+}
+
+function setEngagementBadge(elId, avgEngagement, followers) {
+  const badge = document.getElementById(elId);
+  if (!badge) return;
+  if (followers === 0) {
+    badge.className = 'status-badge status-partial';
+    badge.textContent = 'Not Checked';
+    return;
+  }
+  const rate = Math.round((avgEngagement / followers) * 100 * 1000) / 1000;
+  let cls = 'status-done';
+  let label = `${rate}%`;
+  if (followers >= 500 && rate < 0.1) {
+    cls = 'status-flag';
+    label = `${rate}% ⚠`;
+  } else if (rate < 1) {
+    cls = 'status-partial';
+  }
+  badge.className = 'status-badge ' + cls;
+  badge.textContent = label;
+}
+
+async function checkRow(id, btnEl, hasFb, hasIg) {
+  if (btnEl) { btnEl.classList.add('loading'); btnEl.textContent = '...'; }
+  const errors = [];
+  let fbPosts = 0, igPosts = 0;
+  const row = document.getElementById(`row-${id}`);
+  const fbFollowers = row ? parseInt(row.dataset.fbFollowers, 10) || 0 : 0;
+  const igFollowers = row ? parseInt(row.dataset.igFollowers, 10) || 0 : 0;
+
+  try {
+    if (hasFb) {
+      const timer = btnEl ? startElapsedTimer(btnEl, 'FB') : null;
+      const r = await fetch(`/check_fb_posts.php?id=${id}&from=${rangeFrom}&to=${rangeTo}`);
+      const d = await r.json();
+      if (timer) stopElapsedTimer(timer);
+      if (d.success) {
+        fbPosts = d.fb_posts_week;
+        document.getElementById(`fbposts-${id}`).textContent = fbPosts.toLocaleString();
+        setEngagementBadge(`fbeng-${id}`, d.fb_engagement_avg || 0, fbFollowers);
+      } else errors.push('FB: ' + d.message);
+    }
+    if (hasIg) {
+      const r = await fetch(`/check_ig_posts.php?id=${id}&from=${rangeFrom}&to=${rangeTo}`);
+      const d = await r.json();
+      if (d.success) {
+        igPosts = d.ig_posts_week;
+        document.getElementById(`igposts-${id}`).textContent = igPosts.toLocaleString();
+        setEngagementBadge(`igeng-${id}`, d.ig_engagement_avg || 0, igFollowers);
+      } else errors.push('IG: ' + d.message);
+    }
+
+    setActivityStatus(id, fbPosts, igPosts, hasFb, hasIg);
+    refreshNoActivitySummary();
+
+    const tsEl = document.getElementById(`ts-${id}`);
+    if (errors.length) {
+      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}">⚠ error</span>`;
+    } else {
+      tsEl.textContent = 'just now';
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    if (btnEl) { btnEl.classList.remove('loading'); btnEl.textContent = 'Check'; }
+  }
+}
+
+document.getElementById('check-all')?.addEventListener('click', async function () {
+  const rows = document.querySelectorAll('tr[id^="row-"]');
+  this.disabled = true;
+
+  let done = 0;
+  for (const row of rows) {
+    const id = row.id.replace('row-', '');
+    this.textContent = `Checking ${done + 1}/${rows.length}...`;
+    const btn = row.querySelector('.refresh-btn');
+    if (btn) {
+      await checkRow(id, btn, btn.dataset.hasFb === '1', btn.dataset.hasIg === '1');
+    }
+    done++;
+  }
+
+  this.textContent = 'Check All';
+  this.disabled = false;
+});
+</script>
+{% endblock %}

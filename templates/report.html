@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Social Media Report{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Dealership Social Media Report</h1>
+    <div class="subtitle">{{ totals.cnt }} Dealerships · Overview And Comparison</div>
+  </div>
+  <div class="toolbar">
+    <a href="{{ url_for('export_social_report') }}" class="btn primary">Export CSV</a>
+  </div>
+</header>
+
+{% if detail %}
+<div class="detail-card">
+  <h2>{{ detail.name }}</h2>
+  <div class="detail-grid">
+    <div>
+      <div class="stat-label">FB Followers</div>
+      <div class="stat-value" style="color:var(--fb)">{{ detail.fb_followers|number_format }} {{ target_badge(detail.fb_followers, detail.fb_target)|safe }}</div>
+    </div>
+    <div>
+      <div class="stat-label">IG Followers</div>
+      <div class="stat-value" style="color:var(--ig)">{{ detail.ig_followers|number_format }} {{ target_badge(detail.ig_followers, detail.ig_target)|safe }}</div>
+    </div>
+    <div>
+      <div class="stat-label">YT Subscribers</div>
+      <div class="stat-value" style="color:var(--yt)">{{ detail.yt_subscribers|number_format }} {{ target_badge(detail.yt_subscribers, detail.yt_target)|safe }}</div>
+    </div>
+    <div>
+      <div class="stat-label">YT Videos</div>
+      <div class="stat-value">{{ detail.yt_videos|number_format }}</div>
+    </div>
+    <div>
+      <div class="stat-label">YT Total Views</div>
+      <div class="stat-value">{{ detail.yt_views|number_format }}</div>
+    </div>
+    <div>
+      <div class="stat-label">Google Reviews</div>
+      <div class="stat-value" style="color:var(--gr)">{{ detail.google_review_count|number_format }} {{ target_badge(detail.google_review_count, detail.google_review_target)|safe }}</div>
+    </div>
+    <div>
+      <div class="stat-label">Google Rating</div>
+      <div class="stat-value">{{ detail.google_rating }}★</div>
+    </div>
+    <div>
+      <div class="stat-label">FB Posts (last check)</div>
+      <div class="stat-value">{{ detail.fb_posts_week|number_format }}/week</div>
+    </div>
+    <div>
+      <div class="stat-label">IG Posts (last check)</div>
+      <div class="stat-value">{{ detail.ig_posts_week|number_format }}/week</div>
+    </div>
+    <div>
+      <div class="stat-label">YT Videos (last check)</div>
+      <div class="stat-value">{{ detail.yt_videos_month|number_format }}/month</div>
+    </div>
+    <div>
+      <div class="stat-label">Last Refreshed</div>
+      <div class="stat-value" style="font-size:13px;">
+        {% if detail.last_refreshed %}
+          {{ detail.last_refreshed.strftime('%d %b, %H:%M') }}
+        {% else %}
+          never
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="subtitle" style="margin-bottom:16px;">
+  <a href="{{ url_for('social_report') }}" style="color:var(--accent)">← Back To Full Report</a>
+</div>
+{% endif %}
+
+<div class="stat-cards">
+  <div class="stat-card">
+    <div class="stat-label">Total FB Followers</div>
+    <div class="stat-value" style="color:var(--fb)">{{ totals.fb_total|number_format }} {{ target_badge(totals.fb_total, totals.fb_target_total)|safe }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total IG Followers</div>
+    <div class="stat-value" style="color:var(--ig)">{{ totals.ig_total|number_format }} {{ target_badge(totals.ig_total, totals.ig_target_total)|safe }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total YT Subscribers</div>
+    <div class="stat-value" style="color:var(--yt)">{{ totals.yt_total|number_format }} {{ target_badge(totals.yt_total, totals.yt_target_total)|safe }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Average Google Rating</div>
+    <div class="stat-value">
+      {% if totals.avg_rating %}
+        {{ "%.1f"|format(totals.avg_rating) }}★
+      {% else %}
+        —★
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="table-wrap">
+  {% if not dealerships %}
+    <div class="empty-state">No Dealerships Added Yet.</div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Dealership</th>
+        <th>Total Reach (FB+IG+YT)</th>
+        <th class="th-center">FB {{ column_target_label(dealerships, 'fb_target')|safe }}</th>
+        <th class="th-center">IG {{ column_target_label(dealerships, 'ig_target')|safe }}</th>
+        <th class="th-center">YT {{ column_target_label(dealerships, 'yt_target')|safe }}</th>
+        <th class="th-center">Google {{ column_target_label(dealerships, 'google_review_target')|safe }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in dealerships %}
+      <tr>
+        <td><span class="rank-badge">#{{ loop.index }}</span></td>
+        <td class="name">{{ d.name }}</td>
+        <td class="metric">{{ d.total_reach|number_format }}</td>
+        <td class="metric fb-color">{{ d.fb_followers|number_format }} {{ target_badge(d.fb_followers, d.fb_target)|safe }}</td>
+        <td class="metric ig-color">{{ d.ig_followers|number_format }} {{ target_badge(d.ig_followers, d.ig_target)|safe }}</td>
+        <td class="metric yt-color">{{ d.yt_subscribers|number_format }} {{ target_badge(d.yt_subscribers, d.yt_target)|safe }}</td>
+        <td class="metric gr-color">
+          {{ d.google_review_count|number_format }} ({{ d.google_rating }}★) {{ target_badge(d.google_review_count, d.google_review_target)|safe }}
+        </td>
+        <td><a class="edit-btn" href="{{ url_for('social_report', id=d.id) }}">View Detail</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

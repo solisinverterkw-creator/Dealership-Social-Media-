@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Integration Report{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1>Integration Report</h1>
+    <div class="subtitle">Posts Published This Month — Target: {{ monthly_threshold }}/Month Per Dealership</div>
+  </div>
+</header>
+
+<div class="table-wrap" style="margin-bottom:28px;">
+  {% if not all_targets %}
+    <div class="empty-state">
+      {% if is_super_admin() %}No Target Pages Added Yet.{% else %}No Target Page Linked To Your Dealership Yet.{% endif %}
+    </div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Dealership</th>
+        <th>Posts This Month</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in all_targets %}
+      {% set count = count_map.get(t.name, 0) %}
+      <tr>
+        <td class="row-number">{{ loop.index }}</td>
+        <td class="name">{{ t.name }}</td>
+        <td class="metric fb-color">{{ count|number_format }}</td>
+        <td>
+          <span class="status-badge {% if count >= monthly_threshold %}status-done{% else %}status-flag{% endif %}">
+            {% if count >= monthly_threshold %}On Target{% else %}Below Target{% endif %}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<h2 style="font-size:16px; margin-bottom:14px;">Recent Activity (Last 50)</h2>
+<div class="table-wrap">
+  {% if not recent_log %}
+    <div class="empty-state">No Publish Attempts Logged Yet.</div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Dealership</th>
+        <th>Status</th>
+        <th>Message</th>
+        <th>Error</th>
+        <th>Posted At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in recent_log %}
+      <tr>
+        <td class="name">{{ log.dealership_name }}</td>
+        <td><span class="status-badge {% if log.status == 'success' %}status-done{% else %}status-flag{% endif %}">{{ log.status|capitalize }}</span></td>
+        <td class="timestamp" style="max-width:280px; white-space:normal;">{{ (log.message or '')[:80] }}</td>
+        <td class="timestamp" style="color:var(--red);">{{ log.error_message or '' }}</td>
+        <td class="timestamp">{{ log.posted_at.strftime('%d %b, %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}
