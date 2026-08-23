@@ -6,7 +6,13 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(root_dir, '.env'))
 
 class Config:
-    DATABASE_URL = os.environ.get('DATABASE_URL', 'mysql+pymysql://root:@localhost/dealership_dashboard')
+    # Automatically read DATABASE_URL or POSTGRES_URL (injected by Vercel Neon Storage integration)
+    _db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL') or 'mysql+pymysql://root:@localhost/dealership_dashboard'
+    # SQLAlchemy 2.0 requires dialect prefix "postgresql://" instead of deprecated "postgres://"
+    if _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    DATABASE_URL = _db_url
+
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY', 'default-dev-secret-key-change-in-prod')
     
     RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY', '')
