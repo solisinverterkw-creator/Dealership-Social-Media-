@@ -1,4 +1,11 @@
 import os
+import sys
+
+# Add the parent directory of api/ to sys.path so Vercel can resolve local imports properly
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
 import re
 import json
 import time
