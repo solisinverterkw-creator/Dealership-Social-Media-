@@ -57,11 +57,16 @@ app = Flask(
 )
 app.secret_key = Config.SECRET_KEY
 
-# Direct directories setup
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), '../assets/uploads')
+# Vercel serverless filesystem is read-only - use /tmp for writable uploads
+if os.environ.get('VERCEL') or not os.access(os.path.dirname(os.path.abspath(__file__)), os.W_OK):
+    UPLOAD_DIR = '/tmp/uploads'
+else:
+    UPLOAD_DIR = os.path.join(os.path.dirname(__file__), '../assets/uploads')
+
 os.makedirs(os.path.join(UPLOAD_DIR, 'vehicles'), exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_DIR, 'logos'), exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_DIR, 'refresh_status'), exist_ok=True)
+
 
 # Set TZ offset roughly for date display to match Asia/Karachi
 def current_time_pk():
