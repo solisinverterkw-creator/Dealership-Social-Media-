@@ -90,7 +90,7 @@ class Dealership(Base):
     users = relationship('User', secondary=user_dealerships, back_populates='dealerships')
     yt_monthly_stats = relationship('YtMonthlyStats', back_populates='dealership', cascade='all, delete-orphan')
     reshare_checks = relationship('ReshareCheck', back_populates='dealership', cascade='all, delete-orphan')
-    reshare_own_post_stats = relationship('ReshareOwnPostStats', back_populates='dealership', uselist=False, cascade='all, delete-orphan')
+    reshare_own_post_stats = relationship('ReshareOwnPostStat', back_populates='dealership', uselist=False, cascade='all, delete-orphan')
     post_submissions = relationship('PostSubmission', back_populates='dealership', cascade='all, delete-orphan')
     sales_records = relationship('SalesRecord', back_populates='dealership', cascade='all, delete-orphan')
     sales_summaries = relationship('SalesSummary', back_populates='dealership', cascade='all, delete-orphan')
@@ -153,7 +153,7 @@ class ReshareCheck(Base):
     # Relationships
     dealership = relationship('Dealership', back_populates='reshare_checks')
 
-class ReshareOwnPostStats(Base):
+class ReshareOwnPostStat(Base):
     __tablename__ = 'reshare_own_post_stats'
 
     dealership_id = Column(Integer, ForeignKey('dealerships.id', ondelete='CASCADE'), primary_key=True)

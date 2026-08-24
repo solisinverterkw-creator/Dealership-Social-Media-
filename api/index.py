@@ -20,7 +20,7 @@ from sqlalchemy import or_, and_, func
 from api.config import Config
 from api.database import db_session, init_db
 from api.models import (
-    User, Dealership, UserDealership, UserSidebarSection, VehicleModel,
+    User, Dealership, user_dealerships, UserSidebarSection, VehicleModel,
     VehicleModelImage, BrandIdentity, PostSubmission, CrmParameter,
     CrmRawData, CrmScore, SalesRecord, SalesSummary, StockRecord,
     AgeingRecord, StockChassisRecord, TargetPage, PostLog, AppSetting,
@@ -1548,8 +1548,7 @@ def users_view():
                     if not is_admin:
                         # Link dealerships
                         for did in dealership_ids:
-                            ud = UserDealership(user_id=new_user.id, dealership_id=int(did))
-                            db_session.add(ud)
+                            db_session.execute(user_dealerships.insert().values(user_id=new_user.id, dealership_id=int(did)))
                         # Link sidebar sections
                         for sec in sel_sections:
                             if sec in sidebar_sections:
@@ -1625,13 +1624,12 @@ def edit_user_view():
                     user.password_hash = hash_password(new_pass)
                     
                 # Delete old dealerships/sections links
-                db_session.query(UserDealership).filter(UserDealership.user_id == u_id).delete()
+                db_session.execute(user_dealerships.delete().where(user_dealerships.c.user_id == u_id))
                 db_session.query(UserSidebarSection).filter(UserSidebarSection.user_id == u_id).delete()
                 
                 # Insert new links
                 for did in dealership_ids:
-                    ud = UserDealership(user_id=u_id, dealership_id=int(did))
-                    db_session.add(ud)
+                    db_session.execute(user_dealerships.insert().values(user_id=u_id, dealership_id=int(did)))
                 for sec in sel_sections:
                     if sec in sidebar_sections:
                         uss = UserSidebarSection(user_id=u_id, section_key=sec)
