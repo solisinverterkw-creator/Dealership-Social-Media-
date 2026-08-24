@@ -304,9 +304,18 @@ def social_report():
     ranked.sort(key=lambda x: x[0], reverse=True)
     ranked_dealerships = [x[1] for x in ranked]
     
+    totals = {
+        'cnt': len(dealerships),
+        'fb': sum(d.fb_followers or 0 for d in dealerships),
+        'ig': sum(d.ig_followers or 0 for d in dealerships),
+        'yt': sum(d.yt_subscribers or 0 for d in dealerships),
+        'gr': sum(d.google_review_count or 0 for d in dealerships)
+    }
+    
     return render_template(
         'report.html',
-        dealerships=ranked_dealerships
+        dealerships=ranked_dealerships,
+        totals=totals
     )
 
 @app.route('/weekly_posts')
@@ -318,7 +327,8 @@ def posting_activity():
     dealerships = get_allowed_dealerships()
     message = session.pop('weekly_posts_msg', '')
     error = session.pop('weekly_posts_err', '')
-    return render_template('weekly_posts.html', dealerships=dealerships, message=message, error=error)
+    row_percents = {d.id: dealership_percent(d) for d in dealerships}
+    return render_template('weekly_posts.html', dealerships=dealerships, row_percents=row_percents, message=message, error=error)
 
 @app.route('/yt_monthly')
 @app.route('/yt_monthly.php', endpoint='yt_monthly')
@@ -357,9 +367,11 @@ def yt_monthly_view():
     message = session.pop('yt_monthly_msg', '')
     error = session.pop('yt_monthly_err', '')
     
+    row_percents = {d.id: dealership_percent(d) for d in dealerships}
     return render_template(
         'yt_monthly.html',
         dealerships=dealerships,
+        row_percents=row_percents,
         months=month_keys,
         stats_pivot=stats_pivot,
         message=message,
