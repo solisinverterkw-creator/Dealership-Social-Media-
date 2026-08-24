@@ -1,53 +1,322 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-<script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login — ROSP - Dealers Social Media</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/style.css">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1a1a19">
-<link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — ROSP Dealers Social Media</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0f;
+      background-image:
+        radial-gradient(ellipse 80% 80% at 20% 20%, rgba(99,102,241,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 60% at 80% 80%, rgba(168,85,247,0.10) 0%, transparent 50%);
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(99,102,241,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.05) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .login-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* Logo / Brand */
+    .brand-area {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .brand-logo {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 40px rgba(99,102,241,0.4);
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 40px rgba(99,102,241,0.4); }
+      50% { box-shadow: 0 0 60px rgba(168,85,247,0.6); }
+    }
+
+    .brand-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    /* Card */
+    .login-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 36px;
+      backdrop-filter: blur(20px);
+      box-shadow:
+        0 0 0 1px rgba(99,102,241,0.1),
+        0 32px 64px rgba(0,0,0,0.5);
+    }
+
+    .card-heading {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .card-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 28px;
+    }
+
+    /* Error */
+    .error-banner {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: #f87171;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      25%{transform:translateX(-6px)}
+      75%{transform:translateX(6px)}
+    }
+
+    /* Fields */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .field-input-wrap {
+      position: relative;
+    }
+
+    .field-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.3);
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    .field-input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 14px 12px 42px;
+      color: #fff;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .field-input::placeholder { color: rgba(255,255,255,0.2); }
+
+    .field-input:focus {
+      border-color: rgba(99,102,241,0.6);
+      background: rgba(99,102,241,0.08);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+
+    /* Submit */
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-login::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .btn-login:hover::after { opacity: 1; }
+    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
+    .btn-login:active { transform: translateY(0); }
+
+    .btn-login.loading { pointer-events: none; opacity: 0.7; }
+
+    /* Footer */
+    .login-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* Theme switcher */
+    .theme-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .theme-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .theme-btn:hover, .theme-btn.active { border-color: #6366f1; transform: scale(1.15); }
+    .theme-btn[data-t="dark"]     { background: #1a1a2e; }
+    .theme-btn[data-t="midnight"] { background: #0f0c29; }
+    .theme-btn[data-t="slate"]    { background: #2d3748; }
+    .theme-btn[data-t="light"]    { background: #f8fafc; border-color: rgba(0,0,0,0.15); }
+  </style>
 </head>
 <body>
-<div class="container narrow" style="margin-top: 80px;">
-  <header>
-    <h1 class="brand-h1">ROSP - Dealers Social Media Login</h1>
-    <select class="theme-select" id="theme-select" style="width:auto; margin:12px 0 0;" onchange="setTheme(this.value)">
-      <option value="dark">🌙 Dark</option>
-      <option value="light">☀️ Light</option>
-      <option value="midnight">🌌 Midnight</option>
-      <option value="slate">🪨 Slate</option>
-      <option value="contrast">◐ High Contrast</option>
-    </select>
-  </header>
+  <div class="login-wrapper">
 
-  {% if error %}
-    <div class="error-msg">{{ error }}</div>
-  {% endif %}
-
-  <form method="POST" class="search-panel">
-    <div class="field">
-      <label>Username</label>
-      <input type="text" name="username" required autofocus>
+    <div class="brand-area">
+      <div class="brand-logo">🚗</div>
+      <div class="brand-title">ROSP Dashboard</div>
+      <div class="brand-sub">Dealers Social Media Management</div>
     </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" name="password" required>
-    </div>
-    <button type="submit" class="submit">Login</button>
-  </form>
 
-  <div class="footer" style="text-align: center; margin-top: 20px; color: var(--muted); font-size: 12px;">Developed By Wasim Javed</div>
-</div>
-<script>
-function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('theme', theme);
-}
-document.getElementById('theme-select').value = document.documentElement.getAttribute('data-theme') || 'dark';
-</script>
+    <div class="login-card">
+      <div class="card-heading">Welcome back</div>
+      <div class="card-sub">Sign in to your account to continue</div>
+
+      {% if error %}
+      <div class="error-banner">
+        <span>⚠️</span> {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="POST" id="login-form">
+        <div class="field-group">
+          <div>
+            <div class="field-label">Username</div>
+            <div class="field-input-wrap">
+              <span class="field-icon">👤</span>
+              <input class="field-input" type="text" name="username" placeholder="Enter username" required autofocus>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Password</div>
+            <div class="field-input-wrap">
+              <span class="field-icon">🔒</span>
+              <input class="field-input" type="password" name="password" placeholder="Enter password" required>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-login" type="submit" id="login-btn">
+          Sign In →
+        </button>
+      </form>
+
+      <div class="theme-row" style="margin-top: 20px; margin-bottom: 0;">
+        <button class="theme-btn" data-t="dark"     title="Dark"     onclick="setTheme('dark')"></button>
+        <button class="theme-btn" data-t="midnight" title="Midnight" onclick="setTheme('midnight')"></button>
+        <button class="theme-btn" data-t="slate"    title="Slate"    onclick="setTheme('slate')"></button>
+        <button class="theme-btn" data-t="light"    title="Light"    onclick="setTheme('light')"></button>
+      </div>
+    </div>
+
+    <div class="login-footer">Developed by Wasim Javed &nbsp;•&nbsp; ROSP © 2026</div>
+  </div>
+
+  <script>
+    function setTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('theme', t);
+      document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    }
+
+    // Mark active theme
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.t === cur));
+
+    // Loading state on submit
+    document.getElementById('login-form').addEventListener('submit', function() {
+      const btn = document.getElementById('login-btn');
+      btn.classList.add('loading');
+      btn.textContent = 'Signing in…';
+    });
+  </script>
 </body>
 </html>

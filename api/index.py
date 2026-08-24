@@ -248,7 +248,7 @@ def dashboard():
     if dealerships:
         d_ids = [d.id for d in dealerships]
         # Query DB monthly stats
-        from api.models import YtMonthlyStat
+        from api.models import YtMonthlyStats as YtMonthlyStat
         stats = db_session.query(
             YtMonthlyStat.month, func.sum(YtMonthlyStat.video_count)
         ).filter(
@@ -334,7 +334,7 @@ def yt_monthly_view():
             cursor = cursor.replace(month=cursor.month + 1)
             
     # Pull stats pivot
-    from api.models import YtMonthlyStat
+    from api.models import YtMonthlyStats as YtMonthlyStat
     stats_pivot = {}
     if dealerships:
         d_ids = [d.id for d in dealerships]
@@ -704,7 +704,7 @@ def check_yt_monthly():
         return jsonify(res)
         
     # Save/update YtMonthlyStat
-    from api.models import YtMonthlyStat
+    from api.models import YtMonthlyStats as YtMonthlyStat
     stat = db_session.query(YtMonthlyStat).filter(
         YtMonthlyStat.dealership_id == d_id,
         YtMonthlyStat.month == month
