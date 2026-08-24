@@ -74,6 +74,12 @@ def current_time_pk():
     return datetime.utcnow() + timedelta(hours=5)
 
 # --- JINJA FILTERS ---
+@app.template_filter('escapejs')
+def escapejs_filter(val):
+    if val is None:
+        return ''
+    return json.dumps(str(val))[1:-1]
+
 @app.template_filter('number_format')
 def number_format_filter(value, decimals=0):
     if value is None or value == '':
@@ -273,6 +279,7 @@ def dashboard():
     return render_template(
         'dashboard.html',
         dealerships=dealerships,
+        row_percents=row_percents,
         overall_percent=overall_percent,
         total_fb_followers=total_fb_followers,
         total_ig_followers=total_ig_followers,
