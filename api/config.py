@@ -8,9 +8,11 @@ load_dotenv(os.path.join(root_dir, '.env'))
 class Config:
     # Automatically read DATABASE_URL or POSTGRES_URL (injected by Vercel Neon Storage integration)
     _db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL') or 'mysql+pymysql://root:@localhost/dealership_dashboard'
-    # SQLAlchemy 2.0 requires dialect prefix "postgresql://" instead of deprecated "postgres://"
+    # SQLAlchemy 2.0 with pg8000 driver requires dialect prefix "postgresql+pg8000://"
     if _db_url.startswith('postgres://'):
-        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+        _db_url = _db_url.replace('postgres://', 'postgresql+pg8000://', 1)
+    elif _db_url.startswith('postgresql://'):
+        _db_url = _db_url.replace('postgresql://', 'postgresql+pg8000://', 1)
     DATABASE_URL = _db_url
 
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY', 'default-dev-secret-key-change-in-prod')

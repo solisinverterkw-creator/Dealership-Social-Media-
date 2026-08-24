@@ -1,7 +1,7 @@
 Flask==3.0.3
 SQLAlchemy==2.0.31
 PyMySQL==1.1.1
-psycopg2-binary==2.9.9
+pg8000==1.31.5
 requests==2.32.3
 openpyxl==3.1.5
 Pillow==10.4.0
