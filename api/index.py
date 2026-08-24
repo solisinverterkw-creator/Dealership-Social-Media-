@@ -24,8 +24,11 @@ from api.models import (
     VehicleModelImage, BrandIdentity, PostSubmission, CrmParameter,
     CrmRawData, CrmScore, SalesRecord, SalesSummary, StockRecord,
     AgeingRecord, StockChassisRecord, TargetPage, PostLog, AppSetting,
-    ReshareCheck, ReshareOwnPostStat, ReshareSourcePost
+    ReshareCheck, ReshareOwnPostStat, ProcessedSourcePost
 )
+# Alias for backward compatibility with code that uses ReshareSourcePost name
+ReshareSourcePost = ProcessedSourcePost
+
 from api.auth import (
     hash_password, verify_password, attempt_login, logout_user,
     is_logged_in, is_super_admin, get_dealership_ids,
@@ -38,10 +41,13 @@ from api.services.helpers import (
 )
 from api.services.lookups import (
     FacebookLookup, InstagramLookup, YouTubeLookup, GoogleReviewLookup,
-    FacebookPostsLookup, InstagramPostsLookup, YouTubePostsLookup
+    FacebookPostsLookup
 )
+# Aliases for classes that were renamed
+InstagramPostsLookup = InstagramLookup
+YouTubePostsLookup = YouTubeLookup
 from api.services.facebook_poster import FacebookPoster
-from api.services.email_validator import EmailValidatorService
+from api.services.email_validator import EmailValidator as EmailValidatorService
 
 app = Flask(
     __name__, 
