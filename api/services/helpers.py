@@ -281,288 +281,442 @@ class SpreadsheetImportHelper:
         if not rows or len(rows) < 2:
             return {'success': False, 'message': 'Sheet is empty or has no data rows.'}
 
-        dealership_map = self._build_dealership_map(db_session)
-        header_idx = self.find_header_row_index(rows, ['dealer', 'dealership', 'name'])
-        header = rows[header_idx] if header_idx < len(rows) else []
+        dealershipsByName = self._build_dealership_map(db_session)
+        headerIndex = self.find_header_row_index(rows, ['dealer'])
+        headerRow = rows[headerIndex] if headerIndex < len(rows) else []
+        dealerCol = self.find_column(headerRow, ['dealer'])
 
-        dealer_col = self.find_column(header, ['dealer', 'dealership', 'name'])
-        target_col = self.find_column(header, ['target', 'tgt'])
-        grand_total_col = self.find_column(header, ['total', 'grand total', 'achieved'])
+        if dealerCol is None:
+            return {'success': False, 'message': 'Could not find a "Dealer"/"Dealership" column in the header row.'}
 
-        if dealer_col is None:
-            return {'success': False, 'message': 'Could not identify Dealership Name column.'}
+        nextRow = rows[headerIndex + 1] if (headerIndex + 1) < len(rows) else []
+        nextRowDealerVal = str(nextRow[dealerCol]).strip() if dealerCol < len(nextRow) else ''
+        hasSubHeaderRow = (nextRowDealerVal == '') and any(str(c).strip() != '' for c in nextRow)
 
-        db_session.query(SalesRecord).filter(SalesRecord.period_month == period_month).delete()
-        db_session.query(SalesSummary).filter(SalesSummary.period_month == period_month).delete()
+        effectiveHeader = list(headerRow)
+        dataStartIndex = headerIndex + 1
+        if hasSubHeaderRow:
+            for col, val in enumerate(nextRow):
+                v_str = str(val).strip()
+                if v_str != '':
+                    if col < len(effectiveHeader):
+                        effectiveHeader[col] = val
+                    else:
+                        effectiveHeader.append(val)
+            dataStartIndex = headerIndex + 2
 
-        imported_count = 0
-        for r_idx in range(header_idx + 1, len(rows)):
-            row = rows[r_idx]
-            if len(row) <= dealer_col:
+        targetCol = self.find_column(effectiveHeader, ['target'])
+        totalCol = self.find_column(effectiveHeader, ['total'])
+
+        skipKeywords = ['sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'target', 'total']
+        productCols = {}
+        for col, label in enumerate(effectiveHeader):
+            labelStr = str(label).strip()
+            if labelStr == '' or self.matches_any_keyword(labelStr, skipKeywords):
                 continue
-            raw_name = str(row[dealer_col]).strip()
-            if not raw_name or raw_name.lower() in ('total', 'grand total', 'average', 'summary'):
+            productCols[col] = labelStr
+
+        if not productCols:
+            return {'success': False, 'message': 'Could not find any Product/Model columns in the sheet.'}
+
+        touchedDealershipIds = set()
+        importedCount = 0
+        importErrors = []
+
+        for i in range(dataStartIndex, len(rows)):
+            row = rows[i]
+            rowNum = i + 1
+            if not any(str(c).strip() != '' for c in row):
                 continue
 
-            d_id = self.find_dealership_match(dealership_map, raw_name)
-            if not d_id:
+            dealershipName = str(row[dealerCol]).strip() if dealerCol < len(row) else ''
+            if not dealershipName:
                 continue
 
-            col_order = 0
-            for c_idx in range(len(header)):
-                if c_idx == dealer_col or c_idx == target_col or c_idx == grand_total_col:
-                    continue
-                col_name = str(header[c_idx]).strip()
-                if not col_name:
-                    continue
-                val_str = str(row[c_idx]).strip() if c_idx < len(row) else '0'
+            dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
+            if not dealershipId:
+                importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                continue
+
+            if dealershipId not in touchedDealershipIds:
+                db_session.query(SalesRecord).filter(
+                    SalesRecord.dealership_id == dealershipId,
+                    SalesRecord.period_month == period_month
+                ).delete()
+                touchedDealershipIds.add(dealershipId)
+
+            for col, productName in productCols.items():
+                val_str = str(row[col]).strip() if col < len(row) else '0'
                 try:
                     qty = int(float(val_str.replace(',', ''))) if val_str else 0
                 except Exception:
                     qty = 0
 
                 rec = SalesRecord(
-                    dealership_id=d_id,
-                    product_name=col_name,
+                    dealership_id=dealershipId,
+                    product_name=productName,
                     quantity=qty,
                     period_month=period_month,
-                    column_order=col_order
+                    column_order=col
                 )
                 db_session.add(rec)
-                col_order += 1
+                importedCount += 1
 
             target_val = None
-            if target_col is not None and target_col < len(row):
+            if targetCol is not None and targetCol < len(row):
                 try:
-                    target_val = int(float(str(row[target_col]).replace(',', '').strip()))
+                    target_val = int(float(str(row[targetCol]).replace(',', '').strip()))
                 except Exception:
                     pass
 
             gt_val = None
-            if grand_total_col is not None and grand_total_col < len(row):
+            if totalCol is not None and totalCol < len(row):
                 try:
-                    gt_val = int(float(str(row[grand_total_col]).replace(',', '').strip()))
+                    gt_val = int(float(str(row[totalCol]).replace(',', '').strip()))
                 except Exception:
                     pass
 
-            summary = SalesSummary(
-                dealership_id=d_id,
-                period_month=period_month,
-                target=target_val,
-                grand_total=gt_val,
-                grand_total_column_order=grand_total_col
-            )
-            db_session.add(summary)
-            imported_count += 1
+            summary = db_session.query(SalesSummary).filter(
+                SalesSummary.dealership_id == dealershipId,
+                SalesSummary.period_month == period_month
+            ).first()
+            if not summary:
+                summary = SalesSummary(
+                    dealership_id=dealershipId,
+                    period_month=period_month,
+                    target=target_val,
+                    grand_total=gt_val,
+                    grand_total_column_order=totalCol
+                )
+                db_session.add(summary)
+            else:
+                summary.target = target_val
+                summary.grand_total = gt_val
+                summary.grand_total_column_order = totalCol
 
         db_session.commit()
-        return {'success': True, 'imported_count': imported_count}
+        return {'success': True, 'imported_count': importedCount, 'import_errors': importErrors}
 
     def import_stock_sheet(self, db_session, rows: list) -> dict:
-        from api.models import StockRecord
+        from api.models import StockRecord, Dealership
         if not rows or len(rows) < 2:
             return {'success': False, 'message': 'Sheet is empty or has no data rows.'}
 
-        dealership_map = self._build_dealership_map(db_session)
-        header_idx = self.find_header_row_index(rows, ['dealer', 'dealership', 'name'])
-        header = rows[header_idx] if header_idx < len(rows) else []
+        excludedStockNames = ['suzuki habib motors', 'suzuki habib motors alipur']
+        excludedStockIds = set()
+        for d in db_session.query(Dealership).all():
+            if self.normalize_dealership_name(d.name) in excludedStockNames:
+                excludedStockIds.add(d.id)
 
-        dealer_col = self.find_column(header, ['dealer', 'dealership', 'name'])
-        if dealer_col is None:
-            return {'success': False, 'message': 'Could not identify Dealership Name column.'}
+        if excludedStockIds:
+            db_session.query(StockRecord).filter(StockRecord.dealership_id.in_(list(excludedStockIds))).delete()
 
-        db_session.query(StockRecord).delete()
+        dealershipsByName = self._build_dealership_map(db_session)
+        headerIndex = self.find_header_row_index(rows, ['dealer'])
+        headerRow = rows[headerIndex] if headerIndex < len(rows) else []
+        dealerCol = self.find_column(headerRow, ['dealer'])
 
-        imported_count = 0
-        for r_idx in range(header_idx + 1, len(rows)):
-            row = rows[r_idx]
-            if len(row) <= dealer_col:
-                continue
-            raw_name = str(row[dealer_col]).strip()
-            if not raw_name or raw_name.lower() in ('total', 'grand total', 'average', 'summary'):
-                continue
+        if dealerCol is None:
+            return {'success': False, 'message': 'Could not find a "Dealer"/"Dealership" column in the header row.'}
 
-            d_id = self.find_dealership_match(dealership_map, raw_name)
-            if not d_id:
-                continue
+        dealerNameCol = self.find_column(headerRow, ['dealer name']) or dealerCol
+        productDescCol = self.find_column(headerRow, ['product desc', 'product description'])
+        if productDescCol is None:
+            genericCol = self.find_column(headerRow, ['product'])
+            if genericCol is not None and not self.matches_any_keyword(str(headerRow[genericCol]), ['code']):
+                productDescCol = genericCol
 
-            col_order = 0
-            for c_idx in range(len(header)):
-                if c_idx == dealer_col:
+        touchedDealershipIds = set()
+        importedCount = 0
+        importErrors = []
+
+        if productDescCol is not None:
+            counts = {}
+            productOrder = {}
+
+            for i in range(headerIndex + 1, len(rows)):
+                row = rows[i]
+                rowNum = i + 1
+                if not any(str(c).strip() != '' for c in row):
                     continue
-                col_name = str(header[c_idx]).strip()
-                if not col_name or col_name.lower() in ('total', 'grand total'):
+
+                dealershipName = str(row[dealerNameCol]).strip() if dealerNameCol < len(row) else ''
+                productName = str(row[productDescCol]).strip() if productDescCol < len(row) else ''
+                if not dealershipName or not productName:
                     continue
-                val_str = str(row[c_idx]).strip() if c_idx < len(row) else '0'
-                try:
-                    qty = int(float(val_str.replace(',', ''))) if val_str else 0
-                except Exception:
-                    qty = 0
 
-                rec = StockRecord(
-                    dealership_id=d_id,
-                    product_name=col_name,
-                    quantity=qty,
-                    column_order=col_order
-                )
-                db_session.add(rec)
-                col_order += 1
+                dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
+                if not dealershipId:
+                    importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                    continue
+                if dealershipId in excludedStockIds:
+                    continue
 
-            imported_count += 1
+                if dealershipId not in counts:
+                    counts[dealershipId] = {}
+                counts[dealershipId][productName] = counts[dealershipId].get(productName, 0) + 1
+                if productName not in productOrder:
+                    productOrder[productName] = len(productOrder)
+
+            for d_id, prod_dict in counts.items():
+                db_session.query(StockRecord).filter(StockRecord.dealership_id == d_id).delete()
+                for prod_name, qty in prod_dict.items():
+                    rec = StockRecord(
+                        dealership_id=d_id,
+                        product_name=prod_name,
+                        quantity=qty,
+                        column_order=productOrder.get(prod_name, 0)
+                    )
+                    db_session.add(rec)
+                    importedCount += 1
+        else:
+            skipKeywords = ['sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'region', 'total']
+            productCols = {}
+            for col, label in enumerate(headerRow):
+                labelStr = str(label).strip()
+                if labelStr == '' or self.matches_any_keyword(labelStr, skipKeywords):
+                    continue
+                productCols[col] = labelStr
+
+            for i in range(headerIndex + 1, len(rows)):
+                row = rows[i]
+                rowNum = i + 1
+                if not any(str(c).strip() != '' for c in row):
+                    continue
+
+                dealershipName = str(row[dealerCol]).strip() if dealerCol < len(row) else ''
+                if not dealershipName:
+                    continue
+
+                dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
+                if not dealershipId:
+                    importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                    continue
+                if dealershipId in excludedStockIds:
+                    continue
+
+                if dealershipId not in touchedDealershipIds:
+                    db_session.query(StockRecord).filter(StockRecord.dealership_id == dealershipId).delete()
+                    touchedDealershipIds.add(dealershipId)
+
+                for col, productName in productCols.items():
+                    val_str = str(row[col]).strip() if col < len(row) else '0'
+                    try:
+                        qty = int(float(val_str.replace(',', ''))) if val_str else 0
+                    except Exception:
+                        qty = 0
+                    rec = StockRecord(
+                        dealership_id=dealershipId,
+                        product_name=productName,
+                        quantity=qty,
+                        column_order=col
+                    )
+                    db_session.add(rec)
+                    importedCount += 1
 
         db_session.commit()
-        return {'success': True, 'imported_count': imported_count}
+        return {'success': True, 'imported_count': importedCount, 'import_errors': importErrors}
 
     def import_ageing_sheet(self, db_session, rows: list) -> dict:
         from api.models import AgeingRecord
         if not rows or len(rows) < 2:
             return {'success': False, 'message': 'Sheet is empty or has no data rows.'}
 
-        dealership_map = self._build_dealership_map(db_session)
-        header_idx = self.find_header_row_index(rows, ['dealer', 'dealership', 'name', 'chassis', 'delivery', 'date', 'model', 'product'])
-        header = rows[header_idx] if header_idx < len(rows) else []
+        dealershipsByName = self._build_dealership_map(db_session)
+        headerIndex = self.find_header_row_index(rows, ['dealer'])
+        headerRow = rows[headerIndex] if headerIndex < len(rows) else []
 
-        dealer_col  = self.find_column(header, ['dealer', 'dealership', 'name'])
-        chassis_col = self.find_column(header, ['chassis', 'frame', 'vin'])
-        date_col    = self.find_column(header, ['delivery', 'date', 'invoice date'])
-        product_col = self.find_column(header, ['model', 'product', 'variant'])
+        dealerCol = self.find_column(headerRow, ['dealer'])
+        dealerNameCol = self.find_column(headerRow, ['dealer name']) or dealerCol
 
-        if chassis_col is None:
-            return {'success': False, 'message': 'Could not identify Chassis column.'}
+        productCol = self.find_column(headerRow, ['product desc', 'product description']) \
+            or self.find_column(headerRow, ['model name']) \
+            or self.find_column(headerRow, ['product']) \
+            or self.find_column(headerRow, ['model'])
 
-        db_session.query(AgeingRecord).delete()
+        chassisCol = self.find_column(headerRow, ['chassis'])
+        deliveryDateCol = self.find_column(headerRow, ['delivery date', 'deilvery date'])
 
-        imported_count = 0
-        for r_idx in range(header_idx + 1, len(rows)):
-            row = rows[r_idx]
-            chassis_val = str(row[chassis_col]).strip() if chassis_col < len(row) else ''
-            if not chassis_val or chassis_val.lower() in ('chassis', 'total'):
+        if dealerNameCol is None or chassisCol is None or deliveryDateCol is None:
+            return {'success': False, 'message': 'Could not find "Dealer Name", "Chassis", and "Delivery Date" columns.'}
+
+        touchedDealershipIds = set()
+        importedCount = 0
+        importErrors = []
+
+        for i in range(headerIndex + 1, len(rows)):
+            row = rows[i]
+            rowNum = i + 1
+            if not any(str(c).strip() != '' for c in row):
                 continue
 
-            raw_name = str(row[dealer_col]).strip() if (dealer_col is not None and dealer_col < len(row)) else ''
-            d_id = self.find_dealership_match(dealership_map, raw_name) if raw_name else None
-            if not d_id:
+            dealershipName = str(row[dealerNameCol]).strip() if dealerNameCol < len(row) else ''
+            chassis = str(row[chassisCol]).strip() if chassisCol < len(row) else ''
+            deliveryDateRaw = str(row[deliveryDateCol]).strip() if deliveryDateCol < len(row) else ''
+
+            if not dealershipName or not chassis or not deliveryDateRaw:
                 continue
 
-            product_name = str(row[product_col]).strip() if (product_col is not None and product_col < len(row)) else 'Vehicle'
-            date_val = str(row[date_col]).strip() if (date_col is not None and date_col < len(row)) else ''
-            parsed_date_str = self.parse_flexible_date(date_val)
-            if not parsed_date_str:
+            dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
+            if not dealershipId:
+                importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                continue
+
+            deliveryDateStr = self.parse_flexible_date(deliveryDateRaw)
+            if not deliveryDateStr:
+                importErrors.append(f"Row {rowNum}: Could Not Parse Delivery Date \"{deliveryDateRaw}\" — Skipped.")
                 continue
 
             try:
-                del_date = datetime.strptime(parsed_date_str, '%Y-%m-%d').date()
+                delDate = datetime.strptime(deliveryDateStr, '%Y-%m-%d').date()
             except Exception:
                 continue
 
+            productName = str(row[productCol]).strip() if (productCol is not None and productCol < len(row)) else 'Vehicle'
+
+            if dealershipId not in touchedDealershipIds:
+                db_session.query(AgeingRecord).filter(AgeingRecord.dealership_id == dealershipId).delete()
+                touchedDealershipIds.add(dealershipId)
+
             rec = AgeingRecord(
-                dealership_id=d_id,
-                product_name=product_name,
-                chassis_number=chassis_val,
-                delivery_date=del_date
+                dealership_id=dealershipId,
+                product_name=productName,
+                chassis_number=chassis,
+                delivery_date=delDate
             )
             db_session.add(rec)
-            imported_count += 1
+            importedCount += 1
 
         db_session.commit()
-        return {'success': True, 'imported_count': imported_count}
+        return {'success': True, 'imported_count': importedCount, 'import_errors': importErrors}
 
     def import_stock_chassis_sheet(self, db_session, rows: list) -> dict:
         from api.models import StockChassisRecord
         if not rows or len(rows) < 2:
             return {'success': False, 'message': 'Sheet is empty or has no data rows.'}
 
-        dealership_map = self._build_dealership_map(db_session)
-        header_idx = self.find_header_row_index(rows, ['dealer', 'dealership', 'chassis', 'frame', 'vin'])
-        header = rows[header_idx] if header_idx < len(rows) else []
+        dealershipsByName = self._build_dealership_map(db_session)
+        headerIndex = self.find_header_row_index(rows, ['dealer'])
+        headerRow = rows[headerIndex] if headerIndex < len(rows) else []
 
-        dealer_col  = self.find_column(header, ['dealer', 'dealership', 'name'])
-        chassis_col = self.find_column(header, ['chassis', 'frame', 'vin'])
+        dealerCol = self.find_column(headerRow, ['dealer'])
+        dealerNameCol = self.find_column(headerRow, ['dealer name']) or dealerCol
+        chassisCol = self.find_column(headerRow, ['chassis'])
 
-        if chassis_col is None:
-            return {'success': False, 'message': 'Could not identify Chassis column.'}
+        if chassisCol is None:
+            return {'success': False, 'message': 'Could not find "Chassis" column.'}
 
-        db_session.query(StockChassisRecord).delete()
+        touchedDealershipIds = set()
+        importedCount = 0
+        importErrors = []
 
-        imported_count = 0
-        for r_idx in range(header_idx + 1, len(rows)):
-            row = rows[r_idx]
-            chassis_val = str(row[chassis_col]).strip() if chassis_col < len(row) else ''
-            if not chassis_val or chassis_val.lower() in ('chassis', 'total'):
+        for i in range(headerIndex + 1, len(rows)):
+            row = rows[i]
+            rowNum = i + 1
+            if not any(str(c).strip() != '' for c in row):
                 continue
 
-            raw_name = str(row[dealer_col]).strip() if (dealer_col is not None and dealer_col < len(row)) else ''
-            d_id = self.find_dealership_match(dealership_map, raw_name) if raw_name else None
-            if not d_id:
+            dealershipName = str(row[dealerNameCol]).strip() if (dealerNameCol is not None and dealerNameCol < len(row)) else ''
+            chassis = str(row[chassisCol]).strip() if chassisCol < len(row) else ''
+            if not chassis or chassis.lower() in ('chassis', 'total'):
                 continue
+
+            dealershipId = self.find_dealership_match(dealershipsByName, dealershipName) if dealershipName else None
+            if not dealershipId:
+                continue
+
+            if dealershipId not in touchedDealershipIds:
+                db_session.query(StockChassisRecord).filter(StockChassisRecord.dealership_id == dealershipId).delete()
+                touchedDealershipIds.add(dealershipId)
 
             rec = StockChassisRecord(
-                dealership_id=d_id,
-                chassis_number=chassis_val
+                dealership_id=dealershipId,
+                chassis_number=chassis
             )
             db_session.add(rec)
-            imported_count += 1
+            importedCount += 1
 
         db_session.commit()
-        return {'success': True, 'imported_count': imported_count}
+        return {'success': True, 'imported_count': importedCount, 'import_errors': importErrors}
 
     def import_crm_sheet(self, db_session, rows: list, period_month: str) -> dict:
         from api.models import CrmParameter, CrmScore
         if not rows or len(rows) < 2:
             return {'success': False, 'message': 'Sheet is empty or has no data rows.'}
 
-        dealership_map = self._build_dealership_map(db_session)
-        header_idx = self.find_header_row_index(rows, ['dealer', 'dealership', 'name'])
-        header = rows[header_idx] if header_idx < len(rows) else []
+        parameters = db_session.query(CrmParameter).order_by(CrmParameter.display_order, CrmParameter.id).all()
+        if not parameters:
+            return {'success': False, 'message': 'No CRM Parameters defined yet — add them in CRM Parameters first.'}
 
-        dealer_col = self.find_column(header, ['dealer', 'dealership', 'name'])
-        if dealer_col is None:
-            return {'success': False, 'message': 'Could not identify Dealership Name column.'}
+        dealershipsByName = self._build_dealership_map(db_session)
+        headerIndex = self.find_header_row_index(rows, ['dealer', 'company'])
+        headerRow = rows[headerIndex] if headerIndex < len(rows) else []
+        dealerCol = self.find_column(headerRow, ['dealer', 'dealership', 'company'])
 
-        crm_params = db_session.query(CrmParameter).all()
-        param_map = {}
-        for c_idx, cell in enumerate(header):
-            if c_idx == dealer_col:
+        if dealerCol is None:
+            return {'success': False, 'message': 'Could not find a "Dealer"/"Dealership"/"Company" column in header row.'}
+
+        scoreCols = []
+        for col, label in enumerate(headerRow):
+            if col <= dealerCol:
                 continue
-            cell_str = str(cell).strip().lower()
-            for p in crm_params:
-                if p.parameter_name.strip().lower() in cell_str or cell_str in p.parameter_name.strip().lower():
-                    param_map[c_idx] = p.id
-                    break
+            if str(label).strip() != '':
+                scoreCols.append(col)
 
-        db_session.query(CrmScore).filter(CrmScore.period_month == period_month).delete()
+        if len(scoreCols) < len(parameters):
+            return {
+                'success': False,
+                'message': f'Found {len(scoreCols)} score column(s) after "Dealer" but there are {len(parameters)} CRM Parameters. Check template.'
+            }
 
-        imported_count = 0
-        for r_idx in range(header_idx + 1, len(rows)):
-            row = rows[r_idx]
-            if len(row) <= dealer_col:
-                continue
-            raw_name = str(row[dealer_col]).strip()
-            if not raw_name or raw_name.lower() in ('total', 'grand total'):
-                continue
+        importedCount = 0
+        importErrors = []
 
-            d_id = self.find_dealership_match(dealership_map, raw_name)
-            if not d_id:
+        for i in range(headerIndex + 1, len(rows)):
+            row = rows[i]
+            rowNum = i + 1
+            if not any(str(c).strip() != '' for c in row):
                 continue
 
-            for c_idx, param_id in param_map.items():
-                if c_idx < len(row):
-                    val_str = str(row[c_idx]).strip()
-                    try:
-                        pts = float(val_str.replace(',', ''))
-                        score = CrmScore(
-                            dealership_id=d_id,
-                            crm_parameter_id=param_id,
-                            period_month=period_month,
-                            points_obtained=pts
-                        )
-                        db_session.add(score)
-                        imported_count += 1
-                    except Exception:
-                        pass
+            dealershipName = str(row[dealerCol]).strip() if dealerCol < len(row) else ''
+            if not dealershipName:
+                continue
+
+            dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
+            if not dealershipId:
+                importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                continue
+
+            for pIdx, param in enumerate(parameters):
+                col = scoreCols[pIdx]
+                val_str = str(row[col]).strip() if col < len(row) else ''
+                if val_str == '':
+                    continue
+                try:
+                    pts = float(val_str.replace(',', ''))
+                except Exception:
+                    continue
+
+                score = db_session.query(CrmScore).filter(
+                    CrmScore.dealership_id == dealershipId,
+                    CrmScore.crm_parameter_id == param.id,
+                    CrmScore.period_month == period_month
+                ).first()
+                if not score:
+                    score = CrmScore(
+                        dealership_id=dealershipId,
+                        crm_parameter_id=param.id,
+                        period_month=period_month,
+                        points_obtained=pts
+                    )
+                    db_session.add(score)
+                else:
+                    score.points_obtained = pts
+
+                importedCount += 1
 
         db_session.commit()
-        return {'success': True, 'imported_count': imported_count}
+        return {'success': True, 'imported_count': importedCount, 'import_errors': importErrors}
 
 def read_excel_rows(file_input, sheet_name: str = None) -> list:
     """Reads spreadsheet (XLSX, XLS, CSV) rows from file path string or FileStorage stream object and returns lists of strings."""
@@ -618,9 +772,12 @@ def read_excel_rows(file_input, sheet_name: str = None) -> list:
                 if match:
                     sheet = wb[match[0]]
                 else:
-                    return None
+                    sheet = wb.active
         else:
-            sheet = wb.active
+            if 'Undelivered Stock' in wb.sheetnames:
+                sheet = wb['Undelivered Stock']
+            else:
+                sheet = wb.active
 
         rows = []
         for row in sheet.iter_rows(values_only=True):

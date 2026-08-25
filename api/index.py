@@ -1532,6 +1532,7 @@ def sales_report_view():
     message = session.pop('sales_msg', '')
     error = session.pop('sales_err', '')
     
+    import_errors = []
     if request.method == 'POST' and can_perform('edit'):
         file_upload = request.files.get('file_upload') or request.files.get('sales_csv')
         period_month = request.form.get('period_month') # e.g. "2026-08"
@@ -1540,12 +1541,12 @@ def sales_report_view():
             error = "Excel File and Period Month are required."
         else:
             try:
-                # Process Sales scoreboard sheets positionally via helper
                 helper = SpreadsheetImportHelper()
                 rows = read_excel_rows(file_upload)
                 res = helper.import_sales_sheet(db_session, rows, period_month)
                 if res['success']:
-                    message = f"Sales data imported successfully. {res['imported_count']} dealer rows imported."
+                    message = f"Sales data imported successfully. {res['imported_count']} record(s) loaded."
+                    import_errors = res.get('import_errors', [])
                 else:
                     error = res['message']
             except Exception as e:
@@ -1564,13 +1565,10 @@ def sales_report_view():
         except Exception:
             period_label = latest_period
             
-        # Get columns sequence
-        from sqlalchemy import distinct
         cols = db_session.query(SalesRecord.product_name, SalesRecord.column_order).filter(
             SalesRecord.period_month == latest_period
         ).distinct().order_by(SalesRecord.column_order).all()
         
-        # Check where grand total fits in column order sequence
         gt_order = db_session.query(SalesSummary.grand_total_column_order).filter(
             SalesSummary.period_month == latest_period,
             SalesSummary.grand_total_column_order.isnot(None)
@@ -1586,7 +1584,6 @@ def sales_report_view():
         if gt_order_val is not None and not gt_inserted:
             columns_sequence.append({'type': 'grand_total'})
             
-        # Load pivot and summary
         records = db_session.query(SalesRecord).filter(SalesRecord.period_month == latest_period).all()
         for r in records:
             if r.dealership_id not in pivot_data:
@@ -1608,7 +1605,8 @@ def sales_report_view():
         pivot_data=pivot_data,
         summary_data=summary_data,
         message=message,
-        error=error
+        error=error,
+        import_errors=import_errors
     )
 
 # --- STOCK SNAPSHOT SHEET ---
@@ -1623,6 +1621,7 @@ def stock_report_view():
     message = session.pop('stock_msg', '')
     error = session.pop('stock_err', '')
     
+    import_errors = []
     if request.method == 'POST' and can_perform('edit'):
         file_upload = request.files.get('file_upload') or request.files.get('stock_csv')
         if not file_upload:
@@ -1633,13 +1632,13 @@ def stock_report_view():
                 rows = read_excel_rows(file_upload)
                 res = helper.import_stock_sheet(db_session, rows)
                 if res['success']:
-                    message = f"Stock snapshot data imported successfully. {res['imported_count']} dealers updated."
+                    message = f"Stock snapshot data imported successfully. {res['imported_count']} record(s) loaded."
+                    import_errors = res.get('import_errors', [])
                 else:
                     error = res['message']
             except Exception as e:
                 error = f"Error reading sheet: {str(e)}"
                 
-    # Priority sorting of models
     variant_priority = [
         'Alto VXR', 'Alto VXR AGS', 'Alto AGS', 'Alto VXL AGS',
         'FRONX GL AT', 'FRONX GLX',
@@ -1648,11 +1647,9 @@ def stock_report_view():
         'EVERY'
     ]
     
-    # Load distinct product names
     stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
     stock_master_columns = SpreadsheetImportHelper.sort_product_columns_by_priority(stock_cols, variant_priority)
     
-    # Pivot data
     pivot_data = {}
     records = db_session.query(StockRecord).all()
     for r in records:
@@ -1671,7 +1668,8 @@ def stock_report_view():
         dealers_without_security=dealers_without_security,
         total_stock_count=total_stock_count,
         message=message,
-        error=error
+        error=error,
+        import_errors=import_errors
     )
 
 # --- AGEING AUDIT ANALYSIS ---
@@ -1686,6 +1684,7 @@ def ageing_report_view():
     message = session.pop('ageing_msg', '')
     error = session.pop('ageing_err', '')
     
+    import_errors = []
     if request.method == 'POST' and can_perform('edit'):
         action = request.form.get('action')
         file_upload = request.files.get('file_upload') or request.files.get('ageing_csv') or request.files.get('stock_chassis_csv')
@@ -1695,9 +1694,13 @@ def ageing_report_view():
             try:
                 helper = SpreadsheetImportHelper()
                 rows = read_excel_rows(file_upload)
-                res = helper.import_ageing_sheet(db_session, rows)
+                if action == 'import_stock_csv':
+                    res = helper.import_stock_chassis_sheet(db_session, rows)
+                else:
+                    res = helper.import_ageing_sheet(db_session, rows)
                 if res['success']:
-                    message = f"Ageing report imported successfully. {res['imported_count']} chassis rows saved."
+                    message = f"Ageing report imported successfully. {res['imported_count']} record(s) loaded."
+                    import_errors = res.get('import_errors', [])
                 else:
                     error = res['message']
             except Exception as e:
@@ -1762,7 +1765,8 @@ def ageing_report_view():
         total_aged_count=total_aged_count,
         ageing_records_count=len(ageing_records),
         message=message,
-        error=error
+        error=error,
+        import_errors=import_errors
     )
 
 # --- CRM METRIC SCOREBOARD & PERFORMANCE ---
@@ -1777,6 +1781,7 @@ def crm_report_view():
     message = session.pop('crm_msg', '')
     error = session.pop('crm_err', '')
     
+    import_errors = []
     if request.method == 'POST' and can_perform('edit'):
         file_upload = request.files.get('file_upload') or request.files.get('crm_csv')
         period_month = request.form.get('period_month')
@@ -1791,6 +1796,7 @@ def crm_report_view():
                 res = helper.import_crm_sheet(db_session, rows, period_month)
                 if res['success']:
                     message = f"CRM scoreboard data imported successfully. {res['imported_count']} records loaded."
+                    import_errors = res.get('import_errors', [])
                 else:
                     error = res['message']
             except Exception as e:
@@ -1833,7 +1839,8 @@ def crm_report_view():
         total_max_points=total_max_points,
         crm_period_label=crm_period_label,
         message=message,
-        error=error
+        error=error,
+        import_errors=import_errors
     )
 
 @app.route('/crm_parameters', methods=['GET', 'POST'])
