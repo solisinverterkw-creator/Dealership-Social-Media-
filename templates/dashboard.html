@@ -14,7 +14,9 @@
     {% endif %}
     <a href="{{ url_for('export_csv') }}" class="btn">Export CSV</a>
     {% if can_perform('refresh') %}
-    <button class="btn primary" id="refresh-all">Refresh All (FB+IG+YT+Google)</button>
+    <button class="btn primary" id="btn-refresh-all-dash" onclick="dashRefreshAll()" style="background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;">
+      🔄 Refresh All Data
+    </button>
     {% endif %}
     <a href="{{ url_for('logout') }}" class="btn">Logout</a>
   </div>
@@ -25,6 +27,10 @@
     <div class="progress-bar-fill" id="progress-bar-fill" style="width: {{ overall_percent }}%"></div>
   </div>
   <div class="progress-text" id="progress-text">{{ overall_percent }}% Complete — {{ dealerships|length }} Dealerships</div>
+</div>
+
+<div id="dash-refresh-bar" style="display:none;margin:8px 0 16px 0;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.08);color:#4f46e5;">
+  ⏳ Sending refresh request...
 </div>
 
 <div class="feature-cards">
@@ -284,30 +290,72 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(checkLiveQuotas, 
 </script>
 {% endif %}
 
+<script>
+function dashRefreshAll() {
+  const btn = document.getElementById('btn-refresh-all-dash');
+  const bar = document.getElementById('dash-refresh-bar');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Refreshing...';
+  bar.style.display = 'block';
+  bar.style.background = 'rgba(99,102,241,0.08)';
+  bar.style.color = '#4f46e5';
+  bar.innerHTML = '⏳ Refreshing all dealerships data (FB, IG, YT, Google)... this may take 20-40 seconds.';
+
+  fetch('/api/refresh_all')
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        bar.style.background = 'rgba(34,197,94,0.1)';
+        bar.style.color = '#16a34a';
+        bar.style.borderColor = 'rgba(34,197,94,0.3)';
+        bar.innerHTML = '✅ ' + data.message + '<br><small style="opacity:.8">Page reloading in 30s to show updated numbers on dashboard &amp; <a href="/report.php" style="color:#16a34a;font-weight:700;">Social Media Report →</a></small>';
+        btn.innerHTML = '🔄 Refresh All Data';
+        btn.disabled = false;
+        // Reload after 30s so DB has time to update
+        setTimeout(() => window.location.reload(), 30000);
+      } else {
+        bar.style.background = 'rgba(239,68,68,0.1)';
+        bar.style.color = '#dc2626';
+        bar.innerHTML = '❌ ' + (data.message || 'Refresh failed');
+        btn.innerHTML = '🔄 Refresh All Data';
+        btn.disabled = false;
+      }
+    })
+    .catch(err => {
+      bar.style.background = 'rgba(239,68,68,0.1)';
+      bar.style.color = '#dc2626';
+      bar.innerHTML = '❌ Request failed: ' + err.message;
+      btn.innerHTML = '🔄 Refresh All Data';
+      btn.disabled = false;
+    });
+}
+</script>
+
 <div class="stat-cards">
   <div class="stat-card-icon">
     <div class="badge" style="background:rgba(57,135,229,0.15); color:var(--fb);">📘</div>
-    <div class="stat-value" style="color:var(--fb)">{{ total_fb_followers|number_format }}</div>
+    <div class="stat-value" style="color:var(--fb)" id="dash-fb">{{ total_fb_followers|number_format }}</div>
     <div class="stat-label">Total FB Followers</div>
-    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--fb)">View All →</a>
+    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--fb)">View Report →</a>
   </div>
   <div class="stat-card-icon">
     <div class="badge" style="background:rgba(213,81,129,0.15); color:var(--ig);">📷</div>
-    <div class="stat-value" style="color:var(--ig)">{{ total_ig_followers|number_format }}</div>
+    <div class="stat-value" style="color:var(--ig)" id="dash-ig">{{ total_ig_followers|number_format }}</div>
     <div class="stat-label">Total IG Followers</div>
-    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--ig)">View All →</a>
+    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--ig)">View Report →</a>
   </div>
   <div class="stat-card-icon">
     <div class="badge" style="background:rgba(230,103,103,0.15); color:var(--yt);">▶️</div>
-    <div class="stat-value" style="color:var(--yt)">{{ total_yt_subs|number_format }}</div>
+    <div class="stat-value" style="color:var(--yt)" id="dash-yt">{{ total_yt_subs|number_format }}</div>
     <div class="stat-label">Total YT Subscribers</div>
-    <a href="{{ url_for('yt_monthly') }}" class="stat-link" style="color:var(--yt)">View All →</a>
+    <a href="{{ url_for('yt_monthly') }}" class="stat-link" style="color:var(--yt)">View Report →</a>
   </div>
   <div class="stat-card-icon">
     <div class="badge" style="background:rgba(25,158,112,0.15); color:var(--gr);">⭐</div>
-    <div class="stat-value" style="color:var(--gr)">{{ total_google_reviews|number_format }}</div>
+    <div class="stat-value" style="color:var(--gr)" id="dash-gr">{{ total_google_reviews|number_format }}</div>
     <div class="stat-label">Total Google Reviews</div>
-    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--gr)">View All →</a>
+    <a href="{{ url_for('social_report') }}" class="stat-link" style="color:var(--gr)">View Report →</a>
   </div>
 </div>
 
