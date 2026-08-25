@@ -486,6 +486,7 @@ def save_scraper_settings():
 @app.route('/api/check_scraper_quota')
 @require_login
 def check_scraper_quota_api():
+    """Fast key-presence check - no external calls, always instant"""
     if not is_super_admin():
         return jsonify({'success': False, 'message': 'Super admin required'}), 403
 
@@ -495,40 +496,149 @@ def check_scraper_quota_api():
         return val[:4] + '****' + val[-4:]
 
     keys = {
-        'youtube':     Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY') or '',
-        'brightdata':  Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN') or '',
-        'rapidapi':    Config.get_key('rapidapi_key', 'RAPIDAPI_KEY') or '',
-        'apify':       Config.get_key('apify_api_token', 'APIFY_API_TOKEN') or '',
+        'youtube':    Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY') or '',
+        'brightdata': Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN') or '',
+        'rapidapi':   Config.get_key('rapidapi_key', 'RAPIDAPI_KEY') or '',
+        'apify':      Config.get_key('apify_api_token', 'APIFY_API_TOKEN') or '',
     }
 
     descs = {
-        'youtube':    ('YouTube Data API v3',       'Daily quota: 10,000 units/day free'),
-        'brightdata': ('Bright Data Scraper',        'Pay-as-you-go metered billing'),
-        'rapidapi':   ('RapidAPI Scraper',           'Depends on subscribed plan'),
-        'apify':      ('Apify / ScrapeCreators',     'Monthly compute units'),
+        'youtube':    'Daily quota: 10,000 units/day',
+        'brightdata': 'Pay-as-you-go metered billing',
+        'rapidapi':   'Depends on subscribed plan',
+        'apify':      'Monthly compute units',
     }
 
     results = {}
     for k, token in keys.items():
-        desc, plan_info = descs[k]
         if token:
-            masked = mask(token)
-            results[k] = {
-                'status': 'ok',
-                'badge': 'Configured',
-                'quota': f'Key set: {masked} | {plan_info}',
-            }
+            results[k] = {'status': 'ok', 'badge': 'Key Set', 'quota': f'Token: {mask(token)} | {descs[k]}'}
         else:
-            results[k] = {
-                'status': 'not_set',
-                'badge': 'Not Set',
-                'quota': f'Not configured — click Configure Tokens & Engines to add',
-            }
+            results[k] = {'status': 'not_set', 'badge': 'Not Set', 'quota': 'Not configured — add via Configure Tokens'}
 
-    diagnostics = {k: bool(v) for k, v in keys.items()}
-    return jsonify({'success': True, 'results': results, 'diagnostics': diagnostics})
+    return jsonify({'success': True, 'results': results})
 
 
+# ---------- Individual live-quota endpoints (each gets its own Vercel 10s budget) ----------
+
+@app.route('/api/quota/youtube')
+@require_login
+def quota_youtube():
+    if not is_super_admin():
+        return jsonify({'status': 'error', 'badge': 'Forbidden', 'quota': 'Super admin required'}), 403
+    key = Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY') or ''
+    if not key:
+        return jsonify({'status': 'not_set', 'badge': 'Not Set', 'quota': 'YOUTUBE_API_KEY not configured'})
+    try:
+        r = requests.get(
+            f'https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&maxResults=1&key={key}',
+            timeout=7
+        )
+        if r.status_code == 200:
+            return jsonify({'status': 'ok', 'badge': 'Live OK', 'quota': '~10,000 units/day available (key valid)'})
+        try:
+            err = r.json().get('error', {}).get('message', f'HTTP {r.status_code}')
+        except Exception:
+            err = f'HTTP {r.status_code}'
+        if 'quotaExceeded' in err or 'rateLimitExceeded' in err:
+            return jsonify({'status': 'error', 'badge': 'Quota Exceeded', 'quota': 'Daily 10,000 unit quota exhausted — resets midnight PST'})
+        return jsonify({'status': 'error', 'badge': 'Key Error', 'quota': f'Google API: {err[:80]}'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'badge': 'Timeout', 'quota': f'Google API unreachable: {str(e)[:50]}'})
+
+
+@app.route('/api/quota/brightdata')
+@require_login
+def quota_brightdata():
+    if not is_super_admin():
+        return jsonify({'status': 'error', 'badge': 'Forbidden', 'quota': 'Super admin required'}), 403
+    token = Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN') or ''
+    if not token:
+        return jsonify({'status': 'not_set', 'badge': 'Not Set', 'quota': 'BRIGHTDATA_API_TOKEN not configured'})
+    try:
+        r = requests.get(
+            'https://api.brightdata.com/customer',
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=7
+        )
+        if r.status_code == 200:
+            try:
+                data = r.json()
+                balance = data.get('balance', data.get('credit'))
+                if balance is not None:
+                    return jsonify({'status': 'ok', 'badge': 'Live OK', 'quota': f'Account balance: ${balance:.4f} (metered)'})
+            except Exception:
+                pass
+            return jsonify({'status': 'ok', 'badge': 'Live OK', 'quota': 'Active metered account — balance visible in Bright Data dashboard'})
+        if r.status_code == 401:
+            return jsonify({'status': 'error', 'badge': 'Invalid Token', 'quota': 'HTTP 401 — token rejected, check Bright Data API token'})
+        return jsonify({'status': 'warn', 'badge': f'HTTP {r.status_code}', 'quota': f'Bright Data returned HTTP {r.status_code}'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'badge': 'Timeout', 'quota': f'Bright Data unreachable: {str(e)[:50]}'})
+
+
+@app.route('/api/quota/rapidapi')
+@require_login
+def quota_rapidapi():
+    if not is_super_admin():
+        return jsonify({'status': 'error', 'badge': 'Forbidden', 'quota': 'Super admin required'}), 403
+    key = Config.get_key('rapidapi_key', 'RAPIDAPI_KEY') or ''
+    if not key:
+        return jsonify({'status': 'not_set', 'badge': 'Not Set', 'quota': 'RAPIDAPI_KEY not configured'})
+    try:
+        r = requests.get(
+            'https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=instagram',
+            headers={'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com'},
+            timeout=7
+        )
+        rem = r.headers.get('x-ratelimit-requests-remaining', '')
+        limit = r.headers.get('x-ratelimit-requests-limit', '')
+        if r.status_code in (200, 201):
+            if rem and limit:
+                return jsonify({'status': 'ok', 'badge': 'Live OK', 'quota': f'{rem} / {limit} requests remaining this period'})
+            return jsonify({'status': 'ok', 'badge': 'Live OK', 'quota': 'Active — quota headers not returned by this endpoint'})
+        if r.status_code == 403:
+            return jsonify({'status': 'error', 'badge': 'Invalid Key', 'quota': 'HTTP 403 — key rejected or no active subscription on this API'})
+        if r.status_code == 429:
+            return jsonify({'status': 'warn', 'badge': 'Rate Limited', 'quota': f'Rate limit hit — {rem}/{limit} remaining'})
+        # Key may still be valid but endpoint returned unexpected code
+        if rem or limit:
+            return jsonify({'status': 'ok', 'badge': 'Live OK', 'quota': f'{rem or "?"} / {limit or "?"} remaining (HTTP {r.status_code})'})
+        return jsonify({'status': 'warn', 'badge': f'HTTP {r.status_code}', 'quota': f'HTTP {r.status_code} — key may be valid, check RapidAPI dashboard'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'badge': 'Timeout', 'quota': f'RapidAPI unreachable: {str(e)[:50]}'})
+
+
+@app.route('/api/quota/apify')
+@require_login
+def quota_apify():
+    if not is_super_admin():
+        return jsonify({'status': 'error', 'badge': 'Forbidden', 'quota': 'Super admin required'}), 403
+    token = Config.get_key('apify_api_token', 'APIFY_API_TOKEN') or ''
+    if not token:
+        return jsonify({'status': 'not_set', 'badge': 'Not Set', 'quota': 'APIFY_API_TOKEN not configured'})
+    try:
+        r = requests.get(f'https://api.apify.com/v2/users/me?token={token}', timeout=7)
+        if r.status_code == 200:
+            try:
+                data = r.json().get('data', {})
+                plan = data.get('plan', {}).get('id', 'Standard')
+                usage = data.get('monthlyUsage', {})
+                compute = usage.get('actorComputeUnits', {})
+                used = compute.get('current', None)
+                limit_val = compute.get('limit', None)
+                if used is not None and limit_val is not None:
+                    remaining = max(0, limit_val - used)
+                    return jsonify({'status': 'ok', 'badge': 'Live OK',
+                                    'quota': f'Plan: {plan} | Used: {used:.2f} / {limit_val:.2f} units | Remaining: {remaining:.2f}'})
+                return jsonify({'status': 'ok', 'badge': 'Live OK', 'quota': f'Active — Plan: {plan} (usage details not available)'})
+            except Exception:
+                return jsonify({'status': 'ok', 'badge': 'Live OK', 'quota': 'Active Apify account (details unavailable)'})
+        if r.status_code == 401:
+            return jsonify({'status': 'error', 'badge': 'Invalid Token', 'quota': 'HTTP 401 — Apify token rejected'})
+        return jsonify({'status': 'warn', 'badge': f'HTTP {r.status_code}', 'quota': f'Apify HTTP {r.status_code}'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'badge': 'Timeout', 'quota': f'Apify unreachable: {str(e)[:50]}'})
 
 
 @app.route('/report')
