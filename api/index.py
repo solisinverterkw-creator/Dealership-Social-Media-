@@ -15,7 +15,7 @@ from decimal import Decimal
 import openpyxl
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file, Response, abort
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_, func, distinct
 
 from api.config import Config
 from api.database import engine, db_session, init_db
@@ -86,13 +86,16 @@ def current_time_pk():
 # --- JINJA FILTERS ---
 @app.template_filter('escapejs')
 def escapejs_filter(val):
-    if val is None:
+    try:
+        if val is None or str(type(val)).endswith("Undefined'>"):
+            return ''
+        return json.dumps(str(val))[1:-1]
+    except Exception:
         return ''
-    return json.dumps(str(val))[1:-1]
 
 @app.template_filter('number_format')
 def number_format_filter(value, decimals=0):
-    if value is None or value == '':
+    if value is None or value == '' or str(type(value)).endswith("Undefined'>"):
         return ''
     try:
         if decimals == 0:
@@ -100,6 +103,31 @@ def number_format_filter(value, decimals=0):
         return f"{float(value):,.{decimals}f}"
     except (ValueError, TypeError):
         return value
+
+def sidebar_sections_list():
+    return {
+        'dashboard': {'label': 'Dashboard', 'page': 'index.php'},
+        'report': {'label': 'Social Media Report', 'page': 'report.php'},
+        'weekly_posts': {'label': 'Posting Activity', 'page': 'weekly_posts.php'},
+        'yt_monthly': {'label': 'YT Monthly Videos', 'page': 'yt_monthly.php'},
+        'no_activity_report': {'label': 'Follower Activity Report', 'page': 'no_activity_report.php'},
+        'manual_publish': {'label': 'Publish Content', 'page': 'manual_publish.php'},
+        'syndication_report': {'label': 'Integration Report', 'page': 'syndication_report.php'},
+        'post_breakdown': {'label': 'Post Breakdown Report', 'page': 'post_breakdown_report.php'},
+        'reshare_compliance': {'label': 'Reshare Compliance', 'page': 'reshare_compliance_report.php'},
+        'target_pages': {'label': 'Target Pages', 'page': 'target_pages.php'},
+        'exchange_token': {'label': 'Exchange Token', 'page': 'exchange_token.php'},
+        'submit_post_check': {'label': 'Post Approval', 'page': 'submit_post_check.php'},
+        'email_validator': {'label': 'Email Validator', 'page': 'email_validator.php'},
+        'sales_report': {'label': 'Sales Report', 'page': 'sales_report.php'},
+        'stock_report': {'label': 'Stock Report', 'page': 'stock_report.php'},
+        'visit_report': {'label': 'Visit Report', 'page': 'visit_report.php'},
+        'ageing_report': {'label': 'Ageing Report', 'page': 'ageing_report.php'},
+        'crm_report': {'label': 'CRM Report', 'page': 'crm_report.php'},
+        'crm_parameters': {'label': 'CRM Parameters', 'page': 'crm_parameters.php'},
+        'crm_data_quality': {'label': 'CRM Data Quality Checker', 'page': 'crm_data_quality_check.php'},
+        'brand_assets': {'label': 'Brand Assets', 'page': 'brand_assets.php'},
+    }
 
 # --- UTILITY CONTEXT PROCESSORS ---
 @app.context_processor
@@ -398,10 +426,21 @@ def posting_activity():
     if not can_view('weekly_posts'):
         abort(403)
     dealerships = get_allowed_dealerships()
+    today = current_time_pk().date()
+    from_val = request.args.get('from', (today - timedelta(days=7)).strftime('%Y-%m-%d'))
+    to_val = request.args.get('to', today.strftime('%Y-%m-%d'))
     message = session.pop('weekly_posts_msg', '')
     error = session.pop('weekly_posts_err', '')
     row_percents = {d.id: dealership_percent(d) for d in dealerships}
-    return render_template('weekly_posts.html', dealerships=dealerships, row_percents=row_percents, message=message, error=error)
+    return render_template(
+        'weekly_posts.html',
+        dealerships=dealerships,
+        row_percents=row_percents,
+        from_val=from_val,
+        to_val=to_val,
+        message=message,
+        error=error
+    )
 
 @app.route('/yt_monthly')
 @app.route('/yt_monthly.php', endpoint='yt_monthly')
@@ -440,12 +479,24 @@ def yt_monthly_view():
     message = session.pop('yt_monthly_msg', '')
     error = session.pop('yt_monthly_err', '')
     
+    from_val = request.args.get('from', month_keys[0])
+    to_val = request.args.get('to', month_keys[-1])
+    month_labels = {}
+    for mk in month_keys:
+        try:
+            month_labels[mk] = datetime.strptime(mk + "-01", "%Y-%m-%d").strftime("%b %Y")
+        except Exception:
+            month_labels[mk] = mk
     row_percents = {d.id: dealership_percent(d) for d in dealerships}
     return render_template(
         'yt_monthly.html',
         dealerships=dealerships,
         row_percents=row_percents,
         months=month_keys,
+        month_keys=month_keys,
+        month_labels=month_labels,
+        from_val=from_val,
+        to_val=to_val,
         stats_pivot=stats_pivot,
         message=message,
         error=error
@@ -458,7 +509,57 @@ def follower_activity_report():
     if not can_view('no_activity_report'):
         abort(403)
     dealerships = get_allowed_dealerships()
-    return render_template('no_activity_report.html', dealerships=dealerships)
+
+    today = current_time_pk().date()
+    from_str = request.args.get('from', (today - timedelta(days=7)).strftime('%Y-%m-%d'))
+    to_str = request.args.get('to', today.strftime('%Y-%m-%d'))
+
+    try:
+        from_dt = datetime.strptime(from_str, '%Y-%m-%d').date()
+    except Exception:
+        from_dt = today - timedelta(days=7)
+
+    from_formatted = from_dt.strftime('%d %b %Y')
+
+    no_activity = []
+    for d in dealerships:
+        total_posts = (d.fb_posts_week or 0) + (d.ig_posts_week or 0)
+        if total_posts == 0 and ((d.fb_followers or 0) > 0 or (d.ig_followers or 0) > 0):
+            no_activity.append(d)
+
+    def activity_status(d):
+        total_posts = (d.fb_posts_week or 0) + (d.ig_posts_week or 0)
+        if d.fb_posts_checked_at or d.ig_posts_checked_at:
+            return 'active' if total_posts > 0 else 'inactive'
+        return 'not_checked'
+
+    def engagement_rate(avg, followers, checked):
+        if not checked or not followers:
+            return None
+        return float(avg or 0)
+
+    def engagement_badge_class(rate, followers):
+        if rate is None:
+            return 'status-pending'
+        return 'status-done' if rate > 0.5 else 'status-partial'
+
+    def engagement_badge_label(rate, followers):
+        if rate is None:
+            return 'N/A'
+        return f"{rate:.1f}%"
+
+    return render_template(
+        'no_activity_report.html',
+        dealerships=dealerships,
+        from_val=from_str,
+        to_val=to_str,
+        from_formatted=from_formatted,
+        no_activity=no_activity,
+        activity_status=activity_status,
+        engagement_rate=engagement_rate,
+        engagement_badge_class=engagement_badge_class,
+        engagement_badge_label=engagement_badge_label
+    )
 
 # --- BACKROUND JOB RUNNER FOR REFRESHES ---
 
@@ -1270,6 +1371,7 @@ def ageing_report_view():
         pivot_data=pivot_data,
         oldest_days=oldest_days,
         total_aged_count=total_aged_count,
+        ageing_records_count=len(ageing_records),
         message=message,
         error=error
     )
@@ -1332,12 +1434,14 @@ def crm_report_view():
                     d_tot += float(pivot_data.get(d.id, {}).get(p.id) or 0.0)
             total_points[d.id] = d_tot
             
+    total_max_points = sum(float(p.max_points or 0) for p in crm_parameters)
     return render_template(
         'crm_report.html',
         dealerships=dealerships,
         crm_parameters=crm_parameters,
         pivot_data=pivot_data,
         total_points=total_points,
+        total_max_points=total_max_points,
         crm_period_label=crm_period_label,
         message=message,
         error=error
@@ -1435,7 +1539,16 @@ def crm_parameters_view():
                     error = f"Recalculation error: {str(e)}"
                     
     crm_parameters = db_session.query(CrmParameter).order_by(CrmParameter.display_order, CrmParameter.id).all()
-    return render_template('crm_parameters.html', crm_parameters=crm_parameters, message=message, error=error)
+    total_max_points = sum(float(p.max_points or 0) for p in crm_parameters)
+    selected_period = request.args.get('period_month', '')
+    return render_template(
+        'crm_parameters.html',
+        crm_parameters=crm_parameters,
+        total_max_points=total_max_points,
+        selected_period=selected_period,
+        message=message,
+        error=error
+    )
 
 # --- CRM DATA QUALITY CHECKER ---
 
@@ -1567,6 +1680,7 @@ def brand_assets():
         'brand_assets.html',
         vehicle_models=vehicle_models,
         brand_identity=brand_identity,
+        identity=brand_identity,
         message=message,
         error=error
     )
@@ -1614,7 +1728,6 @@ def users_view():
     message = ''
     error = ''
     
-    from api.includes.sidebar_sections import sidebar_sections_list
     sidebar_sections = sidebar_sections_list()
     
     if request.method == 'POST':
@@ -1703,7 +1816,6 @@ def edit_user_view():
         return redirect(url_for('users'))
         
     message = ''
-    from api.includes.sidebar_sections import sidebar_sections_list
     sidebar_sections = sidebar_sections_list()
     
     if request.method == 'POST':

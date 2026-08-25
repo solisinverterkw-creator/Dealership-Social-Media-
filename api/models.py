@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, BigInteger, DateTime, Date, ForeignKey, Table, UniqueConstraint, func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 from api.database import Base
 
 # Association table for User-to-Dealership many-to-many relationship
@@ -171,9 +171,11 @@ class VehicleModel(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
-    color = Column(String(50), nullable=False)
-    reference_image = Column(String(255), nullable=False)
+    color = Column(String(50), nullable=True)
+    reference_image = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=func.now())
+
+    model_name = synonym('name')
 
     # Relationships
     images = relationship('VehicleModelImage', back_populates='vehicle_model', cascade='all, delete-orphan')
