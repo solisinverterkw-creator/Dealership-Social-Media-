@@ -2940,11 +2940,9 @@ def bg_reshare_dealership_task(job_key, d_id, from_date, to_date):
         from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date() if isinstance(from_date, str) else from_date
         to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date() if isinstance(to_date, str) else to_date
 
-        # Update own post stats table
+        # Update own post stats table (upsert by dealership_id primary key)
         stat = db_session.query(ReshareOwnPostStat).filter(
-            ReshareOwnPostStat.dealership_id == d_id,
-            ReshareOwnPostStat.range_from == from_date_obj,
-            ReshareOwnPostStat.range_to == to_date_obj
+            ReshareOwnPostStat.dealership_id == d_id
         ).first()
         if not stat:
             stat = ReshareOwnPostStat(
@@ -2957,7 +2955,10 @@ def bg_reshare_dealership_task(job_key, d_id, from_date, to_date):
             )
             db_session.add(stat)
         else:
+            stat.range_from = from_date_obj
+            stat.range_to = to_date_obj
             stat.own_post_count = own_count
+            stat.reshare_post_count = len(source_posts) - own_count
             stat.checked_at = current_time_pk()
             
         db_session.commit()
@@ -3122,9 +3123,7 @@ def reshare_compliance_view():
             ).scalar()
             
             own_stat = db_session.query(ReshareOwnPostStat).filter(
-                ReshareOwnPostStat.dealership_id == d.id,
-                ReshareOwnPostStat.range_from == from_date_obj,
-                ReshareOwnPostStat.range_to == to_date_obj
+                ReshareOwnPostStat.dealership_id == d.id
             ).first()
             own_count = own_stat.own_post_count if own_stat else None
             
@@ -3205,9 +3204,7 @@ def export_reshare_compliance():
                 ).count()
                 missed = tracked - reshared
                 own_stat = db_session.query(ReshareOwnPostStat).filter(
-                    ReshareOwnPostStat.dealership_id == d.id,
-                    ReshareOwnPostStat.range_from == from_date_obj,
-                    ReshareOwnPostStat.range_to == to_date_obj
+                    ReshareOwnPostStat.dealership_id == d.id
                 ).first()
                 own_count = own_stat.own_post_count if own_stat else 0
                 yield f'"{d.name}",{own_count},{tracked},{reshared},{missed}\n'
