@@ -1,4 +1,5 @@
 import time
+import json
 import requests
 from api.config import Config
 
@@ -20,6 +21,24 @@ class BrightDataClient:
             return data
         return [data]
 
+    def _parse_json_response(self, text: str):
+        text = text.strip() if text else ''
+        if not text:
+            return []
+        try:
+            return json.loads(text)
+        except Exception:
+            # Handle NDJSON (newline-delimited JSON) format from Bright Data
+            records = []
+            for line in text.splitlines():
+                line = line.strip()
+                if line:
+                    try:
+                        records.append(json.loads(line))
+                    except Exception:
+                        pass
+            return records
+
     def scrape(self, dataset_id: str, inputs: list, max_wait_seconds: int = 150) -> dict:
         """
         Scrapes a Bright Data dataset using the /scrape endpoint.
@@ -38,7 +57,7 @@ class BrightDataClient:
 
         if response.status_code == 200:
             try:
-                data = response.json()
+                data = self._parse_json_response(response.text)
                 return {'success': True, 'data': self._normalize_records(data)}
             except Exception as e:
                 return {'success': False, 'message': f"JSON parsing failed: {str(e)}"}
@@ -73,7 +92,7 @@ class BrightDataClient:
                         snapshot_url = f"{self.base_url}/snapshot/{snapshot_id}?format=json"
                         snapshot_res = requests.get(snapshot_url, headers=self._headers(), timeout=30)
                         if snapshot_res.status_code == 200:
-                            data = snapshot_res.json()
+                            data = self._parse_json_response(snapshot_res.text)
                             return {'success': True, 'data': self._normalize_records(data)}
                         return {'success': False, 'message': f"Failed downloading snapshot (HTTP {snapshot_res.status_code})"}
                     elif status == 'failed':
@@ -83,3 +102,4 @@ class BrightDataClient:
                 pass
 
         return {'success': False, 'message': f"Timed Out Waiting For Bright Data After {max_wait_seconds}s."}
+
