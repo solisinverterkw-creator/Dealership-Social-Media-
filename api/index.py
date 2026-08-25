@@ -498,78 +498,134 @@ def check_scraper_quota_api():
 
     results = {}
 
-    # 1. YouTube
-    yt_key = scraper_settings['youtube_api_key']
+    # 1. YouTube Data API v3
+    yt_key = scraper_settings.get('youtube_api_key', '') or ''
     if not yt_key:
-        results['youtube'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Key Not Configured'}
+        results['youtube'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'YOUTUBE_API_KEY not configured in DB or Vercel Env'}
     else:
         try:
-            r = requests.get(f"https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&maxResults=1&key={yt_key}", timeout=6)
+            url = f"https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&maxResults=1&key={yt_key}"
+            r = requests.get(url, timeout=8)
             if r.status_code == 200:
-                results['youtube'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': '~9,900 / 10,000 units remaining today'}
+                results['youtube'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Key Valid (~10,000 units/day quota)'}
             elif r.status_code in (400, 403):
-                err_msg = r.json().get('error', {}).get('message', 'Invalid Key or Quota Exceeded')
-                results['youtube'] = {'status': 'error', 'badge': '⚠️ Key Issue', 'quota': f"API Error: {err_msg[:50]}"}
+                try:
+                    err = r.json().get('error', {}).get('message', 'Error details unavailable')
+                except Exception:
+                    err = f'HTTP {r.status_code}'
+                results['youtube'] = {'status': 'error', 'badge': '⚠️ Key Issue', 'quota': f'Google API: {err[:80]}'}
             else:
-                results['youtube'] = {'status': 'error', 'badge': '⚠️ Key Issue', 'quota': f"HTTP {r.status_code} Response"}
+                results['youtube'] = {'status': 'error', 'badge': '⚠️ Key Issue', 'quota': f'HTTP {r.status_code} from Google API'}
+        except requests.exceptions.Timeout:
+            results['youtube'] = {'status': 'error', 'badge': '⚠️ Timeout', 'quota': 'Google API timed out (>8s) - Key may still be valid'}
         except Exception as e:
-            results['youtube'] = {'status': 'error', 'badge': '⚠️ Connection Error', 'quota': 'Connection Timeout'}
+            results['youtube'] = {'status': 'error', 'badge': '⚠️ Error', 'quota': f'Request failed: {str(e)[:60]}'}
 
-    # 2. Bright Data
-    bd_token = scraper_settings['brightdata_api_token']
+    # 2. Bright Data - correct endpoint is /zone/cost or /customer/zone
+    bd_token = scraper_settings.get('brightdata_api_token', '') or ''
     if not bd_token:
-        results['brightdata'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Token Not Configured'}
+        results['brightdata'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'BRIGHTDATA_API_TOKEN not configured in DB or Vercel Env'}
     else:
         try:
-            r = requests.get("https://api.brightdata.com/customer", headers={'Authorization': f'Bearer {bd_token}'}, timeout=6)
+            # Use the correct Bright Data API endpoint
+            r = requests.get(
+                'https://api.brightdata.com/customer/account',
+                headers={'Authorization': f'Bearer {bd_token}'},
+                timeout=8
+            )
             if r.status_code == 200:
-                results['brightdata'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Metered Account (HTTP 200 OK)'}
+                try:
+                    data = r.json()
+                    balance = data.get('balance', data.get('credit', 'Metered'))
+                    results['brightdata'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': f'Active Account — Balance: {balance}'}
+                except Exception:
+                    results['brightdata'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Metered Account (OK)'}
             elif r.status_code == 401:
-                results['brightdata'] = {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 Unauthorized (Check Token)'}
-            else:
-                results['brightdata'] = {'status': 'error', 'badge': '⚠️ HTTP Issue', 'quota': f"HTTP {r.status_code} Response"}
-        except Exception as e:
-            results['brightdata'] = {'status': 'error', 'badge': '⚠️ Connection Error', 'quota': 'Connection Timeout'}
-
-    # 3. RapidAPI
-    rapid_key = scraper_settings['rapidapi_key']
-    if not rapid_key:
-        results['rapidapi'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Key Not Configured'}
-    else:
-        try:
-            r = requests.get("https://rapidapi.com/auth/user", headers={'X-RapidAPI-Key': rapid_key}, timeout=6)
-            rem = r.headers.get('x-ratelimit-requests-remaining')
-            limit = r.headers.get('x-ratelimit-requests-limit')
-            if r.status_code == 200:
-                if rem and limit:
-                    results['rapidapi'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': f"{rem} / {limit} requests remaining"}
+                results['brightdata'] = {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 — Token rejected, check Bright Data API token'}
+            elif r.status_code == 404:
+                # Token format correct but endpoint different — try alternate
+                r2 = requests.get(
+                    'https://api.brightdata.com/customer',
+                    headers={'Authorization': f'Bearer {bd_token}'},
+                    timeout=6
+                )
+                if r2.status_code in (200, 201):
+                    results['brightdata'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Metered Account (OK)'}
+                elif r2.status_code == 401:
+                    results['brightdata'] = {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 — Check Bright Data API token'}
                 else:
-                    results['rapidapi'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Account (HTTP 200 OK)'}
-            elif r.status_code == 401:
-                results['rapidapi'] = {'status': 'error', 'badge': '⚠️ Invalid Key', 'quota': 'HTTP 401 Unauthorized (Check Key)'}
+                    results['brightdata'] = {'status': 'warn', 'badge': '⚠️ Unverified', 'quota': f'Token set but HTTP {r2.status_code} from Bright Data'}
             else:
-                results['rapidapi'] = {'status': 'error', 'badge': '⚠️ HTTP Issue', 'quota': f"HTTP {r.status_code} Response"}
+                results['brightdata'] = {'status': 'warn', 'badge': '⚠️ Check Token', 'quota': f'HTTP {r.status_code} from Bright Data API'}
+        except requests.exceptions.Timeout:
+            results['brightdata'] = {'status': 'error', 'badge': '⚠️ Timeout', 'quota': 'Bright Data API timed out (>8s) — may still be valid'}
         except Exception as e:
-            results['rapidapi'] = {'status': 'error', 'badge': '⚠️ Connection Error', 'quota': 'Connection Timeout'}
+            results['brightdata'] = {'status': 'error', 'badge': '⚠️ Error', 'quota': f'Request failed: {str(e)[:60]}'}
+
+    # 3. RapidAPI — correct endpoint for key verification
+    rapid_key = scraper_settings.get('rapidapi_key', '') or ''
+    if not rapid_key:
+        results['rapidapi'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'RAPIDAPI_KEY not configured in DB or Vercel Env'}
+    else:
+        try:
+            # Test with a simple free endpoint — Instagram Profile Scraper ping
+            r = requests.get(
+                'https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=instagram',
+                headers={'X-RapidAPI-Key': rapid_key, 'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com'},
+                timeout=8
+            )
+            rem = r.headers.get('x-ratelimit-requests-remaining', '')
+            limit = r.headers.get('x-ratelimit-requests-limit', '')
+            if r.status_code in (200, 201):
+                quota_str = f'{rem} / {limit} requests remaining' if rem and limit else 'Active (quota details not available)'
+                results['rapidapi'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': quota_str}
+            elif r.status_code == 403:
+                results['rapidapi'] = {'status': 'error', 'badge': '⚠️ Invalid Key', 'quota': 'HTTP 403 — RapidAPI key rejected or subscription inactive'}
+            elif r.status_code == 429:
+                results['rapidapi'] = {'status': 'warn', 'badge': '⚠️ Rate Limited', 'quota': f'HTTP 429 — Rate limit hit. {rem} / {limit} remaining'}
+            else:
+                results['rapidapi'] = {'status': 'warn', 'badge': '⚠️ Check Key', 'quota': f'HTTP {r.status_code} — Key may be valid but endpoint returned unexpected response'}
+        except requests.exceptions.Timeout:
+            results['rapidapi'] = {'status': 'error', 'badge': '⚠️ Timeout', 'quota': 'RapidAPI timed out (>8s) — try again'}
+        except Exception as e:
+            results['rapidapi'] = {'status': 'error', 'badge': '⚠️ Error', 'quota': f'Request failed: {str(e)[:60]}'}
 
     # 4. Apify
-    apify_token = scraper_settings['apify_api_token']
+    apify_token = scraper_settings.get('apify_api_token', '') or ''
     if not apify_token:
-        results['apify'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Token Not Configured'}
+        results['apify'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'APIFY_API_TOKEN not configured — add it via Configure Tokens below'}
     else:
         try:
-            r = requests.get(f"https://api.apify.com/v2/users/me?token={apify_token}", timeout=6)
+            r = requests.get(f'https://api.apify.com/v2/users/me?token={apify_token}', timeout=8)
             if r.status_code == 200:
-                plan = r.json().get('data', {}).get('plan', {}).get('id', 'Standard')
-                results['apify'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': f"Active ({plan} Plan OK)"}
+                try:
+                    data = r.json().get('data', {})
+                    plan = data.get('plan', {}).get('id', 'Standard')
+                    usage = data.get('monthlyUsage', {})
+                    actor_compute = usage.get('actorComputeUnits', {})
+                    used = actor_compute.get('current', 'N/A')
+                    limit_val = actor_compute.get('limit', 'N/A')
+                    results['apify'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': f'Plan: {plan} | Compute: {used}/{limit_val} units used'}
+                except Exception:
+                    results['apify'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Apify Account (OK)'}
             elif r.status_code == 401:
-                results['apify'] = {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 Unauthorized (Check Token)'}
+                results['apify'] = {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 — Apify token rejected, check token value'}
             else:
-                results['apify'] = {'status': 'error', 'badge': '⚠️ HTTP Issue', 'quota': f"HTTP {r.status_code} Response"}
+                results['apify'] = {'status': 'warn', 'badge': '⚠️ Check Token', 'quota': f'HTTP {r.status_code} from Apify API'}
+        except requests.exceptions.Timeout:
+            results['apify'] = {'status': 'error', 'badge': '⚠️ Timeout', 'quota': 'Apify API timed out (>8s) — try again'}
         except Exception as e:
-            results['apify'] = {'status': 'error', 'badge': '⚠️ Connection Error', 'quota': 'Connection Timeout'}
+            results['apify'] = {'status': 'error', 'badge': '⚠️ Error', 'quota': f'Request failed: {str(e)[:60]}'}
 
-    return jsonify({'success': True, 'results': results})
+    # Also return which keys are actually set (masked) for diagnostics
+    diagnostics = {
+        'youtube_key_set': bool(scraper_settings.get('youtube_api_key')),
+        'brightdata_token_set': bool(scraper_settings.get('brightdata_api_token')),
+        'rapidapi_key_set': bool(scraper_settings.get('rapidapi_key')),
+        'apify_token_set': bool(scraper_settings.get('apify_api_token')),
+    }
+
+    return jsonify({'success': True, 'results': results, 'diagnostics': diagnostics})
 
 
 @app.route('/report')
