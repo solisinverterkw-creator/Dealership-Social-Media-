@@ -319,79 +319,11 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-def get_scrapers_live_summary(scraper_settings):
-    # 1. YouTube Data API
-    yt_key = scraper_settings.get('youtube_api_key', '')
-    yt_quota_text = "Not Configured"
-    yt_status = False
-    if yt_key:
-        try:
-            r = requests.get(f"https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&maxResults=1&key={yt_key}", timeout=3)
-            if r.status_code == 200:
-                yt_status = True
-                yt_quota_text = "~9,900 / 10,000 units remaining today"
-            else:
-                yt_quota_text = f"HTTP {r.status_code} Error"
-        except Exception:
-            yt_quota_text = "Connection Timeout"
-
-    # 2. Bright Data
+def get_scrapers_initial_summary(scraper_settings):
     bd_token = scraper_settings.get('brightdata_api_token', '')
-    bd_quota_text = "Not Configured"
-    bd_status = False
-    if bd_token:
-        try:
-            r = requests.get("https://api.brightdata.com/customer", headers={'Authorization': f'Bearer {bd_token}'}, timeout=3)
-            if r.status_code == 200:
-                bd_status = True
-                bd_quota_text = "Active Metered Account (OK)"
-            elif r.status_code == 401:
-                bd_quota_text = "401 Unauthorized (Invalid Token)"
-            else:
-                bd_quota_text = f"HTTP {r.status_code} Response"
-        except Exception:
-            bd_quota_text = "Connection Timeout"
-
-    # 3. RapidAPI
+    yt_key = scraper_settings.get('youtube_api_key', '')
     rapid_key = scraper_settings.get('rapidapi_key', '')
-    rapid_quota_text = "Not Configured"
-    rapid_status = False
-    if rapid_key:
-        try:
-            r = requests.get("https://rapidapi.com/auth/user", headers={'X-RapidAPI-Key': rapid_key}, timeout=3)
-            rem = r.headers.get('x-ratelimit-requests-remaining')
-            limit = r.headers.get('x-ratelimit-requests-limit')
-            if r.status_code == 200:
-                rapid_status = True
-                if rem and limit:
-                    rapid_quota_text = f"{rem} / {limit} requests remaining"
-                else:
-                    rapid_quota_text = "Active Account (OK)"
-            elif r.status_code == 401:
-                rapid_quota_text = "401 Unauthorized (Invalid Key)"
-            else:
-                rapid_quota_text = f"Active (HTTP {r.status_code})"
-        except Exception:
-            rapid_quota_text = "Connection Timeout"
-
-    # 4. Apify / ScrapeCreators
     apify_token = scraper_settings.get('apify_api_token', '')
-    apify_quota_text = "Not Configured"
-    apify_status = False
-    if apify_token:
-        try:
-            r = requests.get(f"https://api.apify.com/v2/users/me?token={apify_token}", timeout=3)
-            if r.status_code == 200:
-                apify_status = True
-                data = r.json().get('data', {})
-                plan = data.get('plan', {}).get('id', 'Standard')
-                apify_quota_text = f"Active ({plan} Plan OK)"
-            elif r.status_code == 401:
-                apify_quota_text = "401 Unauthorized (Invalid Token)"
-            else:
-                apify_quota_text = f"HTTP {r.status_code}"
-        except Exception:
-            apify_quota_text = "Connection Timeout"
 
     return [
         {
@@ -399,8 +331,8 @@ def get_scrapers_live_summary(scraper_settings):
             'id': 'brightdata',
             'token': bd_token,
             'is_configured': bool(bd_token),
-            'status_ok': bd_status,
-            'remaining_quota': bd_quota_text,
+            'status_ok': False,
+            'remaining_quota': 'Click "Check Quota" or auto-fetching...' if bd_token else 'Token Not Configured',
             'used_for': 'Facebook Page & Post Scraping, Instagram Profiles',
             'engine_key': 'fb_engine'
         },
@@ -409,8 +341,8 @@ def get_scrapers_live_summary(scraper_settings):
             'id': 'youtube',
             'token': yt_key,
             'is_configured': bool(yt_key),
-            'status_ok': yt_status,
-            'remaining_quota': yt_quota_text,
+            'status_ok': False,
+            'remaining_quota': 'Click "Check Quota" or auto-fetching...' if yt_key else 'API Key Not Configured',
             'used_for': 'YouTube Channel Subscribers, Video Count, Views',
             'engine_key': 'yt_engine'
         },
@@ -419,8 +351,8 @@ def get_scrapers_live_summary(scraper_settings):
             'id': 'rapidapi',
             'token': rapid_key,
             'is_configured': bool(rapid_key),
-            'status_ok': rapid_status,
-            'remaining_quota': rapid_quota_text,
+            'status_ok': False,
+            'remaining_quota': 'Click "Check Quota" or auto-fetching...' if rapid_key else 'API Key Not Configured',
             'used_for': 'Google Reviews Lookup & Fallback Scraping',
             'engine_key': 'rapidapi'
         },
@@ -429,8 +361,8 @@ def get_scrapers_live_summary(scraper_settings):
             'id': 'apify',
             'token': apify_token,
             'is_configured': bool(apify_token),
-            'status_ok': apify_status,
-            'remaining_quota': apify_quota_text,
+            'status_ok': False,
+            'remaining_quota': 'Click "Check Quota" or auto-fetching...' if apify_token else 'Token Not Configured',
             'used_for': 'Instagram Posts & Secondary Fallback',
             'engine_key': 'ig_engine'
         }
@@ -503,7 +435,7 @@ def dashboard():
     }
 
     if is_super_admin():
-        scrapers_summary = get_scrapers_live_summary(scraper_settings)
+        scrapers_summary = get_scrapers_initial_summary(scraper_settings)
     else:
         scrapers_summary = []
 
@@ -550,6 +482,94 @@ def save_scraper_settings():
 
     session['dashboard_msg'] = 'Scraper settings & API tokens updated successfully!'
     return redirect(url_for('dashboard'))
+
+@app.route('/api/check_scraper_quota')
+@require_login
+def check_scraper_quota_api():
+    if not is_super_admin():
+        return jsonify({'success': False, 'message': 'Super admin required'}), 403
+
+    scraper_settings = {
+        'youtube_api_key': Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY'),
+        'brightdata_api_token': Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN'),
+        'rapidapi_key': Config.get_key('rapidapi_key', 'RAPIDAPI_KEY'),
+        'apify_api_token': Config.get_key('apify_api_token', 'APIFY_API_TOKEN'),
+    }
+
+    results = {}
+
+    # 1. YouTube
+    yt_key = scraper_settings['youtube_api_key']
+    if not yt_key:
+        results['youtube'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Key Not Configured'}
+    else:
+        try:
+            r = requests.get(f"https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&maxResults=1&key={yt_key}", timeout=6)
+            if r.status_code == 200:
+                results['youtube'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': '~9,900 / 10,000 units remaining today'}
+            elif r.status_code in (400, 403):
+                err_msg = r.json().get('error', {}).get('message', 'Invalid Key or Quota Exceeded')
+                results['youtube'] = {'status': 'error', 'badge': '⚠️ Key Issue', 'quota': f"API Error: {err_msg[:50]}"}
+            else:
+                results['youtube'] = {'status': 'error', 'badge': '⚠️ Key Issue', 'quota': f"HTTP {r.status_code} Response"}
+        except Exception as e:
+            results['youtube'] = {'status': 'error', 'badge': '⚠️ Connection Error', 'quota': 'Connection Timeout'}
+
+    # 2. Bright Data
+    bd_token = scraper_settings['brightdata_api_token']
+    if not bd_token:
+        results['brightdata'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Token Not Configured'}
+    else:
+        try:
+            r = requests.get("https://api.brightdata.com/customer", headers={'Authorization': f'Bearer {bd_token}'}, timeout=6)
+            if r.status_code == 200:
+                results['brightdata'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Metered Account (HTTP 200 OK)'}
+            elif r.status_code == 401:
+                results['brightdata'] = {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 Unauthorized (Check Token)'}
+            else:
+                results['brightdata'] = {'status': 'error', 'badge': '⚠️ HTTP Issue', 'quota': f"HTTP {r.status_code} Response"}
+        except Exception as e:
+            results['brightdata'] = {'status': 'error', 'badge': '⚠️ Connection Error', 'quota': 'Connection Timeout'}
+
+    # 3. RapidAPI
+    rapid_key = scraper_settings['rapidapi_key']
+    if not rapid_key:
+        results['rapidapi'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Key Not Configured'}
+    else:
+        try:
+            r = requests.get("https://rapidapi.com/auth/user", headers={'X-RapidAPI-Key': rapid_key}, timeout=6)
+            rem = r.headers.get('x-ratelimit-requests-remaining')
+            limit = r.headers.get('x-ratelimit-requests-limit')
+            if r.status_code == 200:
+                if rem and limit:
+                    results['rapidapi'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': f"{rem} / {limit} requests remaining"}
+                else:
+                    results['rapidapi'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Account (HTTP 200 OK)'}
+            elif r.status_code == 401:
+                results['rapidapi'] = {'status': 'error', 'badge': '⚠️ Invalid Key', 'quota': 'HTTP 401 Unauthorized (Check Key)'}
+            else:
+                results['rapidapi'] = {'status': 'error', 'badge': '⚠️ HTTP Issue', 'quota': f"HTTP {r.status_code} Response"}
+        except Exception as e:
+            results['rapidapi'] = {'status': 'error', 'badge': '⚠️ Connection Error', 'quota': 'Connection Timeout'}
+
+    # 4. Apify
+    apify_token = scraper_settings['apify_api_token']
+    if not apify_token:
+        results['apify'] = {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Token Not Configured'}
+    else:
+        try:
+            r = requests.get(f"https://api.apify.com/v2/users/me?token={apify_token}", timeout=6)
+            if r.status_code == 200:
+                plan = r.json().get('data', {}).get('plan', {}).get('id', 'Standard')
+                results['apify'] = {'status': 'ok', 'badge': '🟢 Live OK', 'quota': f"Active ({plan} Plan OK)"}
+            elif r.status_code == 401:
+                results['apify'] = {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 Unauthorized (Check Token)'}
+            else:
+                results['apify'] = {'status': 'error', 'badge': '⚠️ HTTP Issue', 'quota': f"HTTP {r.status_code} Response"}
+        except Exception as e:
+            results['apify'] = {'status': 'error', 'badge': '⚠️ Connection Error', 'quota': 'Connection Timeout'}
+
+    return jsonify({'success': True, 'results': results})
 
 
 @app.route('/report')

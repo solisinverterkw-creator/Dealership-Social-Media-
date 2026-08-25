@@ -67,25 +67,26 @@
         Real-time remaining requests, API quota status, and active provider selection for all 4 scrapers.
       </div>
     </div>
-    <button type="button" class="btn" onclick="toggleScraperSettings()" style="font-size:12px; padding:7px 14px;">
-      ⚙️ Configure Tokens & Engines
-    </button>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button type="button" class="btn" id="btn-check-quotas" onclick="checkLiveQuotas()" style="font-size:12px; padding:7px 14px; background:rgba(57,135,229,0.1); color:var(--fb); border:1px solid rgba(57,135,229,0.3);">
+        🔄 Check Live Quotas
+      </button>
+      <button type="button" class="btn" onclick="toggleScraperSettings()" style="font-size:12px; padding:7px 14px;">
+        ⚙️ Configure Tokens & Engines
+      </button>
+    </div>
   </div>
 
-  <!-- SCRAPER SUMMARY CARDS WITH LIVE REMAINING QUOTA -->
+  <!-- SCRAPER SUMMARY CARDS WITH DYNAMIC LIVE QUOTA -->
   <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:8px;">
     {% for s in scrapers_summary %}
     <div style="background:var(--bg-subtle, #f8fafc); border:1px solid var(--border); border-radius:10px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <span style="font-weight:700; font-size:13px;">{{ s.name }}</span>
-          {% if s.status_ok %}
-            <span style="background:rgba(34,197,94,0.15); color:#16a34a; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">🟢 Live OK</span>
-          {% elif s.is_configured %}
-            <span style="background:rgba(234,179,8,0.15); color:#ca8a04; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">⚠️ Key Issue</span>
-          {% else %}
-            <span style="background:rgba(239,68,68,0.15); color:#dc2626; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">🔴 Not Set</span>
-          {% endif %}
+          <span id="badge-{{ s.id }}" style="background:rgba(239,68,68,0.15); color:#dc2626; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">
+            {% if s.is_configured %}⏳ Checking...{% else %}🔴 Not Set{% endif %}
+          </span>
         </div>
         <div style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-bottom:10px;">
           {{ s.used_for }}
@@ -95,7 +96,7 @@
         <div style="font-size:11px; font-weight:600; color:var(--accent); margin-bottom:4px;">
           📊 Remaining Quota / Status:
         </div>
-        <div style="font-size:11px; font-family:'IBM Plex Mono', monospace; background:rgba(0,0,0,0.04); padding:6px 8px; border-radius:6px; font-weight:600; color:var(--text-main);">
+        <div id="quota-{{ s.id }}" style="font-size:11px; font-family:'IBM Plex Mono', monospace; background:rgba(0,0,0,0.04); padding:6px 8px; border-radius:6px; font-weight:600; color:var(--text-main); word-break:break-word;">
           {{ s.remaining_quota }}
         </div>
       </div>
@@ -173,6 +174,48 @@ function toggleScraperSettings() {
     form.style.display = (form.style.display === 'none' || !form.style.display) ? 'block' : 'none';
   }
 }
+
+function checkLiveQuotas() {
+  const btn = document.getElementById('btn-check-quotas');
+  if (btn) btn.innerHTML = '⏳ Checking Quotas...';
+  
+  fetch('/api/check_scraper_quota')
+    .then(r => r.json())
+    .then(data => {
+      if (btn) btn.innerHTML = '🔄 Check Live Quotas';
+      if (data.success && data.results) {
+        for (const [key, res] of Object.entries(data.results)) {
+          const badgeEl = document.getElementById('badge-' + key);
+          const quotaEl = document.getElementById('quota-' + key);
+          if (badgeEl) {
+            badgeEl.innerHTML = res.badge;
+            if (res.status === 'ok') {
+              badgeEl.style.background = 'rgba(34,197,94,0.15)';
+              badgeEl.style.color = '#16a34a';
+            } else if (res.status === 'not_set') {
+              badgeEl.style.background = 'rgba(239,68,68,0.15)';
+              badgeEl.style.color = '#dc2626';
+            } else {
+              badgeEl.style.background = 'rgba(234,179,8,0.15)';
+              badgeEl.style.color = '#ca8a04';
+            }
+          }
+          if (quotaEl) {
+            quotaEl.innerHTML = res.quota;
+          }
+        }
+      }
+    })
+    .catch(err => {
+      if (btn) btn.innerHTML = '🔄 Check Live Quotas';
+      console.error('Quota check error:', err);
+    });
+}
+
+// Auto fetch live quotas on load after 500ms
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(checkLiveQuotas, 500);
+});
 </script>
 {% endif %}
 
