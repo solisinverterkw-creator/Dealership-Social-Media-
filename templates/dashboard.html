@@ -55,33 +55,34 @@
 <div class="alert error" style="margin-bottom:20px; padding:12px 16px; background:rgba(239,68,68,0.15); border:1px solid #ef4444; color:#b91c1c; border-radius:8px;">{{ error }}</div>
 {% endif %}
 
-<!-- SCRAPER ENGINES & API TOKENS CONTROL PANEL -->
+{% if is_super_admin() %}
+<!-- SUPER ADMIN ONLY: SCRAPER ENGINES, LIVE QUOTA & API TOKENS CONTROL PANEL -->
 <div class="detail-card" style="margin-top:20px; margin-bottom:24px; background:var(--card-bg, #ffffff); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:0 4px 20px rgba(0,0,0,0.04);">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px;">
     <div>
       <h2 style="margin:0; font-size:17px; font-weight:700; display:flex; align-items:center; gap:8px;">
-        ⚙️ Active Scraper Engines & API Token Manager
+        ⚙️ Scrapers Live Quota & Engine Manager <span style="font-size:11px; background:rgba(217,119,6,0.15); color:#b45309; padding:2px 8px; border-radius:10px; font-weight:600;">Super Admin Only</span>
       </h2>
       <div style="font-size:12px; color:var(--text-muted); margin-top:3px;">
-        Select active scraper engines for Facebook, Instagram & YouTube. Manage API tokens directly from Dashboard.
+        Real-time remaining requests, API quota status, and active provider selection for all 4 scrapers.
       </div>
     </div>
-    {% if is_super_admin() %}
     <button type="button" class="btn" onclick="toggleScraperSettings()" style="font-size:12px; padding:7px 14px;">
       ⚙️ Configure Tokens & Engines
     </button>
-    {% endif %}
   </div>
 
-  <!-- SCRAPER SUMMARY CARDS -->
+  <!-- SCRAPER SUMMARY CARDS WITH LIVE REMAINING QUOTA -->
   <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:8px;">
     {% for s in scrapers_summary %}
     <div style="background:var(--bg-subtle, #f8fafc); border:1px solid var(--border); border-radius:10px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <span style="font-weight:700; font-size:13px;">{{ s.name }}</span>
-          {% if s.is_configured %}
-            <span style="background:rgba(34,197,94,0.15); color:#16a34a; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">🟢 Active</span>
+          {% if s.status_ok %}
+            <span style="background:rgba(34,197,94,0.15); color:#16a34a; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">🟢 Live OK</span>
+          {% elif s.is_configured %}
+            <span style="background:rgba(234,179,8,0.15); color:#ca8a04; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">⚠️ Key Issue</span>
           {% else %}
             <span style="background:rgba(239,68,68,0.15); color:#dc2626; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">🔴 Not Set</span>
           {% endif %}
@@ -90,19 +91,19 @@
           {{ s.used_for }}
         </div>
       </div>
-      <div style="font-size:11px; font-family:'IBM Plex Mono', monospace; background:rgba(0,0,0,0.04); padding:4px 8px; border-radius:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-        {% if s.token %}
-          Token: {{ s.token[:4] }}****{{ s.token[-2:] }}
-        {% else %}
-          Token: (Not Set)
-        {% endif %}
+      <div>
+        <div style="font-size:11px; font-weight:600; color:var(--accent); margin-bottom:4px;">
+          📊 Remaining Quota / Status:
+        </div>
+        <div style="font-size:11px; font-family:'IBM Plex Mono', monospace; background:rgba(0,0,0,0.04); padding:6px 8px; border-radius:6px; font-weight:600; color:var(--text-main);">
+          {{ s.remaining_quota }}
+        </div>
       </div>
     </div>
     {% endfor %}
   </div>
 
   <!-- SCRAPER SETTINGS FORM (COLLAPSIBLE) -->
-  {% if is_super_admin() %}
   <div id="scraper-settings-form" style="display:none; margin-top:16px; border-top:1px dashed var(--border); padding-top:16px;">
     <form method="POST" action="{{ url_for('save_scraper_settings') }}">
       <h3 style="font-size:14px; margin-bottom:12px; color:var(--accent);">Choose Active Scraper Provider Engine:</h3>
@@ -163,7 +164,6 @@
       </div>
     </form>
   </div>
-  {% endif %}
 </div>
 
 <script>
@@ -174,6 +174,7 @@ function toggleScraperSettings() {
   }
 }
 </script>
+{% endif %}
 
 <div class="stat-cards">
   <div class="stat-card-icon">

@@ -319,6 +319,123 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+def get_scrapers_live_summary(scraper_settings):
+    # 1. YouTube Data API
+    yt_key = scraper_settings.get('youtube_api_key', '')
+    yt_quota_text = "Not Configured"
+    yt_status = False
+    if yt_key:
+        try:
+            r = requests.get(f"https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&maxResults=1&key={yt_key}", timeout=3)
+            if r.status_code == 200:
+                yt_status = True
+                yt_quota_text = "~9,900 / 10,000 units remaining today"
+            else:
+                yt_quota_text = f"HTTP {r.status_code} Error"
+        except Exception:
+            yt_quota_text = "Connection Timeout"
+
+    # 2. Bright Data
+    bd_token = scraper_settings.get('brightdata_api_token', '')
+    bd_quota_text = "Not Configured"
+    bd_status = False
+    if bd_token:
+        try:
+            r = requests.get("https://api.brightdata.com/customer", headers={'Authorization': f'Bearer {bd_token}'}, timeout=3)
+            if r.status_code == 200:
+                bd_status = True
+                bd_quota_text = "Active Metered Account (OK)"
+            elif r.status_code == 401:
+                bd_quota_text = "401 Unauthorized (Invalid Token)"
+            else:
+                bd_quota_text = f"HTTP {r.status_code} Response"
+        except Exception:
+            bd_quota_text = "Connection Timeout"
+
+    # 3. RapidAPI
+    rapid_key = scraper_settings.get('rapidapi_key', '')
+    rapid_quota_text = "Not Configured"
+    rapid_status = False
+    if rapid_key:
+        try:
+            r = requests.get("https://rapidapi.com/auth/user", headers={'X-RapidAPI-Key': rapid_key}, timeout=3)
+            rem = r.headers.get('x-ratelimit-requests-remaining')
+            limit = r.headers.get('x-ratelimit-requests-limit')
+            if r.status_code == 200:
+                rapid_status = True
+                if rem and limit:
+                    rapid_quota_text = f"{rem} / {limit} requests remaining"
+                else:
+                    rapid_quota_text = "Active Account (OK)"
+            elif r.status_code == 401:
+                rapid_quota_text = "401 Unauthorized (Invalid Key)"
+            else:
+                rapid_quota_text = f"Active (HTTP {r.status_code})"
+        except Exception:
+            rapid_quota_text = "Connection Timeout"
+
+    # 4. Apify / ScrapeCreators
+    apify_token = scraper_settings.get('apify_api_token', '')
+    apify_quota_text = "Not Configured"
+    apify_status = False
+    if apify_token:
+        try:
+            r = requests.get(f"https://api.apify.com/v2/users/me?token={apify_token}", timeout=3)
+            if r.status_code == 200:
+                apify_status = True
+                data = r.json().get('data', {})
+                plan = data.get('plan', {}).get('id', 'Standard')
+                apify_quota_text = f"Active ({plan} Plan OK)"
+            elif r.status_code == 401:
+                apify_quota_text = "401 Unauthorized (Invalid Token)"
+            else:
+                apify_quota_text = f"HTTP {r.status_code}"
+        except Exception:
+            apify_quota_text = "Connection Timeout"
+
+    return [
+        {
+            'name': 'Bright Data Scraper',
+            'id': 'brightdata',
+            'token': bd_token,
+            'is_configured': bool(bd_token),
+            'status_ok': bd_status,
+            'remaining_quota': bd_quota_text,
+            'used_for': 'Facebook Page & Post Scraping, Instagram Profiles',
+            'engine_key': 'fb_engine'
+        },
+        {
+            'name': 'YouTube Data API',
+            'id': 'youtube',
+            'token': yt_key,
+            'is_configured': bool(yt_key),
+            'status_ok': yt_status,
+            'remaining_quota': yt_quota_text,
+            'used_for': 'YouTube Channel Subscribers, Video Count, Views',
+            'engine_key': 'yt_engine'
+        },
+        {
+            'name': 'RapidAPI Scraper',
+            'id': 'rapidapi',
+            'token': rapid_key,
+            'is_configured': bool(rapid_key),
+            'status_ok': rapid_status,
+            'remaining_quota': rapid_quota_text,
+            'used_for': 'Google Reviews Lookup & Fallback Scraping',
+            'engine_key': 'rapidapi'
+        },
+        {
+            'name': 'Apify / ScrapeCreators Scraper',
+            'id': 'apify',
+            'token': apify_token,
+            'is_configured': bool(apify_token),
+            'status_ok': apify_status,
+            'remaining_quota': apify_quota_text,
+            'used_for': 'Instagram Posts & Secondary Fallback',
+            'engine_key': 'ig_engine'
+        }
+    ]
+
 @app.route('/')
 @app.route('/index.php', endpoint='dashboard')
 @require_login
@@ -340,13 +457,11 @@ def dashboard():
     
     # Chart 1: YouTube uploads last 6 months
     month_keys = []
-    # today to 5 months ago
     today = current_time_pk()
     start_date = (today - timedelta(days=150)).replace(day=1)
     cursor = start_date
     while cursor <= today:
         month_keys.append(cursor.strftime('%Y-%m'))
-        # advance 1 month
         if cursor.month == 12:
             cursor = cursor.replace(year=cursor.year + 1, month=1)
         else:
@@ -355,7 +470,6 @@ def dashboard():
     yt_chart_data = {mk: 0 for mk in month_keys}
     if dealerships:
         d_ids = [d.id for d in dealerships]
-        # Query DB monthly stats
         from api.models import YtMonthlyStats as YtMonthlyStat
         stats = db_session.query(
             YtMonthlyStat.month, func.sum(YtMonthlyStat.video_count)
@@ -369,7 +483,6 @@ def dashboard():
                 
     yt_chart_html = render_monthly_bar_chart(yt_chart_data, 'var(--yt)')
     
-    # Chart 2: FB vs IG posts this week
     fb_posts_total = sum(d.fb_posts_week or 0 for d in dealerships)
     ig_posts_total = sum(d.ig_posts_week or 0 for d in dealerships)
     
@@ -378,7 +491,6 @@ def dashboard():
         'Instagram': {'value': ig_posts_total, 'color': 'var(--ig)'}
     })
     
-    # Scrapers Audit & Control Panel Data
     scraper_settings = {
         'fb_engine': get_setting('fb_engine', 'brightdata'),
         'ig_engine': get_setting('ig_engine', 'brightdata'),
@@ -390,40 +502,10 @@ def dashboard():
         'gemini_api_key': Config.get_key('gemini_api_key', 'GEMINI_API_KEY'),
     }
 
-    scrapers_summary = [
-        {
-            'name': 'Bright Data Scraper',
-            'id': 'brightdata',
-            'token': scraper_settings['brightdata_api_token'],
-            'is_configured': bool(scraper_settings['brightdata_api_token']),
-            'used_for': 'Facebook Page & Post Scraping, Instagram Profiles',
-            'engine_key': 'fb_engine'
-        },
-        {
-            'name': 'YouTube Data API',
-            'id': 'youtube',
-            'token': scraper_settings['youtube_api_key'],
-            'is_configured': bool(scraper_settings['youtube_api_key']),
-            'used_for': 'YouTube Channel Subscribers, Video Count, Views',
-            'engine_key': 'yt_engine'
-        },
-        {
-            'name': 'RapidAPI Scraper',
-            'id': 'rapidapi',
-            'token': scraper_settings['rapidapi_key'],
-            'is_configured': bool(scraper_settings['rapidapi_key']),
-            'used_for': 'Google Reviews Lookup & Fallback Scraping',
-            'engine_key': 'rapidapi'
-        },
-        {
-            'name': 'Apify / ScrapeCreators Scraper',
-            'id': 'apify',
-            'token': scraper_settings['apify_api_token'],
-            'is_configured': bool(scraper_settings['apify_api_token']),
-            'used_for': 'Instagram Posts & Secondary Fallback',
-            'engine_key': 'ig_engine'
-        }
-    ]
+    if is_super_admin():
+        scrapers_summary = get_scrapers_live_summary(scraper_settings)
+    else:
+        scrapers_summary = []
 
     message = session.pop('dashboard_msg', '')
     error = session.pop('dashboard_err', '')
