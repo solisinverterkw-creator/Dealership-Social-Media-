@@ -49,10 +49,15 @@ YouTubePostsLookup = YouTubeLookup
 from api.services.facebook_poster import FacebookPoster
 from api.services.email_validator import EmailValidator as EmailValidatorService
 
+# Absolute path resolution for serverless function execution
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+template_dir = os.path.join(root_dir, 'templates')
+static_dir = os.path.join(root_dir, 'assets')
+
 app = Flask(
     __name__, 
-    template_folder='../templates', 
-    static_folder='../assets', 
+    template_folder=template_dir, 
+    static_folder=static_dir, 
     static_url_path='/assets'
 )
 app.secret_key = Config.SECRET_KEY
