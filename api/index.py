@@ -2937,17 +2937,20 @@ def bg_reshare_dealership_task(job_key, d_id, from_date, to_date):
             )
             own_count = match_res['own_count']
             
+        from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date() if isinstance(from_date, str) else from_date
+        to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date() if isinstance(to_date, str) else to_date
+
         # Update own post stats table
         stat = db_session.query(ReshareOwnPostStat).filter(
             ReshareOwnPostStat.dealership_id == d_id,
-            ReshareOwnPostStat.range_from == from_date,
-            ReshareOwnPostStat.range_to == to_date
+            ReshareOwnPostStat.range_from == from_date_obj,
+            ReshareOwnPostStat.range_to == to_date_obj
         ).first()
         if not stat:
             stat = ReshareOwnPostStat(
                 dealership_id=d_id,
-                range_from=from_date,
-                range_to=to_date,
+                range_from=from_date_obj,
+                range_to=to_date_obj,
                 own_post_count=own_count,
                 reshare_post_count=len(source_posts) - own_count,
                 checked_at=current_time_pk()
@@ -3088,6 +3091,8 @@ def reshare_compliance_view():
     if has_range:
         from_dt = datetime.strptime(from_val, '%Y-%m-%d')
         to_dt = datetime.strptime(to_val, '%Y-%m-%d') + timedelta(days=1)
+        from_date_obj = from_dt.date()
+        to_date_obj = datetime.strptime(to_val, '%Y-%m-%d').date()
         
         # Load stats for each dealership
         for d in dealerships:
@@ -3118,8 +3123,8 @@ def reshare_compliance_view():
             
             own_stat = db_session.query(ReshareOwnPostStat).filter(
                 ReshareOwnPostStat.dealership_id == d.id,
-                ReshareOwnPostStat.range_from == from_val,
-                ReshareOwnPostStat.range_to == to_val
+                ReshareOwnPostStat.range_from == from_date_obj,
+                ReshareOwnPostStat.range_to == to_date_obj
             ).first()
             own_count = own_stat.own_post_count if own_stat else None
             
@@ -3178,6 +3183,8 @@ def export_reshare_compliance():
         
     from_dt = datetime.strptime(from_val, '%Y-%m-%d')
     to_dt = datetime.strptime(to_val, '%Y-%m-%d') + timedelta(days=1)
+    from_date_obj = from_dt.date()
+    to_date_obj = datetime.strptime(to_val, '%Y-%m-%d').date()
     dealerships = get_allowed_dealerships()
     d_ids = [d.id for d in dealerships]
     
@@ -3199,8 +3206,8 @@ def export_reshare_compliance():
                 missed = tracked - reshared
                 own_stat = db_session.query(ReshareOwnPostStat).filter(
                     ReshareOwnPostStat.dealership_id == d.id,
-                    ReshareOwnPostStat.range_from == from_val,
-                    ReshareOwnPostStat.range_to == to_val
+                    ReshareOwnPostStat.range_from == from_date_obj,
+                    ReshareOwnPostStat.range_to == to_date_obj
                 ).first()
                 own_count = own_stat.own_post_count if own_stat else 0
                 yield f'"{d.name}",{own_count},{tracked},{reshared},{missed}\n'
