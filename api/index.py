@@ -1533,7 +1533,7 @@ def sales_report_view():
     error = session.pop('sales_err', '')
     
     if request.method == 'POST' and can_perform('edit'):
-        file_upload = request.files.get('file_upload')
+        file_upload = request.files.get('file_upload') or request.files.get('sales_csv')
         period_month = request.form.get('period_month') # e.g. "2026-08"
         
         if not file_upload or not period_month:
@@ -1624,7 +1624,7 @@ def stock_report_view():
     error = session.pop('stock_err', '')
     
     if request.method == 'POST' and can_perform('edit'):
-        file_upload = request.files.get('file_upload')
+        file_upload = request.files.get('file_upload') or request.files.get('stock_csv')
         if not file_upload:
             error = "Excel File is required."
         else:
@@ -1687,7 +1687,8 @@ def ageing_report_view():
     error = session.pop('ageing_err', '')
     
     if request.method == 'POST' and can_perform('edit'):
-        file_upload = request.files.get('file_upload')
+        action = request.form.get('action')
+        file_upload = request.files.get('file_upload') or request.files.get('ageing_csv') or request.files.get('stock_chassis_csv')
         if not file_upload:
             error = "Excel File is required."
         else:
@@ -1777,7 +1778,7 @@ def crm_report_view():
     error = session.pop('crm_err', '')
     
     if request.method == 'POST' and can_perform('edit'):
-        file_upload = request.files.get('file_upload')
+        file_upload = request.files.get('file_upload') or request.files.get('crm_csv')
         period_month = request.form.get('period_month')
         
         if not file_upload or not period_month:

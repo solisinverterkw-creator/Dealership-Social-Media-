@@ -1,5 +1,7 @@
 import os
 import re
+import io
+import csv
 from datetime import datetime, timedelta
 from PIL import Image
 import openpyxl
@@ -260,19 +262,56 @@ class SpreadsheetImportHelper:
             return 'PB (Pending Booking)'
         return name
 
-def read_excel_rows(file_path: str, sheet_name: str = None) -> list:
-    """Reads spreadsheet rows using openpyxl and returns lists of strings."""
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-    
+def read_excel_rows(file_input, sheet_name: str = None) -> list:
+    """Reads spreadsheet (XLSX, XLS, CSV) rows from file path string or FileStorage stream object and returns lists of strings."""
+    if not file_input:
+        return []
+
+    filename = ""
+    file_bytes = None
+
+    if isinstance(file_input, str):
+        if not os.path.exists(file_input):
+            raise FileNotFoundError(f"File not found: {file_input}")
+        filename = file_input
+        with open(file_input, 'rb') as f:
+            file_bytes = f.read()
+    else:
+        filename = getattr(file_input, 'filename', '') or ''
+        file_bytes = file_input.read()
+        try:
+            file_input.seek(0)
+        except Exception:
+            pass
+
+    if not file_bytes:
+        return []
+
+    # Try CSV parsing if filename ends with .csv or text content
+    if filename.lower().endswith('.csv') or (isinstance(file_bytes, bytes) and not file_bytes.startswith(b'PK')):
+        try:
+            try:
+                text = file_bytes.decode('utf-8-sig')
+            except UnicodeDecodeError:
+                text = file_bytes.decode('latin-1', errors='ignore')
+
+            reader = csv.reader(io.StringIO(text))
+            rows = []
+            for row in reader:
+                rows.append([str(cell).strip() if cell is not None else "" for cell in row])
+            if rows:
+                return rows
+        except Exception:
+            pass
+
+    # Otherwise OpenPyXL XLSX
     try:
-        # Load workbook in data_only mode to get calculated cell values
-        wb = openpyxl.load_workbook(file_path, data_only=True)
+        stream = io.BytesIO(file_bytes)
+        wb = openpyxl.load_workbook(stream, data_only=True)
         if sheet_name:
             if sheet_name in wb.sheetnames:
                 sheet = wb[sheet_name]
             else:
-                # Try case insensitive match
                 match = [s for s in wb.sheetnames if s.strip().lower() == sheet_name.strip().lower()]
                 if match:
                     sheet = wb[match[0]]
@@ -286,7 +325,7 @@ def read_excel_rows(file_path: str, sheet_name: str = None) -> list:
             rows.append([str(cell).strip() if cell is not None else "" for cell in row])
         return rows
     except Exception as e:
-        raise RuntimeError(f"Error reading Excel file: {str(e)}")
+        raise RuntimeError(f"Error reading Excel/CSV file: {str(e)}")
 
 class DataQualityAnalyzer:
     FAKE_EMAIL_DOMAINS = ['test.com', 'example.com', 'test.test', 'asdf.com', 'abc.com', 'xyz.com', 'mail.com']
