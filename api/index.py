@@ -1069,6 +1069,88 @@ def refresh_gr():
     
     return jsonify({'success': True, 'google_review_count': res['review_count'], 'google_rating': res['rating']})
 
+
+@app.route('/api/refresh_all')
+@require_login
+def refresh_all_dealerships():
+    """Bulk refresh all dealerships for all metrics — triggers background threads"""
+    if not can_perform('refresh'):
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+
+    dealerships = get_allowed_dealerships()
+    if not dealerships:
+        return jsonify({'success': False, 'message': 'No dealerships found'})
+
+    started = []
+    skipped = []
+
+    for d in dealerships:
+        d_id = d.id
+        # FB
+        if d.fb_input or (d.fb_page_access_token and d.fb_page_id):
+            t = threading.Thread(target=bg_refresh_dealership_task, args=('fb', d_id))
+            t.daemon = True
+            t.start()
+            started.append(f'{d.name}:fb')
+        else:
+            skipped.append(f'{d.name}:fb')
+
+        # IG
+        if d.ig_search or (d.fb_page_access_token and d.fb_page_id):
+            t = threading.Thread(target=bg_refresh_dealership_task, args=('ig', d_id))
+            t.daemon = True
+            t.start()
+            started.append(f'{d.name}:ig')
+        else:
+            skipped.append(f'{d.name}:ig')
+
+    # YT & Google refresh inline (fast API calls)
+    yt_updated = 0
+    gr_updated = 0
+    for d in dealerships:
+        # YT via YouTube API
+        if d.yt_channel_id:
+            try:
+                from api.youtube_scraper import YouTubeScraper
+                yt = YouTubeScraper()
+                res = yt.get_channel_stats(d.yt_channel_id)
+                if res and res.get('success'):
+                    d.yt_subscribers = res.get('subscribers', d.yt_subscribers)
+                    d.yt_videos = res.get('videos', d.yt_videos)
+                    d.yt_views = res.get('views', d.yt_views)
+                    d.last_refreshed = current_time_pk()
+                    yt_updated += 1
+            except Exception:
+                pass
+
+        # Google Reviews
+        if d.google_search:
+            try:
+                lookup = GoogleReviewLookup()
+                res = lookup.search_and_get_reviews(d.google_search)
+                if res and res.get('success'):
+                    d.google_review_count = res['review_count']
+                    d.google_rating = res['rating']
+                    d.last_refreshed = current_time_pk()
+                    gr_updated += 1
+            except Exception:
+                pass
+
+    try:
+        db_session.commit()
+    except Exception:
+        db_session.rollback()
+
+    return jsonify({
+        'success': True,
+        'message': f'Refresh started for {len(dealerships)} dealerships. FB/IG updating in background. YT: {yt_updated} updated, Google: {gr_updated} updated.',
+        'total': len(dealerships),
+        'bg_started': len(started),
+        'skipped': len(skipped),
+    })
+
+
+
 @app.route('/refresh_status.php')
 @require_login
 def refresh_status():
