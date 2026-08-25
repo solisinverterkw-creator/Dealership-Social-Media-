@@ -18,7 +18,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from sqlalchemy import or_, and_, func
 
 from api.config import Config
-from api.database import db_session, init_db
+from api.database import engine, db_session, init_db
 from api.models import (
     User, Dealership, user_dealerships, UserSidebarSection, VehicleModel,
     VehicleModelImage, BrandIdentity, PostSubmission, CrmParameter,
@@ -111,6 +111,13 @@ def utility_processor():
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db_session.remove()
+
+# --- ERROR HANDLER (temporary - shows traceback) ---
+@app.errorhandler(500)
+def internal_error(e):
+    import traceback
+    tb = traceback.format_exc()
+    return f'<pre style="color:red;padding:20px">{tb}</pre>', 500
 
 # --- HELPER FUNCTIONS ---
 def dealership_percent(d):
