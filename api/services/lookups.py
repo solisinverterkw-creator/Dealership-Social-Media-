@@ -450,15 +450,20 @@ class YouTubeLookup:
         self.base_url = "https://www.googleapis.com/youtube/v3"
 
     def resolve_channel_id(self, channel_name: str) -> str:
+        if not channel_name:
+            return None
+        clean = channel_name.strip()
+        if clean.startswith('UC') and len(clean) == 24:
+            return clean
         search_params = {
             'part': 'snippet',
-            'q': channel_name,
+            'q': clean,
             'type': 'channel',
             'maxResults': 1,
             'key': Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY')
         }
         try:
-            res = requests.get(f"{self.base_url}/search", params=search_params, timeout=20)
+            res = requests.get(f"{self.base_url}/search", params=search_params, timeout=10)
             if res.status_code == 200:
                 items = res.json().get('items', [])
                 if items:

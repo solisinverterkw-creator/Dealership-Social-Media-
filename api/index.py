@@ -1109,15 +1109,16 @@ def refresh_all_dealerships():
     gr_updated = 0
     for d in dealerships:
         # YT via YouTube API
-        if d.yt_channel_id:
+        if d.yt_channel_id or d.yt_search:
             try:
-                from api.youtube_scraper import YouTubeScraper
-                yt = YouTubeScraper()
-                res = yt.get_channel_stats(d.yt_channel_id)
+                lookup = YouTubeLookup()
+                res = lookup.search_and_get_stats(d.yt_search or '', d.yt_channel_id)
                 if res and res.get('success'):
-                    d.yt_subscribers = res.get('subscribers', d.yt_subscribers)
-                    d.yt_videos = res.get('videos', d.yt_videos)
-                    d.yt_views = res.get('views', d.yt_views)
+                    d.yt_subscribers = res.get('subscribers', d.yt_subscribers or 0)
+                    d.yt_videos = res.get('total_videos', d.yt_videos or 0)
+                    d.yt_views = res.get('total_views', d.yt_views or 0)
+                    if res.get('channel_id'):
+                        d.yt_channel_id = res['channel_id']
                     d.last_refreshed = current_time_pk()
                     yt_updated += 1
             except Exception:
@@ -1250,34 +1251,53 @@ def check_ig_posts():
 @require_login
 def check_yt_monthly():
     d_id = request.args.get('id', type=int)
-    month = request.args.get('month') # e.g. "2026-08"
+    from_date = request.args.get('from')
+    to_date = request.args.get('to')
+    month = request.args.get('month')
     
-    if not d_id or not month or not can_access_dealership(d_id):
+    if not d_id or not can_access_dealership(d_id):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
         
     d = db_session.query(Dealership).filter(Dealership.id == d_id).first()
-    if not d or not d.yt_search:
+    if not d or (not d.yt_search and not d.yt_channel_id):
         return jsonify({'success': False, 'message': 'No YouTube channel set.'})
-        
-    lookup = YouTubePostsLookup()
-    res = lookup.count_uploads_in_month(d.yt_search, month, d.yt_channel_id)
+
+    if not from_date or not to_date:
+        if month:
+            from_date = f"{month}-01"
+            import calendar
+            yr, mo = int(month[:4]), int(month[5:7])
+            last_day = calendar.monthrange(yr, mo)[1]
+            to_date = f"{month}-{last_day:02d}"
+        else:
+            now = datetime.utcnow()
+            to_date = now.strftime('%Y-%m-%d')
+            from_date = (now - timedelta(days=180)).strftime('%Y-%m-%d')
+
+    lookup = YouTubeLookup()
+    res = lookup.get_monthly_breakdown(d.yt_search or '', from_date, to_date, d.yt_channel_id)
     if not res['success']:
         return jsonify(res)
         
-    # Save/update YtMonthlyStat
+    # Save/update YtMonthlyStats
     from api.models import YtMonthlyStats as YtMonthlyStat
-    stat = db_session.query(YtMonthlyStat).filter(
-        YtMonthlyStat.dealership_id == d_id,
-        YtMonthlyStat.month == month
-    ).first()
-    if not stat:
-        stat = YtMonthlyStat(dealership_id=d_id, month=month)
-        db_session.add(stat)
+    for m, count in res.get('breakdown', {}).items():
+        stat = db_session.query(YtMonthlyStat).filter(
+            YtMonthlyStat.dealership_id == d_id,
+            YtMonthlyStat.month == m
+        ).first()
+        if not stat:
+            stat = YtMonthlyStat(dealership_id=d_id, month=m)
+            db_session.add(stat)
+        stat.video_count = count
         
-    stat.video_count = res['count']
-    d.yt_channel_id = res['channel_id']
+    if res.get('channel_id'):
+        d.yt_channel_id = res['channel_id']
     d.last_refreshed = current_time_pk()
-    db_session.commit()
+    try:
+        db_session.commit()
+    except Exception:
+        db_session.rollback()
     
     return jsonify(res)
 
