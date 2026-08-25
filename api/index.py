@@ -60,7 +60,12 @@ app = Flask(
     static_folder=static_dir, 
     static_url_path='/assets'
 )
-app.secret_key = Config.SECRET_KEY
+# Secret key - must NEVER be None/empty or Flask sessions will crash
+app.secret_key = (
+    os.environ.get('FLASK_SECRET_KEY') or
+    os.environ.get('SECRET_KEY') or
+    'rosp-dealership-dashboard-secret-key-2026-xK9mP3qR'
+)
 
 # Vercel serverless filesystem is read-only - use /tmp for writable uploads
 if os.environ.get('VERCEL') or not os.access(os.path.dirname(os.path.abspath(__file__)), os.W_OK):
