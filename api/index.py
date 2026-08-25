@@ -1520,8 +1520,7 @@ def export_email_validation():
         headers={"Content-disposition": "attachment; filename=email_validation_results.csv"}
     )
 
-# --- SALES REPORT SCOREBOARD ---
-
+# --- SALES REPORT VIEW ---
 @app.route('/sales_report', methods=['GET', 'POST'])
 @app.route('/sales_report.php', endpoint='sales_report', methods=['GET', 'POST'])
 @require_login
@@ -1531,11 +1530,14 @@ def sales_report_view():
     dealerships = get_allowed_dealerships()
     message = session.pop('sales_msg', '')
     error = session.pop('sales_err', '')
-    
     import_errors = []
+
+    pk_today = current_time_pk()
+    current_month = pk_today.strftime('%Y-%m')
+
     if request.method == 'POST' and can_perform('edit'):
         file_upload = request.files.get('file_upload') or request.files.get('sales_csv')
-        period_month = request.form.get('period_month') # e.g. "2026-08"
+        period_month = request.form.get('period_month')
         
         if not file_upload or not period_month:
             error = "Excel File and Period Month are required."
@@ -1551,30 +1553,41 @@ def sales_report_view():
                     error = res['message']
             except Exception as e:
                 error = f"Error reading sheet: {str(e)}"
-                
-    # Fetch period list
-    latest_period = db_session.query(func.max(SalesRecord.period_month)).scalar()
-    period_label = ""
-    columns_sequence = []
-    pivot_data = {}
-    summary_data = {}
+
+    period_records = db_session.query(SalesRecord.period_month).distinct().order_by(SalesRecord.period_month.desc()).all()
+    periods = [p[0] for p in period_records if p[0]]
     
-    if latest_period:
+    selected_period = request.args.get('period', '').strip()
+    if not selected_period or selected_period not in periods:
+        selected_period = periods[0] if periods else current_month
+
+    period_labels = {}
+    for p in periods:
         try:
-            period_label = datetime.strptime(latest_period + "-01", "%Y-%m-%d").strftime("%F %Y")
+            period_labels[p] = datetime.strptime(p + "-01", "%Y-%m-%d").strftime("%B %Y")
         except Exception:
-            period_label = latest_period
-            
+            period_labels[p] = p
+
+    try:
+        date_str = datetime.strptime(selected_period + "-01", "%Y-%m-%d").strftime("%B %Y")
+    except Exception:
+        date_str = selected_period
+
+    columns_sequence = []
+    pivot = {}
+    summary_by_dealership = {}
+
+    if selected_period in periods:
         cols = db_session.query(SalesRecord.product_name, SalesRecord.column_order).filter(
-            SalesRecord.period_month == latest_period
+            SalesRecord.period_month == selected_period
         ).distinct().order_by(SalesRecord.column_order).all()
-        
+
         gt_order = db_session.query(SalesSummary.grand_total_column_order).filter(
-            SalesSummary.period_month == latest_period,
+            SalesSummary.period_month == selected_period,
             SalesSummary.grand_total_column_order.isnot(None)
         ).first()
         gt_order_val = gt_order[0] if gt_order else None
-        
+
         gt_inserted = False
         for col_name, order in cols:
             if gt_order_val is not None and not gt_inserted and int(order) > int(gt_order_val):
@@ -1583,34 +1596,45 @@ def sales_report_view():
             columns_sequence.append({'type': 'product', 'name': col_name})
         if gt_order_val is not None and not gt_inserted:
             columns_sequence.append({'type': 'grand_total'})
-            
-        records = db_session.query(SalesRecord).filter(SalesRecord.period_month == latest_period).all()
+
+        allowed_ids = {d.id for d in dealerships}
+        records = db_session.query(SalesRecord).filter(
+            SalesRecord.period_month == selected_period,
+            SalesRecord.dealership_id.in_(allowed_ids)
+        ).all()
+
+        d_map = {d.id: d.name for d in dealerships}
         for r in records:
-            if r.dealership_id not in pivot_data:
-                pivot_data[r.dealership_id] = {}
-            pivot_data[r.dealership_id][r.product_name] = r.quantity
-            
-        summaries = db_session.query(SalesSummary).filter(SalesSummary.period_month == latest_period).all()
+            d_name = d_map.get(r.dealership_id, 'Unknown')
+            if d_name not in pivot:
+                pivot[d_name] = {'__id': r.dealership_id}
+            pivot[d_name][r.product_name] = r.quantity
+
+        summaries = db_session.query(SalesSummary).filter(
+            SalesSummary.period_month == selected_period,
+            SalesSummary.dealership_id.in_(allowed_ids)
+        ).all()
         for s in summaries:
-            summary_data[s.dealership_id] = {
-                'target': s.target,
-                'grand_total': s.grand_total
-            }
-            
+            summary_by_dealership[s.dealership_id] = s
+
     return render_template(
         'sales_report.html',
         dealerships=dealerships,
-        period_label=period_label,
+        current_month=current_month,
+        periods=periods,
+        selected_period=selected_period,
+        period_labels=period_labels,
+        date_str=date_str,
         columns_sequence=columns_sequence,
-        pivot_data=pivot_data,
-        summary_data=summary_data,
+        pivot=pivot,
+        summary_by_dealership=summary_by_dealership,
         message=message,
         error=error,
-        import_errors=import_errors
+        import_errors=import_errors,
+        friendly_product_label=SpreadsheetImportHelper.friendly_product_label
     )
 
-# --- STOCK SNAPSHOT SHEET ---
-
+# --- STOCK REPORT VIEW ---
 @app.route('/stock_report', methods=['GET', 'POST'])
 @app.route('/stock_report.php', endpoint='stock_report', methods=['GET', 'POST'])
 @require_login
@@ -1620,8 +1644,8 @@ def stock_report_view():
     dealerships = get_allowed_dealerships()
     message = session.pop('stock_msg', '')
     error = session.pop('stock_err', '')
-    
     import_errors = []
+
     if request.method == 'POST' and can_perform('edit'):
         file_upload = request.files.get('file_upload') or request.files.get('stock_csv')
         if not file_upload:
@@ -1638,7 +1662,7 @@ def stock_report_view():
                     error = res['message']
             except Exception as e:
                 error = f"Error reading sheet: {str(e)}"
-                
+
     variant_priority = [
         'Alto VXR', 'Alto VXR AGS', 'Alto AGS', 'Alto VXL AGS',
         'FRONX GL AT', 'FRONX GLX',
@@ -1646,34 +1670,56 @@ def stock_report_view():
         'CULTUS VXR', 'CULTUS VXL', 'CULTUS AGS',
         'EVERY'
     ]
-    
+
     stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
-    stock_master_columns = SpreadsheetImportHelper.sort_product_columns_by_priority(stock_cols, variant_priority)
-    
-    pivot_data = {}
-    records = db_session.query(StockRecord).all()
+    product_names = SpreadsheetImportHelper.sort_product_columns_by_priority(stock_cols, variant_priority)
+
+    column_sequence = [{'type': 'product', 'name': p} for p in product_names]
+    column_sequence.append({'type': 'grand_total'})
+
+    allowed_ids = {d.id for d in dealerships}
+    records = db_session.query(StockRecord).filter(StockRecord.dealership_id.in_(allowed_ids)).all()
+
+    pivot = {}
+    d_map = {d.id: d.name for d in dealerships}
     for r in records:
-        if r.dealership_id not in pivot_data:
-            pivot_data[r.dealership_id] = {}
-        pivot_data[r.dealership_id][r.product_name] = r.quantity
-        
+        d_name = d_map.get(r.dealership_id, 'Unknown')
+        if d_name not in pivot:
+            pivot[d_name] = {'__id': r.dealership_id}
+        pivot[d_name][r.product_name] = r.quantity
+
+    security_by_dealership = {d.id: d.security_amount for d in dealerships if d.security_amount is not None}
+    region_by_dealership = {d.id: d.region for d in dealerships if d.region}
+    regions = sorted(list(set(d.region for d in dealerships if d.region)))
+    selected_region = request.args.get('region', '').strip()
+
+    if selected_region:
+        pivot = {k: v for k, v in pivot.items() if region_by_dealership.get(v['__id']) == selected_region}
+
+    has_data = bool(pivot)
     dealers_without_security = [d for d in dealerships if d.security_amount is None or d.security_amount == 0.0]
     total_stock_count = db_session.query(func.sum(StockRecord.quantity)).scalar() or 0
-    
+
     return render_template(
         'stock_report.html',
         dealerships=dealerships,
-        stock_master_columns=stock_master_columns,
-        pivot_data=pivot_data,
+        has_data=has_data,
+        pivot=pivot,
+        column_sequence=column_sequence,
+        product_names=product_names,
+        security_by_dealership=security_by_dealership,
+        region_by_dealership=region_by_dealership,
+        regions=regions,
+        selected_region=selected_region,
         dealers_without_security=dealers_without_security,
         total_stock_count=total_stock_count,
         message=message,
         error=error,
-        import_errors=import_errors
+        import_errors=import_errors,
+        friendly_product_label=SpreadsheetImportHelper.friendly_product_label
     )
 
-# --- AGEING AUDIT ANALYSIS ---
-
+# --- AGEING REPORT VIEW ---
 @app.route('/ageing_report', methods=['GET', 'POST'])
 @app.route('/ageing_report.php', endpoint='ageing_report', methods=['GET', 'POST'])
 @require_login
@@ -1683,8 +1729,8 @@ def ageing_report_view():
     dealerships = get_allowed_dealerships()
     message = session.pop('ageing_msg', '')
     error = session.pop('ageing_err', '')
-    
     import_errors = []
+
     if request.method == 'POST' and can_perform('edit'):
         action = request.form.get('action')
         file_upload = request.files.get('file_upload') or request.files.get('ageing_csv') or request.files.get('stock_chassis_csv')
@@ -1705,16 +1751,13 @@ def ageing_report_view():
                     error = res['message']
             except Exception as e:
                 error = f"Error reading sheet: {str(e)}"
-                
-    # Calculate days aged relative to month end date (Karachi time)
-    # Pakistan time current month last day
+
     pk_today = current_time_pk()
-    # next month 1st minus 1 day
     if pk_today.month == 12:
         month_end = datetime(pk_today.year + 1, 1, 1) - timedelta(days=1)
     else:
         month_end = datetime(pk_today.year, pk_today.month + 1, 1) - timedelta(days=1)
-        
+
     variant_priority = [
         'Alto VXR', 'Alto VXR AGS', 'Alto AGS', 'Alto VXL AGS',
         'FRONX GL AT', 'FRONX GLX',
@@ -1722,55 +1765,81 @@ def ageing_report_view():
         'CULTUS VXR', 'CULTUS VXL', 'CULTUS AGS',
         'EVERY'
     ]
-    
-    # Filter only chassis currently in Stock table
-    # Query: AgeingRecords that have match in StockChassisRecords
+
     subquery = db_session.query(StockChassisRecord.chassis_number)
+    allowed_ids = {d.id for d in dealerships}
     ageing_records = db_session.query(AgeingRecord).filter(
+        AgeingRecord.dealership_id.in_(allowed_ids),
         func.upper(func.trim(AgeingRecord.chassis_number)).in_(subquery)
     ).all()
-    
-    # Map product-wise count & calculate days aged
-    pivot_data = {}
+
+    pivot = {}
     oldest_days = {}
     total_aged_count = 0
     product_set = set()
-    
+    chassis_records = []
+    d_map = {d.id: d.name for d in dealerships}
+
     for r in ageing_records:
-        # delivery date
         try:
             del_dt = datetime.combine(r.delivery_date, datetime.min.time())
             days = (month_end - del_dt).days
         except Exception:
             continue
-            
+
         if days >= 60:
+            d_name = d_map.get(r.dealership_id, 'Unknown')
             product_set.add(r.product_name)
             total_aged_count += 1
-            if r.dealership_id not in pivot_data:
-                pivot_data[r.dealership_id] = {}
-                oldest_days[r.dealership_id] = {}
-                
-            pivot_data[r.dealership_id][r.product_name] = pivot_data[r.dealership_id].get(r.product_name, 0) + 1
-            oldest_days[r.dealership_id][r.product_name] = max(oldest_days[r.dealership_id].get(r.product_name, 0), days)
-            
-    stock_master_columns = SpreadsheetImportHelper.sort_product_columns_by_priority(list(product_set), variant_priority)
-    
+            if d_name not in pivot:
+                pivot[d_name] = {'__id': r.dealership_id}
+                oldest_days[d_name] = {}
+
+            pivot[d_name][r.product_name] = pivot[d_name].get(r.product_name, 0) + 1
+            oldest_days[d_name][r.product_name] = max(oldest_days[d_name].get(r.product_name, 0), days)
+
+            chassis_records.append({
+                'dealership_name': d_name,
+                'chassis_number': r.chassis_number,
+                'product_name': r.product_name,
+                'delivery_date': r.delivery_date.strftime('%d-%m-%Y') if r.delivery_date else '',
+                'days_aged': days
+            })
+
+    product_names = SpreadsheetImportHelper.sort_product_columns_by_priority(list(product_set), variant_priority)
+    regions = sorted(list(set(d.region for d in dealerships if d.region)))
+    selected_region = request.args.get('region', '').strip()
+    selected_dealership_id = request.args.get('dealership_id', '').strip()
+
+    if selected_region:
+        pivot = {k: v for k, v in pivot.items() if any(d.id == v['__id'] and d.region == selected_region for d in dealerships)}
+
+    has_data = bool(pivot)
+    ageing_records_count = db_session.query(AgeingRecord).filter(AgeingRecord.dealership_id.in_(allowed_ids)).count()
+    stock_chassis_count = db_session.query(StockChassisRecord).filter(StockChassisRecord.dealership_id.in_(allowed_ids)).count()
+
     return render_template(
         'ageing_report.html',
         dealerships=dealerships,
-        stock_master_columns=stock_master_columns,
-        pivot_data=pivot_data,
+        dealerships_filter=dealerships,
+        has_data=has_data,
+        pivot=pivot,
         oldest_days=oldest_days,
+        product_names=product_names,
+        regions=regions,
+        selected_region=selected_region,
+        selected_dealership_id=selected_dealership_id,
         total_aged_count=total_aged_count,
-        ageing_records_count=len(ageing_records),
+        ageing_records_count=ageing_records_count,
+        stock_chassis_count=stock_chassis_count,
+        chassis_records=chassis_records,
         message=message,
         error=error,
-        import_errors=import_errors
+        import_errors=import_errors,
+        friendly_product_label=SpreadsheetImportHelper.friendly_product_label
     )
 
-# --- CRM METRIC SCOREBOARD & PERFORMANCE ---
-
+# --- CRM REPORT VIEW ---
 @app.route('/crm_report', methods=['GET', 'POST'])
 @app.route('/crm_report.php', endpoint='crm_report', methods=['GET', 'POST'])
 @require_login
@@ -1780,8 +1849,11 @@ def crm_report_view():
     dealerships = get_allowed_dealerships()
     message = session.pop('crm_msg', '')
     error = session.pop('crm_err', '')
-    
     import_errors = []
+
+    pk_today = current_time_pk()
+    current_month = pk_today.strftime('%Y-%m')
+
     if request.method == 'POST' and can_perform('edit'):
         file_upload = request.files.get('file_upload') or request.files.get('crm_csv')
         period_month = request.form.get('period_month')
@@ -1790,54 +1862,84 @@ def crm_report_view():
             error = "Excel File and Period Month are required."
         else:
             try:
-                # Import CRM scoreboard via helper
                 helper = SpreadsheetImportHelper()
                 rows = read_excel_rows(file_upload)
                 res = helper.import_crm_sheet(db_session, rows, period_month)
                 if res['success']:
-                    message = f"CRM scoreboard data imported successfully. {res['imported_count']} records loaded."
+                    message = f"CRM scoreboard data imported successfully. {res['imported_count']} record(s) loaded."
                     import_errors = res.get('import_errors', [])
                 else:
                     error = res['message']
             except Exception as e:
                 error = f"Error reading sheet: {str(e)}"
-                
-    crm_parameters = db_session.query(CrmParameter).order_by(CrmParameter.display_order, CrmParameter.id).all()
-    latest_period = db_session.query(func.max(CrmScore.period_month)).scalar()
-    crm_period_label = ""
-    
-    pivot_data = {}
-    total_points = {}
-    
-    if latest_period:
+
+    parameters = db_session.query(CrmParameter).order_by(CrmParameter.display_order, CrmParameter.id).all()
+    period_records = db_session.query(CrmScore.period_month).distinct().order_by(CrmScore.period_month.desc()).all()
+    periods = [p[0] for p in period_records if p[0]]
+
+    selected_period = request.args.get('period', '').strip()
+    if not selected_period or selected_period not in periods:
+        selected_period = periods[0] if periods else current_month
+
+    period_labels = {}
+    for p in periods:
         try:
-            crm_period_label = datetime.strptime(latest_period + "-01", "%Y-%m-%d").strftime("%F %Y")
+            period_labels[p] = datetime.strptime(p + "-01", "%Y-%m-%d").strftime("%B %Y")
         except Exception:
-            crm_period_label = latest_period
-            
-        scores = db_session.query(CrmScore).filter(CrmScore.period_month == latest_period).all()
+            period_labels[p] = p
+
+    try:
+        period_title = datetime.strptime(selected_period + "-01", "%Y-%m-%d").strftime("%B %Y")
+    except Exception:
+        period_title = selected_period
+
+    selected_dealership_id = request.args.get('dealership_id', type=int)
+    selected_dealership = db_session.query(Dealership).filter(Dealership.id == selected_dealership_id).first() if selected_dealership_id else None
+
+    score_by_param = {}
+    pivot = {}
+    allowed_ids = {d.id for d in dealerships}
+
+    if selected_dealership_id and selected_dealership:
+        scores = db_session.query(CrmScore).filter(
+            CrmScore.dealership_id == selected_dealership_id,
+            CrmScore.period_month == selected_period
+        ).all()
         for s in scores:
-            if s.dealership_id not in pivot_data:
-                pivot_data[s.dealership_id] = {}
-            pivot_data[s.dealership_id][s.crm_parameter_id] = s.points_obtained
-            
-        # Calculate total points excluding max_points = 0 parameters (direct achievement)
-        for d in dealerships:
-            d_tot = 0.0
-            for p in crm_parameters:
-                if p.max_points != 0.0:
-                    d_tot += float(pivot_data.get(d.id, {}).get(p.id) or 0.0)
-            total_points[d.id] = d_tot
-            
-    total_max_points = sum(float(p.max_points or 0) for p in crm_parameters)
+            score_by_param[s.crm_parameter_id] = float(s.points_obtained)
+    else:
+        scores = db_session.query(CrmScore).filter(
+            CrmScore.period_month == selected_period,
+            CrmScore.dealership_id.in_(allowed_ids)
+        ).all()
+        d_map = {d.id: d.name for d in dealerships}
+        for s in scores:
+            d_name = d_map.get(s.dealership_id, 'Unknown')
+            if d_name not in pivot:
+                pivot[d_name] = {}
+            pivot[d_name][s.crm_parameter_id] = float(s.points_obtained)
+
+    total_max_points = sum(float(p.max_points or 0) for p in parameters if p.max_points != 0.0)
+    dealer_target_field_by_calc_key = {
+        'digital_enquiry_targets': 'digital_enquiry_target',
+        'stage_won_conversion': 'digital_enquiry_conversion_target'
+    }
+
     return render_template(
         'crm_report.html',
         dealerships=dealerships,
-        crm_parameters=crm_parameters,
-        pivot_data=pivot_data,
-        total_points=total_points,
+        current_month=current_month,
+        periods=periods,
+        selected_period=selected_period,
+        period_labels=period_labels,
+        period_title=period_title,
+        selected_dealership_id=selected_dealership_id,
+        selected_dealership=selected_dealership,
+        parameters=parameters,
         total_max_points=total_max_points,
-        crm_period_label=crm_period_label,
+        score_by_param=score_by_param,
+        pivot=pivot,
+        dealer_target_field_by_calc_key=dealer_target_field_by_calc_key,
         message=message,
         error=error,
         import_errors=import_errors
