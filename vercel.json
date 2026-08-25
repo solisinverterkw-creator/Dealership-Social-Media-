@@ -5,15 +5,11 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "includeFiles": ["templates/**", "assets/**"]
+        "includeFiles": ["templates/**", "assets/**", "api/**"]
       }
     }
   ],
   "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "assets/$1"
-    },
     {
       "src": "/(.*)",
       "dest": "api/index.py",
