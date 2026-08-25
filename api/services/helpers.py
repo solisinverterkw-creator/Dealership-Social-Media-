@@ -420,6 +420,8 @@ class SpreadsheetImportHelper:
             return {'success': False, 'message': 'Could not find a "Dealer"/"Dealership" column in the header row.'}
 
         dealerNameCol = self.find_column(headerRow, ['dealer name']) or dealerCol
+        securityCol = self.find_column(headerRow, ['security'])
+
         productDescCol = self.find_column(headerRow, ['product desc', 'product description'])
         if productDescCol is None:
             genericCol = self.find_column(headerRow, ['product'])
@@ -452,6 +454,17 @@ class SpreadsheetImportHelper:
                 if dealershipId in excludedStockIds:
                     continue
 
+                if securityCol is not None and securityCol < len(row):
+                    sec_str = str(row[securityCol]).strip()
+                    if sec_str != '':
+                        try:
+                            sec_amt = float(sec_str.replace(',', ''))
+                            d_obj = db_session.query(Dealership).filter(Dealership.id == dealershipId).first()
+                            if d_obj:
+                                d_obj.security_amount = sec_amt
+                        except Exception:
+                            pass
+
                 if dealershipId not in counts:
                     counts[dealershipId] = {}
                 counts[dealershipId][productName] = counts[dealershipId].get(productName, 0) + 1
@@ -470,7 +483,7 @@ class SpreadsheetImportHelper:
                     db_session.add(rec)
                     importedCount += 1
         else:
-            skipKeywords = ['sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'region', 'total']
+            skipKeywords = ['sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'security', 'region', 'total', 'ttl']
             productCols = {}
             for col, label in enumerate(headerRow):
                 labelStr = str(label).strip()
@@ -494,6 +507,17 @@ class SpreadsheetImportHelper:
                     continue
                 if dealershipId in excludedStockIds:
                     continue
+
+                if securityCol is not None and securityCol < len(row):
+                    sec_str = str(row[securityCol]).strip()
+                    if sec_str != '':
+                        try:
+                            sec_amt = float(sec_str.replace(',', ''))
+                            d_obj = db_session.query(Dealership).filter(Dealership.id == dealershipId).first()
+                            if d_obj:
+                                d_obj.security_amount = sec_amt
+                        except Exception:
+                            pass
 
                 if dealershipId not in touchedDealershipIds:
                     db_session.query(StockRecord).filter(StockRecord.dealership_id == dealershipId).delete()

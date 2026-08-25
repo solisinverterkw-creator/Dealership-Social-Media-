@@ -1617,6 +1617,8 @@ def sales_report_view():
         for s in summaries:
             summary_by_dealership[s.dealership_id] = s
 
+    pivot = dict(sorted(pivot.items()))
+
     return render_template(
         'sales_report.html',
         dealerships=dealerships,
@@ -1695,6 +1697,9 @@ def stock_report_view():
 
     if selected_region:
         pivot = {k: v for k, v in pivot.items() if region_by_dealership.get(v['__id']) == selected_region}
+
+    # Highest total stock first
+    pivot = dict(sorted(pivot.items(), key=lambda item: sum(v for k, v in item[1].items() if k != '__id'), reverse=True))
 
     has_data = bool(pivot)
     dealers_without_security = [d for d in dealerships if d.security_amount is None or d.security_amount == 0.0]
@@ -1814,6 +1819,10 @@ def ageing_report_view():
     if selected_region:
         pivot = {k: v for k, v in pivot.items() if any(d.id == v['__id'] and d.region == selected_region for d in dealerships)}
 
+    # Oldest vehicle first
+    chassis_records.sort(key=lambda x: x['days_aged'], reverse=True)
+    pivot = dict(sorted(pivot.items(), key=lambda item: max(oldest_days.get(item[0], {}).values() or [0]), reverse=True))
+
     has_data = bool(pivot)
     ageing_records_count = db_session.query(AgeingRecord).filter(AgeingRecord.dealership_id.in_(allowed_ids)).count()
     stock_chassis_count = db_session.query(StockChassisRecord).filter(StockChassisRecord.dealership_id.in_(allowed_ids)).count()
@@ -1918,6 +1927,7 @@ def crm_report_view():
             if d_name not in pivot:
                 pivot[d_name] = {}
             pivot[d_name][s.crm_parameter_id] = float(s.points_obtained)
+        pivot = dict(sorted(pivot.items()))
 
     total_max_points = sum(float(p.max_points or 0) for p in parameters if p.max_points != 0.0)
     dealer_target_field_by_calc_key = {
