@@ -339,27 +339,57 @@ def social_report():
     if not can_view('report'):
         abort(403)
     dealerships = get_allowed_dealerships()
-    # Calculate rankings by total audience (followers + sub + review)
-    ranked = []
+
+    # Optional per-dealership detail view
+    detail_id = request.args.get('id', type=int)
+    detail = None
+    if detail_id:
+        detail = next((d for d in dealerships if d.id == detail_id), None)
+
+    # Inject total_reach on each object (not a DB column)
     for d in dealerships:
-        score = (d.fb_followers or 0) + (d.ig_followers or 0) + (d.yt_subscribers or 0) + (d.google_review_count or 0)
-        ranked.append((score, d))
-    ranked.sort(key=lambda x: x[0], reverse=True)
-    ranked_dealerships = [x[1] for x in ranked]
-    
+        d.total_reach = (d.fb_followers or 0) + (d.ig_followers or 0) + (d.yt_subscribers or 0)
+
+    # Sort by total reach descending
+    ranked_dealerships = sorted(dealerships, key=lambda d: d.total_reach, reverse=True)
+
+    # Compute ratings for avg
+    rated = [float(d.google_rating) for d in dealerships if d.google_rating]
+    avg_rating = sum(rated) / len(rated) if rated else 0
+
     totals = {
         'cnt': len(dealerships),
-        'fb': sum(d.fb_followers or 0 for d in dealerships),
-        'ig': sum(d.ig_followers or 0 for d in dealerships),
-        'yt': sum(d.yt_subscribers or 0 for d in dealerships),
-        'gr': sum(d.google_review_count or 0 for d in dealerships)
+        'fb_total': sum(d.fb_followers or 0 for d in dealerships),
+        'ig_total': sum(d.ig_followers or 0 for d in dealerships),
+        'yt_total': sum(d.yt_subscribers or 0 for d in dealerships),
+        'gr_total': sum(d.google_review_count or 0 for d in dealerships),
+        'fb_target_total': sum(d.fb_target or 0 for d in dealerships),
+        'ig_target_total': sum(d.ig_target or 0 for d in dealerships),
+        'yt_target_total': sum(d.yt_target or 0 for d in dealerships),
+        'avg_rating': avg_rating,
     }
-    
+
+    def target_badge(val, target):
+        if not target:
+            return ''
+        val = val or 0
+        pct = int(round(val * 100 / target)) if target else 0
+        color = '#22c55e' if pct >= 100 else ('#f59e0b' if pct >= 75 else '#ef4444')
+        return f'<span style="font-size:11px;color:{color};font-weight:600">({pct}%)</span>'
+
+    def column_target_label(dships, field):
+        has_target = any(getattr(d, field, 0) for d in dships)
+        return '<span style="font-size:11px;opacity:.6">Target</span>' if has_target else ''
+
     return render_template(
         'report.html',
         dealerships=ranked_dealerships,
-        totals=totals
+        totals=totals,
+        detail=detail,
+        target_badge=target_badge,
+        column_target_label=column_target_label,
     )
+
 
 @app.route('/weekly_posts')
 @app.route('/weekly_posts.php', endpoint='posting_activity')
