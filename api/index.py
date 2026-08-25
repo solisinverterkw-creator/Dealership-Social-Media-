@@ -1849,19 +1849,19 @@ def crm_report_view():
 def crm_parameters_view():
     message = session.pop('crm_param_msg', '')
     error = session.pop('crm_param_err', '')
-    
+    import_errors = []
+
     if request.method == 'POST':
         action = request.form.get('action')
+
         if action == 'save_template':
-            # Save raw sheet schema mapping pos
-            # Parse parameters from forms
             p_ids = request.form.getlist('id[]')
             names = request.form.getlist('parameter_name[]')
             criteria = request.form.getlist('criteria[]')
             max_pts = request.form.getlist('max_points[]')
             calc_keys = request.form.getlist('calc_key[]')
             orders = request.form.getlist('display_order[]')
-            
+
             try:
                 for idx, pid in enumerate(p_ids):
                     param = db_session.query(CrmParameter).filter(CrmParameter.id == int(pid)).first()
@@ -1876,74 +1876,255 @@ def crm_parameters_view():
             except Exception as e:
                 db_session.rollback()
                 error = f"Error saving parameters: {str(e)}"
-                
+
         elif action == 'import_raw':
-            # Raw CSV data upload
-            file_upload = request.files.get('file_upload')
-            period_month = request.form.get('period_month')
-            if not file_upload or not period_month:
-                error = "Raw CSV File and Period Month are required."
+            parameter_id = int(request.form.get('crm_parameter_id') or 0)
+            period_month = request.form.get('period_month', '').strip()
+            file_upload = request.files.get('file_upload') or request.files.get('raw_file')
+
+            if not parameter_id or not period_month:
+                error = "Missing Parameter Or Period."
+            elif not file_upload:
+                error = "A CSV Or Excel File Is Required."
             else:
                 try:
-                    content = file_upload.read().decode('utf-8', errors='ignore')
-                    # Parse and save CrmRawData
-                    lines = [l.strip() for l in content.split('\n') if l.strip()]
-                    imported = 0
-                    
-                    db_session.query(CrmRawData).filter(CrmRawData.period_month == period_month).delete()
-                    
-                    # Columns: dealer_name, phone_number, email_address, numeric_value
-                    # Skip header
-                    for line in lines[1:]:
-                        parts = [p.strip().strip('"') for p in line.split(',')]
-                        if len(parts) >= 4:
-                            # Try parsing numeric val
-                            try:
-                                n_val = float(parts[3])
-                            except ValueError:
-                                n_val = 0.0
-                                
-                            raw = CrmRawData(
-                                period_month=period_month,
-                                dealer_name=parts[0],
-                                phone_number=parts[1],
-                                email_address=parts[2],
-                                numeric_value=n_val
-                            )
-                            db_session.add(raw)
-                            imported += 1
-                    db_session.commit()
-                    message = f"Raw CRM dataset loaded successfully. {imported} customer rows imported."
+                    helper = SpreadsheetImportHelper()
+                    rows = read_excel_rows(file_upload)
+                    if not rows or len(rows) < 2:
+                        error = "Sheet is empty or has no data rows."
+                    else:
+                        headerIndex = helper.find_header_row_index(rows, ['dealer', 'company'])
+                        headerRow = rows[headerIndex] if headerIndex < len(rows) else []
+                        dealerCol = helper.find_column(headerRow, ['dealer', 'dealership', 'company'])
+
+                        if dealerCol is None:
+                            error = "Could Not Find A \"Dealer\"/\"Dealership\"/\"Company\" Column In Header Row."
+                        else:
+                            rawCols = {}
+                            sourceCol = None
+                            stageCol = None
+                            statusCol = None
+                            businessDaysCol = None
+
+                            for col, label in enumerate(headerRow):
+                                label_str = str(label).strip()
+                                if col == dealerCol or label_str == '':
+                                    continue
+                                if sourceCol is None and helper.matches_any_keyword(label_str, ['source']):
+                                    sourceCol = col
+                                    continue
+                                if stageCol is None and helper.matches_any_keyword(label_str, ['stage']):
+                                    stageCol = col
+                                    continue
+                                if statusCol is None and helper.matches_any_keyword(label_str, ['status']):
+                                    statusCol = col
+                                    continue
+                                if businessDaysCol is None and helper.matches_any_keyword(label_str, ['business days']):
+                                    businessDaysCol = col
+                                    continue
+                                rawCols[col] = label_str
+
+                            dealershipsByName = helper._build_dealership_map(db_session)
+                            sumsByDealership = {}
+                            rowCountByDealership = {}
+                            digitalSourceCountByDealership = {}
+                            wonStageCountByDealership = {}
+                            completedStatusCountByDealership = {}
+                            maxBusinessDaysByDealership = {}
+
+                            for i in range(headerIndex + 1, len(rows)):
+                                row = rows[i]
+                                rowNum = i + 1
+                                if not any(str(c).strip() != '' for c in row):
+                                    continue
+
+                                dealershipName = str(row[dealerCol]).strip() if dealerCol < len(row) else ''
+                                if not dealershipName:
+                                    continue
+
+                                dealershipId = helper.find_dealership_match(dealershipsByName, dealershipName)
+                                if not dealershipId:
+                                    import_errors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                                    continue
+
+                                if dealershipId not in sumsByDealership:
+                                    sumsByDealership[dealershipId] = {lbl: 0.0 for lbl in rawCols.values()}
+                                    rowCountByDealership[dealershipId] = 0
+                                    digitalSourceCountByDealership[dealershipId] = 0
+                                    wonStageCountByDealership[dealershipId] = 0
+                                    completedStatusCountByDealership[dealershipId] = 0
+                                    maxBusinessDaysByDealership[dealershipId] = 0.0
+
+                                for col, label in rawCols.items():
+                                    val_str = str(row[col]).strip() if col < len(row) else '0'
+                                    try:
+                                        val = float(val_str.replace(',', ''))
+                                    except Exception:
+                                        val = 0.0
+                                    sumsByDealership[dealershipId][label] += val
+
+                                if sourceCol is not None:
+                                    sourceVal = str(row[sourceCol]).strip().lower() if sourceCol < len(row) else ''
+                                    if sourceVal in ('dealer facebook', 'dealer instagram'):
+                                        digitalSourceCountByDealership[dealershipId] += 1
+
+                                if stageCol is not None:
+                                    stageVal = str(row[stageCol]).strip().lower() if stageCol < len(row) else ''
+                                    if stageVal == 'won':
+                                        wonStageCountByDealership[dealershipId] += 1
+
+                                if statusCol is not None:
+                                    statusVal = str(row[statusCol]).strip().lower() if statusCol < len(row) else ''
+                                    if 'complete' in statusVal:
+                                        completedStatusCountByDealership[dealershipId] += 1
+
+                                if businessDaysCol is not None:
+                                    bd_str = str(row[businessDaysCol]).strip() if businessDaysCol < len(row) else '0'
+                                    try:
+                                        bd_val = float(bd_str.replace(',', ''))
+                                    except Exception:
+                                        bd_val = 0.0
+                                    maxBusinessDaysByDealership[dealershipId] = max(maxBusinessDaysByDealership[dealershipId], bd_val)
+
+                                rowCountByDealership[dealershipId] += 1
+
+                            imported_count = 0
+                            for d_id, sums in sumsByDealership.items():
+                                rawData = dict(sums)
+                                rawData['Row Count'] = rowCountByDealership[d_id]
+                                if sourceCol is not None:
+                                    rawData['Digital Enquiries (Facebook + Instagram Source)'] = digitalSourceCountByDealership[d_id]
+                                if stageCol is not None:
+                                    rawData['Won Enquiries (Stage)'] = wonStageCountByDealership[d_id]
+                                if statusCol is not None:
+                                    rawData['Completed (Status)'] = completedStatusCountByDealership[d_id]
+                                if businessDaysCol is not None:
+                                    rawData['Max Business Days Difference'] = maxBusinessDaysByDealership[d_id]
+
+                                rawJson = json.dumps(rawData)
+                                existing_raw = db_session.query(CrmRawData).filter(
+                                    CrmRawData.dealership_id == d_id,
+                                    CrmRawData.crm_parameter_id == parameter_id,
+                                    CrmRawData.period_month == period_month
+                                ).first()
+
+                                if not existing_raw:
+                                    existing_raw = CrmRawData(
+                                        dealership_id=d_id,
+                                        crm_parameter_id=parameter_id,
+                                        period_month=period_month,
+                                        raw_json=rawJson
+                                    )
+                                    db_session.add(existing_raw)
+                                else:
+                                    existing_raw.raw_json = rawJson
+                                imported_count += 1
+
+                            db_session.commit()
+                            message = f"{imported_count} Dealership(s) — Raw Data Imported (Summed From {sum(rowCountByDealership.values())} Row(s)) For {period_month}."
                 except Exception as e:
                     db_session.rollback()
-                    error = f"Error reading CSV: {str(e)}"
-                    
+                    error = f"Error reading raw data sheet: {str(e)}"
+
         elif action == 'recalculate':
-            period_month = request.form.get('period_month')
-            if not period_month:
-                error = "Period month required."
+            parameter_id = int(request.form.get('crm_parameter_id') or 0)
+            period_month = request.form.get('period_month', '').strip()
+
+            param = db_session.query(CrmParameter).filter(CrmParameter.id == parameter_id).first() if parameter_id else None
+            if not param or not period_month:
+                error = "Missing Parameter Or Period."
+            elif not param.calc_key:
+                error = f"No Calculation Logic Defined Yet For \"{param.parameter_name}\"."
             else:
                 try:
-                    from api.services.crm_calculator import CrmCalculator
-                    calc = CrmCalculator()
-                    res = calc.calculate_scores(db_session, period_month)
-                    if res['success']:
-                        message = f"CRM KPI Scorecard Marks calculated successfully. {res['calculated_count']} parameters scored."
-                    else:
-                        error = res['message']
+                    from api.services.crm_calculator import CrmScoreCalculator
+                    raw_records = db_session.query(CrmRawData).filter(
+                        CrmRawData.crm_parameter_id == parameter_id,
+                        CrmRawData.period_month == period_month
+                    ).all()
+
+                    calculated_count = 0
+                    skipped_count = 0
+
+                    for rd in raw_records:
+                        try:
+                            raw_dict = json.loads(rd.raw_json) if rd.raw_json else {}
+                        except Exception:
+                            raw_dict = {}
+
+                        d_obj = db_session.query(Dealership).filter(Dealership.id == rd.dealership_id).first()
+                        dealership_dict = {
+                            'digital_enquiry_target': d_obj.digital_enquiry_target if d_obj else 0.0,
+                            'digital_enquiry_conversion_target': d_obj.digital_enquiry_conversion_target if d_obj else 0.0
+                        }
+
+                        pts = CrmScoreCalculator.calculate(param.calc_key, raw_dict, float(param.max_points or 0), dealership_dict)
+                        if pts is None:
+                            skipped_count += 1
+                            continue
+
+                        score = db_session.query(CrmScore).filter(
+                            CrmScore.dealership_id == rd.dealership_id,
+                            CrmScore.crm_parameter_id == parameter_id,
+                            CrmScore.period_month == period_month
+                        ).first()
+
+                        if not score:
+                            score = CrmScore(
+                                dealership_id=rd.dealership_id,
+                                crm_parameter_id=parameter_id,
+                                period_month=period_month,
+                                points_obtained=pts
+                            )
+                            db_session.add(score)
+                        else:
+                            score.points_obtained = pts
+                        calculated_count += 1
+
+                    db_session.commit()
+                    skipped_msg = f" ({skipped_count} Skipped — No Logic Yet.)" if skipped_count else ''
+                    message = f"{calculated_count} Dealership(s) Recalculated For \"{param.parameter_name}\".{skipped_msg}"
                 except Exception as e:
+                    db_session.rollback()
                     error = f"Recalculation error: {str(e)}"
-                    
+
+        elif action == 'add':
+            name = request.form.get('parameter_name', '').strip()
+            criteria = request.form.get('criteria', '').strip()
+            max_pts = request.form.get('max_points', '').strip()
+            calc_key = request.form.get('calc_key', '').strip() or None
+
+            if not name or not max_pts:
+                error = "Parameter Name and Max Points are required."
+            else:
+                try:
+                    max_order = db_session.query(func.max(CrmParameter.display_order)).scalar() or 0
+                    new_param = CrmParameter(
+                        parameter_name=name,
+                        criteria=criteria,
+                        max_points=float(max_pts),
+                        calc_key=calc_key,
+                        display_order=max_order + 1
+                    )
+                    db_session.add(new_param)
+                    db_session.commit()
+                    message = f"Parameter \"{name}\" Added Successfully."
+                except Exception as e:
+                    db_session.rollback()
+                    error = f"Error adding parameter: {str(e)}"
+
     crm_parameters = db_session.query(CrmParameter).order_by(CrmParameter.display_order, CrmParameter.id).all()
     total_max_points = sum(float(p.max_points or 0) for p in crm_parameters)
     selected_period = request.args.get('period_month', '')
+
     return render_template(
         'crm_parameters.html',
         crm_parameters=crm_parameters,
         total_max_points=total_max_points,
         selected_period=selected_period,
         message=message,
-        error=error
+        error=error,
+        import_errors=import_errors
     )
 
 # --- CRM DATA QUALITY CHECKER ---
