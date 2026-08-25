@@ -179,82 +179,108 @@ function checkLiveQuotas() {
   const btn = document.getElementById('btn-check-quotas');
   if (btn) { btn.innerHTML = '⏳ Checking...'; btn.disabled = true; }
 
-  // Set all configured cards to "checking" state
-  ['brightdata','youtube','rapidapi','apify'].forEach(key => {
-    const badgeEl = document.getElementById('badge-' + key);
-    const quotaEl = document.getElementById('quota-' + key);
-    if (badgeEl && badgeEl.textContent !== 'Not Set') {
-      badgeEl.textContent = '⏳ Checking...';
-      badgeEl.style.background = 'rgba(99,102,241,0.12)';
-      badgeEl.style.color = '#4f46e5';
-    }
-    if (quotaEl && !quotaEl.textContent.includes('Not configured')) {
-      quotaEl.textContent = 'Fetching live quota...';
-      quotaEl.style.color = '#6b7280';
-    }
-  });
-
-  // Call all 4 endpoints in parallel from browser — each gets own Vercel 10s budget
-  const endpoints = {
-    brightdata: '/api/quota/brightdata',
-    youtube:    '/api/quota/youtube',
-    rapidapi:   '/api/quota/rapidapi',
-    apify:      '/api/quota/apify',
-  };
-
-  let completed = 0;
-  const total = Object.keys(endpoints).length;
-
-  for (const [key, url] of Object.entries(endpoints)) {
-    fetch(url)
-      .then(r => r.json())
-      .then(res => updateCard(key, res))
-      .catch(err => updateCard(key, {status:'error', badge:'Error', quota:'Fetch failed: ' + err.message}))
-      .finally(() => {
-        completed++;
-        if (completed === total && btn) {
-          btn.innerHTML = '🔄 Refresh Quotas';
-          btn.disabled = false;
+  // Step 1: instant key-presence from DB (no external calls)
+  fetch('/api/check_scraper_quota')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      for (const [key, res] of Object.entries(data.results || {})) {
+        const badgeEl = document.getElementById('badge-' + key);
+        const quotaEl = document.getElementById('quota-' + key);
+        if (badgeEl) {
+          if (res.status === 'ok') {
+            badgeEl.textContent = '✅ Key Set';
+            badgeEl.style.background = 'rgba(34,197,94,0.12)';
+            badgeEl.style.color = '#16a34a';
+          } else {
+            badgeEl.textContent = '🔴 Not Set';
+            badgeEl.style.background = 'rgba(239,68,68,0.12)';
+            badgeEl.style.color = '#dc2626';
+          }
         }
-      });
-  }
+        if (quotaEl && res.status === 'ok') {
+          // Show masked key + plan info + dashboard link
+          const link = res.dashboard_url ? ` <a href="${res.dashboard_url}" target="_blank" style="font-size:11px;color:#6366f1;">View Dashboard ↗</a>` : '';
+          quotaEl.innerHTML = `<span style="color:#16a34a;font-weight:600">${res.masked || ''}</span> | ${res.quota}${link}`;
+        } else if (quotaEl) {
+          quotaEl.textContent = 'Not configured — add via Configure Tokens';
+          quotaEl.style.color = '#dc2626';
+        }
+      }
+
+      // Step 2: fire 4 individual live checks in parallel (each gets own 10s budget)
+      const liveEndpoints = {
+        brightdata: '/api/quota/brightdata',
+        youtube:    '/api/quota/youtube',
+        rapidapi:   '/api/quota/rapidapi',
+        apify:      '/api/quota/apify',
+      };
+      let done = 0;
+      const total = Object.keys(liveEndpoints).length;
+
+      for (const [key, url] of Object.entries(liveEndpoints)) {
+        // Only check if key is set
+        const badgeEl = document.getElementById('badge-' + key);
+        if (badgeEl && badgeEl.textContent.includes('Not Set')) {
+          done++;
+          if (done === total && btn) { btn.innerHTML = '🔄 Refresh Quotas'; btn.disabled = false; }
+          continue;
+        }
+        // Show "checking live..." while waiting
+        const quotaEl = document.getElementById('quota-' + key);
+        if (quotaEl) { quotaEl.innerHTML = '⏳ Fetching live quota...'; quotaEl.style.color = '#6366f1'; }
+        if (badgeEl) { badgeEl.textContent = '⏳ Live check...'; badgeEl.style.background = 'rgba(99,102,241,0.12)'; badgeEl.style.color = '#4f46e5'; }
+
+        fetch(url)
+          .then(r => r.json())
+          .then(res => updateLiveCard(key, res))
+          .catch(() => updateLiveCard(key, {status:'warn', badge:'Key Set', quota:'Live check failed — see dashboard link'}))
+          .finally(() => {
+            done++;
+            if (done === total && btn) { btn.innerHTML = '🔄 Refresh Quotas'; btn.disabled = false; }
+          });
+      }
+    })
+    .catch(() => {
+      if (btn) { btn.innerHTML = '🔄 Refresh Quotas'; btn.disabled = false; }
+    });
 }
 
-function updateCard(key, res) {
+const DASH_LINKS = {
+  youtube:    'https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas',
+  brightdata: 'https://brightdata.com/cp/dashboard',
+  rapidapi:   'https://rapidapi.com/developer/dashboard',
+  apify:      'https://console.apify.com/billing',
+};
+
+function updateLiveCard(key, res) {
   const badgeEl = document.getElementById('badge-' + key);
   const quotaEl = document.getElementById('quota-' + key);
-  const cardEl = badgeEl ? badgeEl.closest('div[style*="border-radius:10px"]') : null;
+  const cardEl  = badgeEl ? badgeEl.closest('div[style*="border-radius:10px"]') : null;
+  const dashLink = DASH_LINKS[key] ? `<a href="${DASH_LINKS[key]}" target="_blank" style="font-size:11px;color:#6366f1;margin-left:6px;">View Dashboard ↗</a>` : '';
 
   if (badgeEl) {
     badgeEl.textContent = res.badge || '?';
     if (res.status === 'ok') {
-      badgeEl.style.background = 'rgba(34,197,94,0.15)';
-      badgeEl.style.color = '#16a34a';
+      badgeEl.style.background = 'rgba(34,197,94,0.15)'; badgeEl.style.color = '#16a34a';
       if (cardEl) cardEl.style.borderColor = 'rgba(34,197,94,0.3)';
     } else if (res.status === 'not_set') {
-      badgeEl.style.background = 'rgba(239,68,68,0.15)';
-      badgeEl.style.color = '#dc2626';
+      badgeEl.style.background = 'rgba(239,68,68,0.15)'; badgeEl.style.color = '#dc2626';
       if (cardEl) cardEl.style.borderColor = 'rgba(239,68,68,0.25)';
-    } else if (res.status === 'warn') {
-      badgeEl.style.background = 'rgba(234,179,8,0.15)';
-      badgeEl.style.color = '#b45309';
-      if (cardEl) cardEl.style.borderColor = 'rgba(234,179,8,0.25)';
     } else {
-      badgeEl.style.background = 'rgba(239,68,68,0.12)';
-      badgeEl.style.color = '#dc2626';
-      if (cardEl) cardEl.style.borderColor = 'rgba(239,68,68,0.25)';
+      badgeEl.style.background = 'rgba(234,179,8,0.15)'; badgeEl.style.color = '#b45309';
+      if (cardEl) cardEl.style.borderColor = 'rgba(234,179,8,0.25)';
     }
   }
   if (quotaEl) {
-    quotaEl.textContent = res.quota || 'No data';
+    quotaEl.innerHTML = (res.quota || 'No data') + dashLink;
     if (res.status === 'ok') quotaEl.style.color = '#16a34a';
     else if (res.status === 'not_set') quotaEl.style.color = '#dc2626';
     else quotaEl.style.color = '#b45309';
   }
 }
 
-// Auto-check on page load
-document.addEventListener('DOMContentLoaded', () => setTimeout(checkLiveQuotas, 800));
+document.addEventListener('DOMContentLoaded', () => setTimeout(checkLiveQuotas, 600));
 </script>
 {% endif %}
 
