@@ -455,7 +455,7 @@ class YouTubeLookup:
             'q': channel_name,
             'type': 'channel',
             'maxResults': 1,
-            'key': Config.YOUTUBE_API_KEY
+            'key': Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY')
         }
         try:
             res = requests.get(f"{self.base_url}/search", params=search_params, timeout=20)
@@ -481,7 +481,7 @@ class YouTubeLookup:
         stats_params = {
             'part': 'statistics',
             'id': resolved_id,
-            'key': Config.YOUTUBE_API_KEY
+            'key': Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY')
         }
         try:
             res = requests.get(f"{self.base_url}/channels", params=stats_params, timeout=20)
@@ -518,7 +518,7 @@ class YouTubeLookup:
             'order': 'date',
             'publishedAfter': published_after,
             'maxResults': 50,
-            'key': Config.YOUTUBE_API_KEY
+            'key': Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY')
         }
         try:
             res = requests.get(f"{self.base_url}/search", params=params, timeout=20)
@@ -563,7 +563,7 @@ class YouTubeLookup:
                 'publishedAfter': published_after,
                 'publishedBefore': published_before,
                 'maxResults': 50,
-                'key': Config.YOUTUBE_API_KEY
+                'key': Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY')
             }
             if page_token:
                 params['pageToken'] = page_token

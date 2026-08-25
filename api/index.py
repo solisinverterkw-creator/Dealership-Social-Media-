@@ -129,6 +129,27 @@ def sidebar_sections_list():
         'brand_assets': {'label': 'Brand Assets', 'page': 'brand_assets.php'},
     }
 
+def get_setting(key, default=''):
+    try:
+        setting = db_session.query(AppSetting).filter(AppSetting.setting_key == key).first()
+        if setting and setting.setting_value is not None:
+            return setting.setting_value.strip()
+    except Exception:
+        pass
+    return default
+
+def set_setting(key, value):
+    try:
+        setting = db_session.query(AppSetting).filter(AppSetting.setting_key == key).first()
+        if not setting:
+            setting = AppSetting(setting_key=key, setting_value=str(value).strip())
+            db_session.add(setting)
+        else:
+            setting.setting_value = str(value).strip()
+        db_session.commit()
+    except Exception:
+        db_session.rollback()
+
 # --- UTILITY CONTEXT PROCESSORS ---
 @app.context_processor
 def utility_processor():
@@ -357,6 +378,56 @@ def dashboard():
         'Instagram': {'value': ig_posts_total, 'color': 'var(--ig)'}
     })
     
+    # Scrapers Audit & Control Panel Data
+    scraper_settings = {
+        'fb_engine': get_setting('fb_engine', 'brightdata'),
+        'ig_engine': get_setting('ig_engine', 'brightdata'),
+        'yt_engine': get_setting('yt_engine', 'youtube_api'),
+        'youtube_api_key': Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY'),
+        'brightdata_api_token': Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN'),
+        'rapidapi_key': Config.get_key('rapidapi_key', 'RAPIDAPI_KEY'),
+        'apify_api_token': Config.get_key('apify_api_token', 'APIFY_API_TOKEN'),
+        'gemini_api_key': Config.get_key('gemini_api_key', 'GEMINI_API_KEY'),
+    }
+
+    scrapers_summary = [
+        {
+            'name': 'Bright Data Scraper',
+            'id': 'brightdata',
+            'token': scraper_settings['brightdata_api_token'],
+            'is_configured': bool(scraper_settings['brightdata_api_token']),
+            'used_for': 'Facebook Page & Post Scraping, Instagram Profiles',
+            'engine_key': 'fb_engine'
+        },
+        {
+            'name': 'YouTube Data API',
+            'id': 'youtube',
+            'token': scraper_settings['youtube_api_key'],
+            'is_configured': bool(scraper_settings['youtube_api_key']),
+            'used_for': 'YouTube Channel Subscribers, Video Count, Views',
+            'engine_key': 'yt_engine'
+        },
+        {
+            'name': 'RapidAPI Scraper',
+            'id': 'rapidapi',
+            'token': scraper_settings['rapidapi_key'],
+            'is_configured': bool(scraper_settings['rapidapi_key']),
+            'used_for': 'Google Reviews Lookup & Fallback Scraping',
+            'engine_key': 'rapidapi'
+        },
+        {
+            'name': 'Apify / ScrapeCreators Scraper',
+            'id': 'apify',
+            'token': scraper_settings['apify_api_token'],
+            'is_configured': bool(scraper_settings['apify_api_token']),
+            'used_for': 'Instagram Posts & Secondary Fallback',
+            'engine_key': 'ig_engine'
+        }
+    ]
+
+    message = session.pop('dashboard_msg', '')
+    error = session.pop('dashboard_err', '')
+
     return render_template(
         'dashboard.html',
         dealerships=dealerships,
@@ -367,8 +438,37 @@ def dashboard():
         total_yt_subs=total_yt_subs,
         total_google_reviews=total_google_reviews,
         yt_chart_html=yt_chart_html,
-        comparison_chart_html=comparison_chart_html
+        comparison_chart_html=comparison_chart_html,
+        scraper_settings=scraper_settings,
+        scrapers_summary=scrapers_summary,
+        message=message,
+        error=error
     )
+
+@app.route('/save_scraper_settings', methods=['POST'])
+@require_login
+def save_scraper_settings():
+    if not is_super_admin():
+        session['dashboard_err'] = 'Super admin permission required to update scraper settings.'
+        return redirect(url_for('dashboard'))
+
+    # Update provider choices
+    if 'fb_engine' in request.form:
+        set_setting('fb_engine', request.form.get('fb_engine', 'brightdata'))
+    if 'ig_engine' in request.form:
+        set_setting('ig_engine', request.form.get('ig_engine', 'brightdata'))
+    if 'yt_engine' in request.form:
+        set_setting('yt_engine', request.form.get('yt_engine', 'youtube_api'))
+
+    # Update tokens
+    for key_name in ['youtube_api_key', 'brightdata_api_token', 'rapidapi_key', 'apify_api_token', 'gemini_api_key']:
+        val = request.form.get(key_name, '').strip()
+        if val:
+            set_setting(key_name, val)
+
+    session['dashboard_msg'] = 'Scraper settings & API tokens updated successfully!'
+    return redirect(url_for('dashboard'))
+
 
 @app.route('/report')
 @app.route('/report.php', endpoint='social_report')

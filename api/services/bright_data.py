@@ -7,8 +7,9 @@ class BrightDataClient:
         self.base_url = 'https://api.brightdata.com/datasets/v3'
 
     def _headers(self):
+        token = Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN')
         return {
-            'Authorization': f'Bearer {Config.BRIGHTDATA_API_TOKEN}',
+            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }
 

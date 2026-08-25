@@ -50,3 +50,18 @@ class Config:
     CRON_SECRET_KEY = os.environ.get('CRON_SECRET_KEY', 'fc4dbed312f85b641e150b03d859ba64297bbd7c')
     TIMEZONE = 'Asia/Karachi'
     SYNC_RUN = os.environ.get('SYNC_RUN', '0') == '1'
+
+    @classmethod
+    def get_key(cls, key_name, default_env_var=None):
+        try:
+            from api.database import db_session
+            from api.models import AppSetting
+            setting = db_session.query(AppSetting).filter(AppSetting.setting_key == key_name.lower()).first()
+            if setting and setting.setting_value and setting.setting_value.strip():
+                return setting.setting_value.strip()
+        except Exception:
+            pass
+        if default_env_var:
+            return os.environ.get(default_env_var, '')
+        return os.environ.get(key_name.upper(), '')
+
