@@ -489,106 +489,41 @@ def check_scraper_quota_api():
     if not is_super_admin():
         return jsonify({'success': False, 'message': 'Super admin required'}), 403
 
-    from concurrent.futures import ThreadPoolExecutor, as_completed
+    def mask(val):
+        if not val or len(val) < 8:
+            return None
+        return val[:4] + '****' + val[-4:]
 
     keys = {
-        'youtube_api_key':      Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY') or '',
-        'brightdata_api_token': Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN') or '',
-        'rapidapi_key':         Config.get_key('rapidapi_key', 'RAPIDAPI_KEY') or '',
-        'apify_api_token':      Config.get_key('apify_api_token', 'APIFY_API_TOKEN') or '',
+        'youtube':     Config.get_key('youtube_api_key', 'YOUTUBE_API_KEY') or '',
+        'brightdata':  Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN') or '',
+        'rapidapi':    Config.get_key('rapidapi_key', 'RAPIDAPI_KEY') or '',
+        'apify':       Config.get_key('apify_api_token', 'APIFY_API_TOKEN') or '',
     }
 
-    def check_youtube(key):
-        if not key:
-            return 'youtube', {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Key not configured — add via Configure Tokens'}
-        try:
-            url = f'https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&maxResults=1&key={key}'
-            r = requests.get(url, timeout=4)
-            if r.status_code == 200:
-                return 'youtube', {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Valid key — ~10,000 units/day quota available'}
-            try:
-                err = r.json().get('error', {}).get('message', f'HTTP {r.status_code}')
-            except Exception:
-                err = f'HTTP {r.status_code}'
-            return 'youtube', {'status': 'error', 'badge': '⚠️ Key Error', 'quota': f'Google: {err[:80]}'}
-        except Exception as e:
-            return 'youtube', {'status': 'error', 'badge': '⚠️ Timeout', 'quota': f'Google API timeout — key may still be valid'}
-
-    def check_brightdata(token):
-        if not token:
-            return 'brightdata', {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'Token not configured — add via Configure Tokens'}
-        try:
-            r = requests.get('https://api.brightdata.com/zone/get_all_active',
-                             headers={'Authorization': f'Bearer {token}'}, timeout=4)
-            if r.status_code == 200:
-                return 'brightdata', {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Metered Account — token valid'}
-            if r.status_code == 401:
-                return 'brightdata', {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 Unauthorized — check Bright Data token'}
-            return 'brightdata', {'status': 'warn', 'badge': '⚠️ HTTP ' + str(r.status_code), 'quota': f'Bright Data returned HTTP {r.status_code}'}
-        except Exception:
-            return 'brightdata', {'status': 'error', 'badge': '⚠️ Timeout', 'quota': 'Bright Data API timeout — token may still be valid'}
-
-    def check_rapidapi(key):
-        if not key:
-            return 'rapidapi', {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'API Key not configured — add via Configure Tokens'}
-        try:
-            r = requests.get(
-                'https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=instagram',
-                headers={'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com'},
-                timeout=4
-            )
-            rem = r.headers.get('x-ratelimit-requests-remaining', '')
-            limit = r.headers.get('x-ratelimit-requests-limit', '')
-            if r.status_code in (200, 201):
-                quota_str = f'{rem} / {limit} requests remaining' if (rem and limit) else 'Active — quota info not in headers'
-                return 'rapidapi', {'status': 'ok', 'badge': '🟢 Live OK', 'quota': quota_str}
-            if r.status_code == 403:
-                return 'rapidapi', {'status': 'error', 'badge': '⚠️ Forbidden', 'quota': 'HTTP 403 — key rejected or no active subscription'}
-            if r.status_code == 429:
-                return 'rapidapi', {'status': 'warn', 'badge': '⚠️ Rate Limited', 'quota': f'Rate limit hit — {rem}/{limit} remaining'}
-            return 'rapidapi', {'status': 'warn', 'badge': '⚠️ HTTP ' + str(r.status_code), 'quota': f'RapidAPI HTTP {r.status_code} — key format may be wrong'}
-        except Exception:
-            return 'rapidapi', {'status': 'error', 'badge': '⚠️ Timeout', 'quota': 'RapidAPI timeout — key may still be valid'}
-
-    def check_apify(token):
-        if not token:
-            return 'apify', {'status': 'not_set', 'badge': '🔴 Not Set', 'quota': 'Token not configured — add via Configure Tokens'}
-        try:
-            r = requests.get(f'https://api.apify.com/v2/users/me?token={token}', timeout=4)
-            if r.status_code == 200:
-                try:
-                    data = r.json().get('data', {})
-                    plan = data.get('plan', {}).get('id', 'Standard')
-                    return 'apify', {'status': 'ok', 'badge': '🟢 Live OK', 'quota': f'Active — Plan: {plan}'}
-                except Exception:
-                    return 'apify', {'status': 'ok', 'badge': '🟢 Live OK', 'quota': 'Active Apify account'}
-            if r.status_code == 401:
-                return 'apify', {'status': 'error', 'badge': '⚠️ Invalid Token', 'quota': 'HTTP 401 — Apify token rejected'}
-            return 'apify', {'status': 'warn', 'badge': '⚠️ HTTP ' + str(r.status_code), 'quota': f'Apify HTTP {r.status_code}'}
-        except Exception:
-            return 'apify', {'status': 'error', 'badge': '⚠️ Timeout', 'quota': 'Apify API timeout — token may still be valid'}
+    descs = {
+        'youtube':    ('YouTube Data API v3',       'Daily quota: 10,000 units/day free'),
+        'brightdata': ('Bright Data Scraper',        'Pay-as-you-go metered billing'),
+        'rapidapi':   ('RapidAPI Scraper',           'Depends on subscribed plan'),
+        'apify':      ('Apify / ScrapeCreators',     'Monthly compute units'),
+    }
 
     results = {}
-    tasks = [
-        (check_youtube,    keys['youtube_api_key']),
-        (check_brightdata, keys['brightdata_api_token']),
-        (check_rapidapi,   keys['rapidapi_key']),
-        (check_apify,      keys['apify_api_token']),
-    ]
-
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = {executor.submit(fn, arg): fn for fn, arg in tasks}
-        for future in as_completed(futures, timeout=8):
-            try:
-                k, v = future.result()
-                results[k] = v
-            except Exception as e:
-                pass
-
-    # Fill any missing keys (e.g. if future timed out)
-    for k in ('youtube', 'brightdata', 'rapidapi', 'apify'):
-        if k not in results:
-            results[k] = {'status': 'error', 'badge': '⚠️ Timeout', 'quota': 'Check timed out — Vercel serverless limit reached'}
+    for k, token in keys.items():
+        desc, plan_info = descs[k]
+        if token:
+            masked = mask(token)
+            results[k] = {
+                'status': 'ok',
+                'badge': 'Configured',
+                'quota': f'Key set: {masked} | {plan_info}',
+            }
+        else:
+            results[k] = {
+                'status': 'not_set',
+                'badge': 'Not Set',
+                'quota': f'Not configured — click Configure Tokens & Engines to add',
+            }
 
     diagnostics = {k: bool(v) for k, v in keys.items()}
     return jsonify({'success': True, 'results': results, 'diagnostics': diagnostics})
