@@ -242,30 +242,40 @@ def get_allowed_dealerships():
 
 # --- CORE USER VIEWS ---
 
-# Temporary debug endpoint - shows exact server error (remove after fix)
+# Diagnostic debug endpoint - shows system status and API Key audit
 @app.route('/debug')
 def debug_info():
-    import traceback
     info = []
+    info.append("<h2>🚀 System & Database Audit</h2>")
     info.append(f'Python version: {sys.version}')
     info.append(f'DATABASE_URL set: {bool(os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL"))}')
     info.append(f'Template folder: {app.template_folder}')
-    import os as _os
-    info.append(f'Templates exist: {_os.path.isdir(app.template_folder)}')
     info.append(f'UPLOAD_DIR: {UPLOAD_DIR}')
     try:
         from sqlalchemy import text
         with engine.connect() as conn:
             conn.execute(text('SELECT 1'))
-        info.append('DB Connection: OK')
+        info.append('DB Connection: ✅ OK')
     except Exception as e:
-        info.append(f'DB Connection FAILED: {e}')
-    try:
-        from api.models import User
-        count = db_session.query(User).count()
-        info.append(f'User count in DB: {count}')
-    except Exception as e:
-        info.append(f'User query FAILED: {e}')
+        info.append(f'DB Connection: ❌ FAILED ({e})')
+
+    info.append("<br><h2>🔑 API Keys Audit Status</h2>")
+    keys = {
+        'YOUTUBE_API_KEY': Config.YOUTUBE_API_KEY,
+        'BRIGHTDATA_API_TOKEN': Config.BRIGHTDATA_API_TOKEN,
+        'RAPIDAPI_KEY': Config.RAPIDAPI_KEY,
+        'GEMINI_API_KEY': Config.GEMINI_API_KEY,
+        'FB_APP_ID': Config.FB_APP_ID,
+        'FB_APP_SECRET': Config.FB_APP_SECRET,
+        'SCRAPECREATORS_API_KEY_INSTAGRAM': Config.SCRAPECREATORS_API_KEY_INSTAGRAM,
+    }
+    for name, val in keys.items():
+        if val and len(val.strip()) > 3:
+            masked = val[:4] + '*' * (len(val) - 6) + val[-2:] if len(val) > 8 else 'SET'
+            info.append(f'<strong>{name}</strong>: <span style="color:green;font-weight:bold">ENABLED / SET ({masked})</span>')
+        else:
+            info.append(f'<strong>{name}</strong>: <span style="color:red;font-weight:bold">NOT SET / EMPTY</span>')
+
     return '<br>'.join(info)
 
 @app.route('/login', methods=['GET', 'POST'])
