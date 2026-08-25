@@ -202,6 +202,32 @@ def get_allowed_dealerships():
 
 # --- CORE USER VIEWS ---
 
+# Temporary debug endpoint - shows exact server error (remove after fix)
+@app.route('/debug')
+def debug_info():
+    import traceback
+    info = []
+    info.append(f'Python version: {sys.version}')
+    info.append(f'DATABASE_URL set: {bool(os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL"))}')
+    info.append(f'Template folder: {app.template_folder}')
+    import os as _os
+    info.append(f'Templates exist: {_os.path.isdir(app.template_folder)}')
+    info.append(f'UPLOAD_DIR: {UPLOAD_DIR}')
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text('SELECT 1'))
+        info.append('DB Connection: OK')
+    except Exception as e:
+        info.append(f'DB Connection FAILED: {e}')
+    try:
+        from api.models import User
+        count = db_session.query(User).count()
+        info.append(f'User count in DB: {count}')
+    except Exception as e:
+        info.append(f'User query FAILED: {e}')
+    return '<br>'.join(info)
+
 @app.route('/login', methods=['GET', 'POST'])
 @app.route('/login.php', methods=['GET', 'POST'])
 def login():
