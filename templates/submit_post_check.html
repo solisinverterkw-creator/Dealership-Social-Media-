@@ -56,7 +56,7 @@
         <span>{{ h.dealership_name }}</span>
         <span class="status-badge {{ status_badge_class(h.status) }}">{{ status_badge_label(h.status) }}</span>
       </h2>
-      <img src="/{{ h.image_path }}" style="max-width:300px; border-radius:8px; margin:12px 0; display:block;">
+      <img src="{% if h.image_path.startswith('data:') or h.image_path.startswith('/') %}{{ h.image_path }}{% else %}/{{ h.image_path }}{% endif %}" style="max-width:300px; border-radius:8px; margin:12px 0; display:block;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23E31837\' stroke-width=\'1.5\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'4\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg>';">
       {% if h.caption %}
         <p style="margin:0 0 10px; font-size:13px; white-space:pre-wrap;">{{ h.caption }}</p>
       {% endif %}
@@ -106,12 +106,15 @@ function buildSubmissionBox({ id, dealershipName, status, imagePath, caption, re
   const captionHtml = caption ? `<p style="margin:0 0 10px; font-size:13px; white-space:pre-wrap;">${escapeHtml(caption)}</p>` : '';
   const deleteBtnHtml = isSuperAdmin ? `<button class="delete-row-btn" onclick="deleteSubmission(${id}, this)">Delete</button>` : '';
 
+  const imgSrc = (imagePath.startsWith('data:') || imagePath.startsWith('/')) ? imagePath : '/' + imagePath;
+  const fallbackSvg = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23E31837' stroke-width='1.5'><rect x='3' y='3' width='18' height='18' rx='4'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>`;
+
   card.innerHTML = `
     <h2 style="display:flex; justify-content:space-between; align-items:center; font-size:14px;">
       <span>${escapeHtml(dealershipName)}</span>
       <span class="status-badge ${badgeClass}">${badgeLabel}</span>
     </h2>
-    <img src="/${imagePath}" style="max-width:300px; border-radius:8px; margin:12px 0; display:block;">
+    <img src="${escapeHtml(imgSrc)}" style="max-width:300px; border-radius:8px; margin:12px 0; display:block;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
     ${captionHtml}
     ${reasonsHtml}
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">

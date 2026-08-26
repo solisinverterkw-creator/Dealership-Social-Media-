@@ -1454,9 +1454,13 @@ def prepare_compliance_payload():
         else:
             post_image.save(full_path)
 
+        # Create 10KB Base64 Data URL for fail-proof DB thumbnail rendering on Vercel
+        b64_thumb = base64.b64encode(res['data']).decode('utf-8') if (res and res.get('success') and res.get('data')) else base64.b64encode(post_image.read()).decode('utf-8')
+        db_img_val = f"data:image/jpeg;base64,{b64_thumb}"
+
         sub = PostSubmission(
             dealership_id=d_id,
-            image_path=rel_path,
+            image_path=db_img_val if len(db_img_val) < 200000 else rel_path,
             caption=caption,
             status='pending',
             submitted_at=current_time_pk()
