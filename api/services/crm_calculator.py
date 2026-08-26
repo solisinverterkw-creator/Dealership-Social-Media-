@@ -121,8 +121,8 @@ class CrmScoreCalculator:
             fraction = 0.45
         elif percentage >= 100:
             fraction = 0.30
-        elif percentage >= 50:
-            fraction = 0.15
+        elif percentage > 0:
+            fraction = round(min(1.0, max(0.25, percentage / 20.0)), 4)
         else:
             fraction = 0.0
 

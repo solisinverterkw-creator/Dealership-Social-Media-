@@ -2491,8 +2491,7 @@ def crm_parameters_view():
 
                         pts = CrmScoreCalculator.calculate(param.calc_key, raw_dict, float(param.max_points or 0), dealership_dict)
                         if pts is None:
-                            skipped_count += 1
-                            continue
+                            pts = 0.0
 
                         score = db_session.query(CrmScore).filter(
                             CrmScore.dealership_id == rd.dealership_id,
