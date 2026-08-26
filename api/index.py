@@ -2352,97 +2352,151 @@ def crm_data_quality():
 
 @app.route('/brand_assets', methods=['GET', 'POST'])
 @app.route('/brand_assets.php', endpoint='brand_assets', methods=['GET', 'POST'])
+@app.route('/brand_assets', methods=['GET', 'POST'])
+@app.route('/brand_assets.php', endpoint='brand_assets', methods=['GET', 'POST'])
 @require_login
 def brand_assets():
     if not can_view('brand_assets'):
         abort(403)
     message = session.pop('brand_msg', '')
     error = session.pop('brand_err', '')
-    
+
+    max_images = 10
+
     if request.method == 'POST' and can_perform('edit'):
         action = request.form.get('action')
-        
+
         if action == 'save_identity':
-            # Save logo variants guidelines
-            guides = request.form.get('guidelines_text', '').strip()
-            # Find or insert
+            tagline = request.form.get('tagline', '').strip()
+            primary_color = request.form.get('primary_color', '').strip()
+            secondary_color = request.form.get('secondary_color', '').strip()
+            website_url = request.form.get('website_url', '').strip()
+
             ident = db_session.query(BrandIdentity).first()
             if not ident:
-                ident = BrandIdentity()
+                ident = BrandIdentity(id=1)
                 db_session.add(ident)
-            ident.guidelines_text = guides
-            
-            # Save logo files
-            light_file = request.files.get('light_logo')
-            dark_file = request.files.get('dark_logo')
-            
+
+            ident.tagline = tagline
+            ident.primary_color = primary_color
+            ident.secondary_color = secondary_color
+            ident.website_url = website_url
+
             resizer = ImageResizer()
-            if light_file and light_file.filename:
-                res = resizer.resize(light_file, max_width=400, max_height=400)
-                if res['success']:
-                    light_name = f"logo_light_{int(time.time())}.png"
-                    with open(os.path.join(UPLOAD_DIR, 'logos', light_name), 'wb') as f:
-                        f.write(res['data'])
-                    ident.logo_light_path = f"/assets/uploads/logos/{light_name}"
-                    
-            if dark_file and dark_file.filename:
-                res = resizer.resize(dark_file, max_width=400, max_height=400)
-                if res['success']:
-                    dark_name = f"logo_dark_{int(time.time())}.png"
-                    with open(os.path.join(UPLOAD_DIR, 'logos', dark_name), 'wb') as f:
-                        f.write(res['data'])
-                    ident.logo_dark_path = f"/assets/uploads/logos/{dark_name}"
-                    
+            for field, col in [('logo_light', 'logo_light_path'), ('logo_dark', 'logo_dark_path'), ('logo_white_bg', 'logo_white_bg_path')]:
+                uploaded_file = request.files.get(field)
+                if uploaded_file and uploaded_file.filename:
+                    res = resizer.resize(uploaded_file, max_width=400, max_height=400)
+                    if res['success']:
+                        ext = uploaded_file.filename.split('.')[-1].lower() or 'png'
+                        fname = f"logos_{int(time.time())}_{field}.{ext}"
+                        save_path = os.path.join(UPLOAD_DIR, 'logos', fname)
+                        with open(save_path, 'wb') as f_out:
+                            f_out.write(res['data'])
+                        setattr(ident, col, f"assets/uploads/logos/{fname}")
+
             db_session.commit()
-            message = "Brand logo assets and guidelines saved successfully."
-            
+            message = "Brand Identity Saved."
+
         elif action == 'add_vehicle':
-            # Add vehicle model
-            model_name = request.form.get('model_name', '').strip()
-            specs = request.form.get('specifications', '').strip()
-            price = request.form.get('price')
-            try:
-                price = float(price) if price else 0.0
-            except ValueError:
-                price = 0.0
-                
-            if not model_name:
-                error = "Vehicle model name required."
+            name = request.form.get('name', '').strip() or request.form.get('model_name', '').strip()
+            color = request.form.get('color', '').strip() or request.form.get('specifications', '').strip()
+            uploaded_files = request.files.getlist('reference_images') or request.files.getlist('images[]')
+
+            if not name or not color or not uploaded_files:
+                error = "Name, Color, And At Least One Valid Reference Photo Are Required."
             else:
-                vehicle = VehicleModel(model_name=model_name, specifications=specs, price=price)
+                resizer = ImageResizer()
+                first_img = None
+                vehicle = VehicleModel(name=name, color=color, reference_image='')
                 db_session.add(vehicle)
                 db_session.commit()
-                
-                # Check for uploaded images
-                files = request.files.getlist('images[]')
-                resizer = ImageResizer()
-                saved_images = 0
-                
-                for f in files:
-                    if f and f.filename and saved_images < 10:
+
+                saved_count = 0
+                for f in uploaded_files:
+                    if f and f.filename and saved_count < max_images:
                         res = resizer.resize(f, max_width=800, max_height=800)
                         if res['success']:
-                            img_name = f"vehicle_{vehicle.id}_{saved_images}_{int(time.time())}.jpg"
-                            with open(os.path.join(UPLOAD_DIR, 'vehicles', img_name), 'wb') as f_out:
+                            ext = f.filename.split('.')[-1].lower() or 'jpg'
+                            fname = f"vehicles_{vehicle.id}_{saved_count}_{int(time.time())}.{ext}"
+                            save_path = os.path.join(UPLOAD_DIR, 'vehicles', fname)
+                            with open(save_path, 'wb') as f_out:
                                 f_out.write(res['data'])
+                            img_rel_path = f"assets/uploads/vehicles/{fname}"
+                            if not first_img:
+                                first_img = img_rel_path
                             v_img = VehicleModelImage(
                                 vehicle_model_id=vehicle.id,
-                                image_path=f"/assets/uploads/vehicles/{img_name}",
-                                display_order=saved_images
+                                image_path=img_rel_path,
+                                display_order=saved_count
                             )
                             db_session.add(v_img)
-                            saved_images += 1
+                            saved_count += 1
+
+                if first_img:
+                    vehicle.reference_image = first_img
+
                 db_session.commit()
-                message = f"Vehicle model '{model_name}' added with {saved_images} reference photos."
-                
-    vehicle_models = db_session.query(VehicleModel).order_by(VehicleModel.model_name).all()
+                message = f"{saved_count} Reference Photo(s) Added For This Vehicle."
+
+        elif action == 'add_images':
+            vehicle_id = request.form.get('vehicle_id', type=int)
+            if vehicle_id:
+                existing_imgs = db_session.query(VehicleModelImage).filter(VehicleModelImage.vehicle_model_id == vehicle_id).all()
+                room = max(0, max_images - len(existing_imgs))
+                uploaded_files = request.files.getlist('reference_images')
+                if room <= 0:
+                    error = f"This Vehicle Already Has The Maximum Of {max_images} Reference Photos."
+                elif not uploaded_files:
+                    error = "No Valid Photos Were Uploaded."
+                else:
+                    resizer = ImageResizer()
+                    saved_count = 0
+                    for f in uploaded_files:
+                        if f and f.filename and saved_count < room:
+                            res = resizer.resize(f, max_width=800, max_height=800)
+                            if res['success']:
+                                ext = f.filename.split('.')[-1].lower() or 'jpg'
+                                fname = f"vehicles_{vehicle_id}_{len(existing_imgs) + saved_count}_{int(time.time())}.{ext}"
+                                save_path = os.path.join(UPLOAD_DIR, 'vehicles', fname)
+                                with open(save_path, 'wb') as f_out:
+                                    f_out.write(res['data'])
+                                img_rel_path = f"assets/uploads/vehicles/{fname}"
+                                v_img = VehicleModelImage(
+                                    vehicle_model_id=vehicle_id,
+                                    image_path=img_rel_path,
+                                    display_order=len(existing_imgs) + saved_count
+                                )
+                                db_session.add(v_img)
+                                saved_count += 1
+
+                    db_session.commit()
+                    message = f"{saved_count} More Photo(s) Added."
+
+    # Load vehicles with attached images
+    raw_vehicles = db_session.query(VehicleModel).order_by(VehicleModel.name, VehicleModel.color).all()
+    vehicles = []
+    for v in raw_vehicles:
+        images = db_session.query(VehicleModelImage).filter(
+            VehicleModelImage.vehicle_model_id == v.id
+        ).order_by(VehicleModelImage.id).all()
+        vehicles.append({
+            'id': v.id,
+            'name': v.name or v.model_name or '',
+            'color': v.color or v.specifications or '',
+            'reference_image': v.reference_image,
+            'images': [{'id': img.id, 'image_path': img.image_path} for img in images]
+        })
+
     brand_identity = db_session.query(BrandIdentity).first()
-    
+
     return render_template(
         'brand_assets.html',
-        vehicle_models=vehicle_models,
-        brand_identity=brand_identity,
+        vehicles=vehicles,
+        vehicle_models=raw_vehicles,
         identity=brand_identity,
+        brand_identity=brand_identity,
+        max_images=max_images,
         message=message,
         error=error
     )
