@@ -1446,16 +1446,29 @@ def prepare_compliance_payload():
 
         identity = db_session.query(BrandIdentity).first()
 
-        def encode_image_helper(rel_p, max_dim=720):
-            real_p = os.path.join(root_dir, rel_p.lstrip('/'))
-            if not os.path.exists(real_p):
+        def encode_image_helper(path_input, max_dim=720):
+            if not path_input:
+                return None
+            clean_rel = path_input.replace('assets/uploads/', '').lstrip('/')
+            candidates = [
+                path_input,
+                os.path.join(UPLOAD_DIR, clean_rel),
+                os.path.join(root_dir, path_input.lstrip('/'))
+            ]
+            real_p = None
+            for cand in candidates:
+                if cand and os.path.exists(cand) and os.path.isfile(cand):
+                    real_p = cand
+                    break
+
+            if not real_p:
                 return None
             try:
                 with open(real_p, 'rb') as f:
                     raw_data = f.read()
                 mime = 'image/jpeg'
-                if rel_p.lower().endswith('.png'): mime = 'image/png'
-                elif rel_p.lower().endswith('.webp'): mime = 'image/webp'
+                if real_p.lower().endswith('.png'): mime = 'image/png'
+                elif real_p.lower().endswith('.webp'): mime = 'image/webp'
                 return {
                     'inline_data': {
                         'mime_type': mime,
@@ -1502,7 +1515,7 @@ def prepare_compliance_payload():
                 reference_descriptions.append(f"Reference image {ref_index}: RED & BLUE logo variant (for white backgrounds).")
                 ref_index += 1
 
-        submitted_encoded = encode_image_helper(rel_path)
+        submitted_encoded = encode_image_helper(full_path) or encode_image_helper(rel_path)
         if not submitted_encoded:
             return jsonify({'success': False, 'message': 'Submitted post image could not be read.'})
 
