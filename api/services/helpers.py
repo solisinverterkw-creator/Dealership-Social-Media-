@@ -8,6 +8,39 @@ import openpyxl
 
 class ImageResizer:
     @staticmethod
+    def resize(file_input, max_width: int = 800, max_height: int = 800):
+        """Resizes an image file object or path, returning a dict {'success': bool, 'data': bytes, 'message': str}."""
+        try:
+            if hasattr(file_input, 'read'):
+                file_bytes = file_input.read()
+                if hasattr(file_input, 'seek'):
+                    file_input.seek(0)
+                img = Image.open(io.BytesIO(file_bytes))
+            elif isinstance(file_input, str) and os.path.exists(file_input):
+                img = Image.open(file_input)
+            else:
+                return {'success': False, 'message': 'Invalid file input', 'data': None}
+
+            w, h = img.size
+            if w > max_width or h > max_height:
+                if w / max_width >= h / max_height:
+                    new_w = max_width
+                    new_h = int(round((h / w) * max_width))
+                else:
+                    new_h = max_height
+                    new_w = int(round((w / h) * max_height))
+                img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+            output = io.BytesIO()
+            fmt = img.format if img.format in ['PNG', 'WEBP'] else 'JPEG'
+            if fmt == 'JPEG' and img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+            img.save(output, format=fmt, quality=85)
+            return {'success': True, 'data': output.getvalue()}
+        except Exception as e:
+            return {'success': False, 'message': str(e), 'data': None}
+
+    @staticmethod
     def resize_in_place(file_path: str, max_dim: int = 720):
         """Resizes the image file in-place to fit within max_dim x max_dim dimensions."""
         if not os.path.exists(file_path):
@@ -27,10 +60,11 @@ class ImageResizer:
                 
                 resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
                 fmt = img.format or 'JPEG'
-                # Maintain file transparency support if PNG/WebP
                 if fmt in ['PNG', 'WEBP']:
                     resized.save(file_path, format=fmt)
                 else:
+                    if resized.mode in ('RGBA', 'P'):
+                        resized = resized.convert('RGB')
                     resized.save(file_path, format='JPEG', quality=85)
         except Exception:
             pass
