@@ -209,7 +209,7 @@ class PostSubmission(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     dealership_id = Column(Integer, ForeignKey('dealerships.id', ondelete='CASCADE'), nullable=False)
-    image_path = Column(String(255), nullable=False)
+    image_path = Column(Text, nullable=False)
     caption = Column(Text, nullable=True)
     status = Column(String(20), nullable=False, default='pending') # pending, approved, rejected
     reasons = Column(Text, nullable=True)
