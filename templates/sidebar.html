@@ -83,6 +83,7 @@
       <a href="{{ url_for('users') }}" class="sidebar-link {% if ep == 'users' %}active{% endif %}">User Management</a>
     {% endif %}
     <a href="{{ url_for('change_password') }}" class="sidebar-link {% if ep == 'change_password' %}active{% endif %}">Change Password</a>
+    <a href="{{ url_for('logout') }}" class="sidebar-link" style="color:var(--red); margin-top:8px; border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.08);">🚪 Logout</a>
   </nav>
   
   <button class="btn primary" id="pwa-install-btn" style="display:none; width:100%; margin:10px 0 4px; font-size:12px; border-radius:8px;" onclick="installPWA()">📱 Install App</button>
