@@ -34,18 +34,105 @@
 </div>
 
 <div class="feature-cards">
+  {% if can_view('social_report') %}
   <a href="{{ url_for('social_report') }}" class="feature-card" style="padding:16px 20px;">
-    <div class="feature-card-title" style="color:var(--fb); margin-bottom:0; font-size:15px; font-weight:700;">Social Media Report</div>
+    <div class="feature-card-title" style="color:var(--fb); margin-bottom:0; font-size:14px; font-weight:700;">📊 Social Media Report</div>
   </a>
+  {% endif %}
+
+  {% if can_view('posting_activity') %}
   <a href="{{ url_for('posting_activity') }}" class="feature-card" style="padding:16px 20px;">
-    <div class="feature-card-title" style="color:var(--ig); margin-bottom:0; font-size:15px; font-weight:700;">Posting Activity</div>
+    <div class="feature-card-title" style="color:var(--ig); margin-bottom:0; font-size:14px; font-weight:700;">📈 Posting Activity</div>
   </a>
+  {% endif %}
+
+  {% if can_view('yt_monthly') %}
   <a href="{{ url_for('yt_monthly') }}" class="feature-card" style="padding:16px 20px;">
-    <div class="feature-card-title" style="color:var(--yt); margin-bottom:0; font-size:15px; font-weight:700;">YT Monthly Videos</div>
+    <div class="feature-card-title" style="color:var(--yt); margin-bottom:0; font-size:14px; font-weight:700;">▶️ YT Monthly Videos</div>
   </a>
+  {% endif %}
+
+  {% if can_view('follower_activity_report') %}
+  <a href="{{ url_for('follower_activity_report') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--gr); margin-bottom:0; font-size:14px; font-weight:700;">👥 Follower Activity Report</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('integration_report') %}
+  <a href="{{ url_for('integration_report') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--gold); margin-bottom:0; font-size:14px; font-weight:700;">🔗 Integration Report</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('post_breakdown') %}
+  <a href="{{ url_for('post_breakdown') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--fb); margin-bottom:0; font-size:14px; font-weight:700;">📉 Post Breakdown Report</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('reshare_compliance') %}
+  <a href="{{ url_for('reshare_compliance') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--amber); margin-bottom:0; font-size:14px; font-weight:700;">🔁 Reshare Compliance</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('submit_post_check') %}
+  <a href="{{ url_for('submit_post_check') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--red); margin-bottom:0; font-size:14px; font-weight:700;">🛡️ Post Approval</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('sales_report') %}
+  <a href="{{ url_for('sales_report') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--green); margin-bottom:0; font-size:14px; font-weight:700;">🏷️ Sales Report</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('stock_report') %}
+  <a href="{{ url_for('stock_report') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--gold); margin-bottom:0; font-size:14px; font-weight:700;">📦 Stock Report</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('visit_report') %}
+  <a href="{{ url_for('visit_report') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--ig); margin-bottom:0; font-size:14px; font-weight:700;">🚗 Visit Report</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('ageing_report') %}
+  <a href="{{ url_for('ageing_report') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--amber); margin-bottom:0; font-size:14px; font-weight:700;">⏳ Ageing Report</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('crm_report') %}
+  <a href="{{ url_for('crm_report') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--fb); margin-bottom:0; font-size:14px; font-weight:700;">📋 CRM Report</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('crm_parameters') %}
+  <a href="{{ url_for('crm_parameters') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--gold); margin-bottom:0; font-size:14px; font-weight:700;">⚙️ CRM Parameters</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('crm_data_quality') %}
+  <a href="{{ url_for('crm_data_quality') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--gr); margin-bottom:0; font-size:14px; font-weight:700;">✅ CRM Data Quality Checker</div>
+  </a>
+  {% endif %}
+
+  {% if can_view('brand_assets') %}
+  <a href="{{ url_for('brand_assets') }}" class="feature-card" style="padding:16px 20px;">
+    <div class="feature-card-title" style="color:var(--ig); margin-bottom:0; font-size:14px; font-weight:700;">🎨 Brand Assets</div>
+  </a>
+  {% endif %}
+
   {% if is_super_admin() %}
   <a href="{{ url_for('users') }}" class="feature-card" style="padding:16px 20px;">
-    <div class="feature-card-title" style="color:var(--gold); margin-bottom:0; font-size:15px; font-weight:700;">User Management</div>
+    <div class="feature-card-title" style="color:var(--gold); margin-bottom:0; font-size:14px; font-weight:700;">👤 User Management</div>
   </a>
   {% endif %}
 </div>
@@ -90,11 +177,8 @@
             {% if s.is_configured %}⏳ Checking...{% else %}🔴 Not Set{% endif %}
           </span>
         </div>
-        <div style="font-size:11px; color:var(--muted); line-height:1.3; margin-bottom:10px;">
-          {{ s.used_for }}
-        </div>
       </div>
-      <div>
+      <div style="margin-top:10px;">
         <div style="font-size:11px; font-weight:600; color:var(--gold); margin-bottom:4px;">
           📊 Remaining Quota / Status:
         </div>
