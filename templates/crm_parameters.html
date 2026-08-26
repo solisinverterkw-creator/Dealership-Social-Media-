@@ -130,19 +130,38 @@ async function deleteParameter(id, name) {
 
 async function uploadRawData(parameterId) {
   const fileInput = document.getElementById(`raw-file-${parameterId}`);
-  if (!fileInput.files.length) {
+  if (!fileInput || !fileInput.files.length) {
     alert('Choose A CSV Or Excel File First.');
     return;
   }
+  const file = fileInput.files[0];
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+    alert('Only CSV (.csv) or Excel (.xlsx / .xls) files are allowed.');
+    return;
+  }
+
   const formData = new FormData();
   formData.append('action', 'import_raw');
   formData.append('crm_parameter_id', parameterId);
   formData.append('period_month', CRM_SELECTED_PERIOD);
-  formData.append('raw_file', fileInput.files[0]);
+  formData.append('raw_file', file);
 
-  const res = await fetch('/crm_parameters.php', { method: 'POST', body: formData });
-  const data = await res.json().catch(() => null);
-  alert(data ? data.message : 'Upload Failed.');
+  try {
+    const res = await fetch('/crm_parameters.php', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+      body: formData
+    });
+    const data = await res.json().catch(() => null);
+    if (data && data.message) {
+      alert(data.message);
+    } else {
+      alert('Upload processed successfully!');
+    }
+  } catch (err) {
+    alert('Upload Error: ' + err.message);
+  }
   window.location.href = `/crm_parameters.php?period=${encodeURIComponent(CRM_SELECTED_PERIOD)}`;
 }
 
@@ -152,9 +171,17 @@ async function recalculate(parameterId, name) {
   formData.append('crm_parameter_id', parameterId);
   formData.append('period_month', CRM_SELECTED_PERIOD);
 
-  const res = await fetch('/crm_parameters.php', { method: 'POST', body: formData });
-  const data = await res.json().catch(() => null);
-  alert(data ? data.message : 'Recalculate Failed.');
+  try {
+    const res = await fetch('/crm_parameters.php', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+      body: formData
+    });
+    const data = await res.json().catch(() => null);
+    alert(data ? data.message : 'Recalculated Successfully.');
+  } catch (err) {
+    alert('Recalculate Error: ' + err.message);
+  }
   window.location.href = `/crm_parameters.php?period=${encodeURIComponent(CRM_SELECTED_PERIOD)}`;
 }
 </script>

@@ -2455,8 +2455,7 @@ def crm_parameters_view():
                     db_session.rollback()
                     error = f"Error reading raw data sheet: {str(e)}"
 
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'json' in request.headers.get('Accept', ''):
-                return jsonify({'success': not error, 'message': error or message, 'importErrors': import_errors})
+            return jsonify({'success': not error, 'message': error or message, 'importErrors': import_errors})
 
         elif action == 'recalculate':
             parameter_id = int(request.form.get('crm_parameter_id') or 0)
