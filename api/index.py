@@ -1446,7 +1446,7 @@ def prepare_compliance_payload():
 
         identity = db_session.query(BrandIdentity).first()
 
-        def encode_image_helper(path_input, max_dim=720):
+        def encode_image_helper(path_input, max_dim=480):
             if not path_input:
                 return None
             clean_rel = path_input.replace('assets/uploads/', '').lstrip('/')
@@ -1463,16 +1463,30 @@ def prepare_compliance_payload():
 
             if not real_p:
                 return None
+
             try:
-                with open(real_p, 'rb') as f:
-                    raw_data = f.read()
-                mime = 'image/jpeg'
-                if real_p.lower().endswith('.png'): mime = 'image/png'
-                elif real_p.lower().endswith('.webp'): mime = 'image/webp'
+                with Image.open(real_p) as img:
+                    w, h = img.size
+                    if w > max_dim or h > max_dim:
+                        if w >= h:
+                            new_h = int(round((h / w) * max_dim))
+                            new_w = max_dim
+                        else:
+                            new_w = int(round((w / h) * max_dim))
+                            new_h = max_dim
+                        img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+                    if img.mode in ('RGBA', 'P'):
+                        img = img.convert('RGB')
+
+                    output = io.BytesIO()
+                    img.save(output, format='JPEG', quality=75)
+                    b64_data = base64.b64encode(output.getvalue()).decode('utf-8')
+
                 return {
                     'inline_data': {
-                        'mime_type': mime,
-                        'data': base64.b64encode(raw_data).decode('utf-8')
+                        'mime_type': 'image/jpeg',
+                        'data': b64_data
                     }
                 }
             except Exception:
