@@ -1449,11 +1449,20 @@ def prepare_compliance_payload():
         def encode_image_helper(path_input, max_dim=480):
             if not path_input:
                 return None
-            clean_rel = path_input.replace('assets/uploads/', '').lstrip('/')
+            p_str = str(path_input).replace('\\', '/')
+            clean_rel = p_str.replace('assets/uploads/', '').lstrip('/')
+            fname = os.path.basename(p_str)
             candidates = [
-                path_input,
+                p_str,
+                os.path.join(root_dir, p_str.lstrip('/')),
+                os.path.join(root_dir, 'assets', 'uploads', clean_rel),
+                os.path.join(root_dir, 'assets', 'uploads', 'vehicles', fname),
+                os.path.join(root_dir, 'assets', 'uploads', 'logos', fname),
                 os.path.join(UPLOAD_DIR, clean_rel),
-                os.path.join(root_dir, path_input.lstrip('/'))
+                os.path.join(UPLOAD_DIR, 'vehicles', fname),
+                os.path.join(UPLOAD_DIR, 'logos', fname),
+                os.path.join('/tmp', 'uploads', clean_rel),
+                os.path.join('/tmp', 'uploads', 'vehicles', fname)
             ]
             real_p = None
             for cand in candidates:
@@ -1506,7 +1515,7 @@ def prepare_compliance_payload():
                 vehicle_img_count += 1
 
         if vehicle_img_count == 0:
-            return jsonify({'success': False, 'message': f"No reference photos uploaded yet for {target_vehicle.name} in Brand Assets."})
+            reference_descriptions.append(f"Target Vehicle Model: {target_vehicle.name} (color spec: {target_vehicle.color}).")
 
         if identity and identity.logo_light_path:
             encoded = encode_image_helper(identity.logo_light_path)
