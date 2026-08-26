@@ -85,6 +85,7 @@
     <a href="{{ url_for('change_password') }}" class="sidebar-link {% if ep == 'change_password' %}active{% endif %}">Change Password</a>
   </nav>
   
+  <button class="btn primary" id="pwa-install-btn" style="display:none; width:100%; margin:10px 0 4px; font-size:12px; border-radius:8px;" onclick="installPWA()">📱 Install App</button>
   <select class="theme-select" id="theme-select" onchange="setTheme(this.value)">
     <option value="dark">🌙 Dark</option>
     <option value="light">☀️ Light</option>
@@ -96,6 +97,25 @@
 </aside>
 
 <script>
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const pwaBtn = document.getElementById('pwa-install-btn');
+  if (pwaBtn) pwaBtn.style.display = 'inline-flex';
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      const pwaBtn = document.getElementById('pwa-install-btn');
+      if (pwaBtn) pwaBtn.style.display = 'none';
+    });
+  }
+}
+
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);

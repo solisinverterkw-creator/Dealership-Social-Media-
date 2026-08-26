@@ -1,25 +1,25 @@
 {
-  "name": "ROSP - Dealers Social Media",
-  "short_name": "ROSP Dashboard",
-  "description": "Suzuki dealership Facebook, Instagram, YouTube & Google Reviews tracking dashboard.",
-  "start_url": "index.php",
-  "scope": ".",
+  "name": "ROSP - Suzuki Dealership Social Media",
+  "short_name": "ROSP Suzuki",
+  "description": "Suzuki Dealership Facebook, Instagram, YouTube & Content Compliance Tracking Platform.",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#ffffff",
-  "theme_color": "#1a1a19",
+  "background_color": "#090a0f",
+  "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "/assets/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "/assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

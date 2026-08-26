@@ -104,6 +104,14 @@ def serve_uploaded_file(filename):
 
     return abort(404)
 
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_file(os.path.join(root_dir, 'manifest.json'), mimetype='application/manifest+json')
+
+@app.route('/sw.js')
+def serve_sw():
+    return send_file(os.path.join(root_dir, 'sw.js'), mimetype='application/javascript')
+
 # Set TZ offset roughly for date display to match Asia/Karachi
 def current_time_pk():
     # Pakistan is UTC+5
