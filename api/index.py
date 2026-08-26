@@ -1573,7 +1573,7 @@ def sales_report_view():
     except Exception:
         date_str = selected_period
 
-    columns_sequence = []
+    column_sequence = []
     pivot = {}
     summary_by_dealership = {}
 
@@ -1591,11 +1591,11 @@ def sales_report_view():
         gt_inserted = False
         for col_name, order in cols:
             if gt_order_val is not None and not gt_inserted and int(order) > int(gt_order_val):
-                columns_sequence.append({'type': 'grand_total'})
+                column_sequence.append({'type': 'grand_total'})
                 gt_inserted = True
-            columns_sequence.append({'type': 'product', 'name': col_name})
+            column_sequence.append({'type': 'product', 'name': col_name})
         if gt_order_val is not None and not gt_inserted:
-            columns_sequence.append({'type': 'grand_total'})
+            column_sequence.append({'type': 'grand_total'})
 
         allowed_ids = {d.id for d in dealerships}
         records = db_session.query(SalesRecord).filter(
