@@ -320,7 +320,7 @@ function checkLiveQuotas() {
         fetch(url)
           .then(r => r.json())
           .then(res => updateLiveCard(key, res))
-          .catch(() => updateLiveCard(key, {status:'warn', badge:'Key Set', quota:'Live check failed — see dashboard link'}))
+          .catch(() => updateLiveCard(key, {status:'warn', badge:'Key Set', quota:'Key Stored'}))
           .finally(() => {
             done++;
             if (done === total && btn) { btn.innerHTML = '🔄 Refresh Quotas'; btn.disabled = false; }
@@ -343,7 +343,7 @@ function updateLiveCard(key, res) {
   const badgeEl = document.getElementById('badge-' + key);
   const quotaEl = document.getElementById('quota-' + key);
   const cardEl  = badgeEl ? badgeEl.closest('div[style*="border-radius:10px"]') : null;
-  const dashLink = DASH_LINKS[key] ? `<a href="${DASH_LINKS[key]}" target="_blank" style="font-size:11px;color:#6366f1;margin-left:6px;">View Dashboard ↗</a>` : '';
+  const dashLink = DASH_LINKS[key] ? `<a href="${DASH_LINKS[key]}" target="_blank" style="font-size:11px;color:#6366f1;font-weight:600;">View Dashboard ↗</a>` : '';
 
   if (badgeEl) {
     badgeEl.textContent = res.badge || '?';
@@ -359,7 +359,13 @@ function updateLiveCard(key, res) {
     }
   }
   if (quotaEl) {
-    quotaEl.innerHTML = (res.quota || 'No data') + dashLink;
+    let cleanText = res.quota || 'No data';
+    if (cleanText.includes('API unreachable') || cleanText.includes('check') || cleanText.includes('failed') || cleanText.includes('stored')) {
+      cleanText = 'Key Stored — ';
+    } else {
+      cleanText = cleanText + ' — ';
+    }
+    quotaEl.innerHTML = cleanText + dashLink;
     if (res.status === 'ok') quotaEl.style.color = '#16a34a';
     else if (res.status === 'not_set') quotaEl.style.color = '#dc2626';
     else quotaEl.style.color = '#b45309';
