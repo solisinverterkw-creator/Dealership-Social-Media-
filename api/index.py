@@ -1961,6 +1961,7 @@ def crm_report_view():
 @app.route('/crm_parameters.php', endpoint='crm_parameters', methods=['GET', 'POST'])
 @require_super_admin
 def crm_parameters_view():
+    dealerships = get_allowed_dealerships()
     message = session.pop('crm_param_msg', '')
     error = session.pop('crm_param_err', '')
     import_errors = []
@@ -1983,13 +1984,50 @@ def crm_parameters_view():
                         param.parameter_name = names[idx].strip()
                         param.criteria = criteria[idx].strip()
                         param.max_points = float(max_pts[idx])
-                        param.calc_key = calc_keys[idx].strip() or None
-                        param.display_order = int(orders[idx])
+                        if idx < len(calc_keys):
+                            param.calc_key = calc_keys[idx].strip() or None
+                        if idx < len(orders):
+                            param.display_order = int(orders[idx])
                 db_session.commit()
                 message = "CRM schema template parameters saved successfully."
             except Exception as e:
                 db_session.rollback()
                 error = f"Error saving parameters: {str(e)}"
+
+        elif action == 'update':
+            pid = request.form.get('id', type=int)
+            name = request.form.get('parameter_name', '').strip()
+            criteria = request.form.get('criteria', '').strip()
+            max_pts = request.form.get('max_points', '').strip()
+            order = request.form.get('display_order', type=int)
+
+            if pid and name and max_pts:
+                try:
+                    param = db_session.query(CrmParameter).filter(CrmParameter.id == pid).first()
+                    if param:
+                        param.parameter_name = name
+                        param.criteria = criteria
+                        param.max_points = float(max_pts)
+                        if order is not None:
+                            param.display_order = order
+                        db_session.commit()
+                        message = f"Parameter \"{name}\" Updated Successfully."
+                except Exception as e:
+                    db_session.rollback()
+                    error = f"Error updating parameter: {str(e)}"
+
+        elif action == 'delete':
+            pid = request.form.get('id', type=int)
+            if pid:
+                try:
+                    db_session.query(CrmScore).filter(CrmScore.crm_parameter_id == pid).delete()
+                    db_session.query(CrmRawData).filter(CrmRawData.crm_parameter_id == pid).delete()
+                    db_session.query(CrmParameter).filter(CrmParameter.id == pid).delete()
+                    db_session.commit()
+                    message = "Parameter deleted successfully."
+                except Exception as e:
+                    db_session.rollback()
+                    error = f"Error deleting parameter: {str(e)}"
 
         elif action == 'import_raw':
             parameter_id = int(request.form.get('crm_parameter_id') or 0)
@@ -2140,6 +2178,9 @@ def crm_parameters_view():
                     db_session.rollback()
                     error = f"Error reading raw data sheet: {str(e)}"
 
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'json' in request.headers.get('Accept', ''):
+                return jsonify({'success': not error, 'message': error or message, 'importErrors': import_errors})
+
         elif action == 'recalculate':
             parameter_id = int(request.form.get('crm_parameter_id') or 0)
             period_month = request.form.get('period_month', '').strip()
@@ -2202,6 +2243,9 @@ def crm_parameters_view():
                     db_session.rollback()
                     error = f"Recalculation error: {str(e)}"
 
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'json' in request.headers.get('Accept', ''):
+                return jsonify({'success': not error, 'message': error or message})
+
         elif action == 'add':
             name = request.form.get('parameter_name', '').strip()
             criteria = request.form.get('criteria', '').strip()
@@ -2229,13 +2273,40 @@ def crm_parameters_view():
 
     crm_parameters = db_session.query(CrmParameter).order_by(CrmParameter.display_order, CrmParameter.id).all()
     total_max_points = sum(float(p.max_points or 0) for p in crm_parameters)
-    selected_period = request.args.get('period_month', '')
+
+    selected_period = request.args.get('period', '').strip() or request.args.get('period_month', '').strip()
+    if not selected_period:
+        selected_period = current_time_pk().strftime('%Y-%m')
+
+    try:
+        period_label = datetime.strptime(selected_period + '-01', '%Y-%m-%d').strftime('%b %Y').upper()
+    except Exception:
+        period_label = selected_period
+
+    dealership_names = [d.name for d in dealerships]
+    dealership_count = len(dealership_names)
+
+    raw_counts = db_session.query(
+        CrmRawData.crm_parameter_id, func.count(CrmRawData.id)
+    ).filter(CrmRawData.period_month == selected_period).group_by(CrmRawData.crm_parameter_id).all()
+    raw_count_by_param = {r[0]: r[1] for r in raw_counts}
+
+    score_counts = db_session.query(
+        CrmScore.crm_parameter_id, func.count(CrmScore.id)
+    ).filter(CrmScore.period_month == selected_period).group_by(CrmScore.crm_parameter_id).all()
+    score_count_by_param = {s[0]: s[1] for s in score_counts}
 
     return render_template(
         'crm_parameters.html',
+        parameters=crm_parameters,
         crm_parameters=crm_parameters,
         total_max_points=total_max_points,
         selected_period=selected_period,
+        period_label=period_label,
+        dealership_names=dealership_names,
+        dealership_count=dealership_count,
+        raw_count_by_param=raw_count_by_param,
+        score_count_by_param=score_count_by_param,
         message=message,
         error=error,
         import_errors=import_errors
