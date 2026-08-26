@@ -9,6 +9,8 @@ class BrightDataClient:
 
     def _headers(self):
         token = Config.get_key('brightdata_api_token', 'BRIGHTDATA_API_TOKEN')
+        if not token:
+            return None
         return {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
@@ -28,7 +30,6 @@ class BrightDataClient:
         try:
             return json.loads(text)
         except Exception:
-            # Handle NDJSON (newline-delimited JSON) format from Bright Data
             records = []
             for line in text.splitlines():
                 line = line.strip()
@@ -44,11 +45,15 @@ class BrightDataClient:
         Scrapes a Bright Data dataset using the /scrape endpoint.
         Tries synchronous first, then falls back to polling if HTTP 202 is returned.
         """
+        headers = self._headers()
+        if not headers:
+            return {'success': False, 'message': 'Bright Data API Token is missing or not configured. Please enter your BRIGHTDATA_API_TOKEN in Dashboard Scraper Settings.'}
+
         url = f"{self.base_url}/scrape?dataset_id={dataset_id}&notify=false&include_errors=true"
         try:
             response = requests.post(
                 url,
-                headers=self._headers(),
+                headers=headers,
                 json={'input': inputs},
                 timeout=100
             )

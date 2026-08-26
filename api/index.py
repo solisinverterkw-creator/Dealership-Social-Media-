@@ -3396,14 +3396,21 @@ def reshare_compliance_view():
         from_date_obj = from_dt.date()
         to_date_obj = datetime.strptime(to_val, '%Y-%m-%d').date()
         
+        # Total source posts in range
+        source_posts_count = db_session.query(ReshareSourcePost).filter(
+            ReshareSourcePost.processed_at >= from_dt,
+            ReshareSourcePost.processed_at < to_dt
+        ).count()
+
         # Load stats for each dealership
         for d in dealerships:
-            # Query reshare stats count
             tracked = db_session.query(ReshareCheck).filter(
                 ReshareCheck.dealership_id == d.id,
                 ReshareCheck.published_at >= from_dt,
                 ReshareCheck.published_at < to_dt
             ).count()
+            if tracked == 0 and source_posts_count > 0:
+                tracked = source_posts_count
             
             reshared = db_session.query(ReshareCheck).filter(
                 ReshareCheck.dealership_id == d.id,
@@ -3418,14 +3425,23 @@ def reshare_compliance_view():
                 ReshareCheck.published_at < to_dt,
                 ReshareCheck.reshared == 0
             ).count()
+            if tracked > 0 and missed == 0 and reshared < tracked:
+                missed = tracked - reshared
             
             last_checked = db_session.query(func.max(ReshareCheck.last_checked_at)).filter(
                 ReshareCheck.dealership_id == d.id
             ).scalar()
             
             own_stat = db_session.query(ReshareOwnPostStat).filter(
-                ReshareOwnPostStat.dealership_id == d.id
+                ReshareOwnPostStat.dealership_id == d.id,
+                ReshareOwnPostStat.range_from == from_date_obj,
+                ReshareOwnPostStat.range_to == to_date_obj
             ).first()
+            if not own_stat:
+                own_stat = db_session.query(ReshareOwnPostStat).filter(
+                    ReshareOwnPostStat.dealership_id == d.id
+                ).order_by(ReshareOwnPostStat.checked_at.desc()).first()
+
             own_count = own_stat.own_post_count if own_stat else None
             
             rows.append({
