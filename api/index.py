@@ -1538,7 +1538,27 @@ def prepare_compliance_payload():
                 reference_descriptions.append(f"Reference image {ref_index}: RED & BLUE logo variant (for white backgrounds).")
                 ref_index += 1
 
-        submitted_encoded = encode_image_helper(full_path) or encode_image_helper(rel_path)
+        # Direct in-memory base64 encoding for submitted post image (100% fail-proof, no disk read dependency)
+        sub_bytes = None
+        if res and res.get('success') and res.get('data'):
+            sub_bytes = res['data']
+        else:
+            try:
+                post_image.seek(0)
+                sub_bytes = post_image.read()
+            except Exception:
+                sub_bytes = None
+
+        if sub_bytes:
+            submitted_encoded = {
+                'inline_data': {
+                    'mime_type': 'image/png' if ext == 'png' else 'image/jpeg',
+                    'data': base64.b64encode(sub_bytes).decode('utf-8')
+                }
+            }
+        else:
+            submitted_encoded = encode_image_helper(full_path) or encode_image_helper(rel_path)
+
         if not submitted_encoded:
             return jsonify({'success': False, 'message': 'Submitted post image could not be read.'})
 
