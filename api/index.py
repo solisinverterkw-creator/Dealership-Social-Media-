@@ -77,8 +77,32 @@ else:
 
 os.makedirs(os.path.join(UPLOAD_DIR, 'vehicles'), exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_DIR, 'logos'), exist_ok=True)
-os.makedirs(os.path.join(UPLOAD_DIR, 'refresh_status'), exist_ok=True)
+@app.route('/assets/uploads/<path:filename>')
+def serve_uploaded_file(filename):
+    clean_fn = filename.lstrip('/')
+    fname = os.path.basename(clean_fn)
+    
+    # 1. Search UPLOAD_DIR (/tmp/uploads or local)
+    for cand in [
+        os.path.join(UPLOAD_DIR, clean_fn),
+        os.path.join(UPLOAD_DIR, 'submissions', fname),
+        os.path.join(UPLOAD_DIR, 'vehicles', fname),
+        os.path.join(UPLOAD_DIR, 'logos', fname)
+    ]:
+        if cand and os.path.exists(cand) and os.path.isfile(cand):
+            return send_file(cand)
 
+    # 2. Search root_dir/assets/uploads
+    for cand in [
+        os.path.join(root_dir, 'assets', 'uploads', clean_fn),
+        os.path.join(root_dir, 'assets', 'uploads', 'submissions', fname),
+        os.path.join(root_dir, 'assets', 'uploads', 'vehicles', fname),
+        os.path.join(root_dir, 'assets', 'uploads', 'logos', fname)
+    ]:
+        if cand and os.path.exists(cand) and os.path.isfile(cand):
+            return send_file(cand)
+
+    return abort(404)
 
 # Set TZ offset roughly for date display to match Asia/Karachi
 def current_time_pk():
