@@ -1337,7 +1337,7 @@ def check_yt_monthly():
 
 # --- POST APPROVAL (SUBMIT POST CHECK) ---
 
-@app.route('/submit_post_check', methods=['GET', 'POST'])
+@app.route('/submit_post_check', endpoint='submit_post_check', methods=['GET', 'POST'])
 @app.route('/submit_post_check.php', endpoint='post_approval', methods=['GET', 'POST'])
 @require_login
 def post_approval_view():
