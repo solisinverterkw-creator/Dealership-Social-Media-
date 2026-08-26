@@ -1627,7 +1627,7 @@ def sales_report_view():
         selected_period=selected_period,
         period_labels=period_labels,
         date_str=date_str,
-        columns_sequence=columns_sequence,
+        column_sequence=column_sequence,
         pivot=pivot,
         summary_by_dealership=summary_by_dealership,
         message=message,
@@ -1677,7 +1677,6 @@ def stock_report_view():
     product_names = SpreadsheetImportHelper.sort_product_columns_by_priority(stock_cols, variant_priority)
 
     column_sequence = [{'type': 'product', 'name': p} for p in product_names]
-    column_sequence.append({'type': 'grand_total'})
 
     allowed_ids = {d.id for d in dealerships}
     records = db_session.query(StockRecord).filter(StockRecord.dealership_id.in_(allowed_ids)).all()
@@ -1721,7 +1720,8 @@ def stock_report_view():
         message=message,
         error=error,
         import_errors=import_errors,
-        friendly_product_label=SpreadsheetImportHelper.friendly_product_label
+        friendly_product_label=SpreadsheetImportHelper.friendly_product_label,
+        shorten_product_label=lambda p: SpreadsheetImportHelper.shorten_product_label(p, variant_priority)
     )
 
 # --- AGEING REPORT VIEW ---
@@ -1842,6 +1842,8 @@ def ageing_report_view():
         ageing_records_count=ageing_records_count,
         stock_chassis_count=stock_chassis_count,
         chassis_records=chassis_records,
+        month_end_str=month_end.strftime('%d %b, %Y'),
+        date_str=pk_today.strftime('%d %b, %Y'),
         message=message,
         error=error,
         import_errors=import_errors,

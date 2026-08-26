@@ -71,46 +71,39 @@
       <tr>
         <th>Sr#</th>
         <th>Dealer</th>
-        <th>Region</th>
-        <th>Security Deposit</th>
         {% for c in column_sequence %}
-          <th>
-            {% if c.type == 'grand_total' %}
-              Grand Total
-            {% else %}
-              {{ friendly_product_label(c.name) }}
-            {% endif %}
-          </th>
+          {% if c.type == 'product' %}
+            <th title="{{ c.name }}">{{ shorten_product_label(c.name) }}</th>
+          {% endif %}
         {% endfor %}
+        <th>Total</th>
+        <th>Available Security Amount</th>
       </tr>
     </thead>
     <tbody>
       {% for dealership_name, products in pivot.items() %}
         {% set d_id = products.__id %}
         {% set sec_val = security_by_dealership[d_id] if d_id in security_by_dealership else none %}
-        {% set reg_val = region_by_dealership[d_id] if d_id in region_by_dealership else none %}
+        {% set row_total = namespace(val=0) %}
+        {% for p_name in product_names %}
+          {% set row_total.val = row_total.val + (products[p_name] or 0) %}
+        {% endfor %}
         <tr>
           <td>{{ loop.index }}</td>
           <td class="name-cell">{{ dealership_name }}</td>
-          <td>{{ reg_val or '—' }}</td>
-          <td class="security-column" data-sort-value="{{ sec_val or 0 }}">
-            {% if sec_val is not none %}
-              Rs. {{ sec_val|number_format }}
-            {% else %}
-              —
-            {% endif %}
-          </td>
           {% for c in column_sequence %}
-            {% if c.type == 'grand_total' %}
-              {% set total_val = 0 %}
-              {% for p_name in product_names %}
-                {% set total_val = total_val + (products[p_name] or 0) %}
-              {% endfor %}
-              <td style="font-weight:600;">{{ total_val|number_format }}</td>
-            {% else %}
+            {% if c.type == 'product' %}
               <td>{{ (products[c.name] or 0)|number_format }}</td>
             {% endif %}
           {% endfor %}
+          <td style="font-weight:600;">{{ row_total.val|number_format }}</td>
+          <td>
+            {% if sec_val is not none and sec_val != 0 %}
+              {{ sec_val|number_format(2) }}
+            {% else %}
+              0.00
+            {% endif %}
+          </td>
         </tr>
       {% endfor %}
     </tbody>
