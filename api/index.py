@@ -9,6 +9,8 @@ if parent_dir not in sys.path:
 import re
 import json
 import time
+import uuid
+import base64
 from datetime import datetime, timedelta
 import threading
 from decimal import Decimal
@@ -1388,181 +1390,185 @@ def delete_submission():
 @app.route('/prepare_compliance_payload.php', methods=['POST'])
 @require_login
 def prepare_compliance_payload():
-    d_id = request.form.get('dealership_id', type=int)
-    caption = request.form.get('caption', '').strip()
-    vehicle_model_id = request.form.get('vehicle_model_id', type=int)
-    post_image = request.files.get('post_image') or request.files.get('image')
+    try:
+        d_id = request.form.get('dealership_id', type=int)
+        caption = request.form.get('caption', '').strip()
+        vehicle_model_id = request.form.get('vehicle_model_id', type=int)
+        post_image = request.files.get('post_image') or request.files.get('image')
 
-    if not d_id or not can_access_dealership(d_id):
-        return jsonify({'success': False, 'message': 'You Do Not Have Access To This Dealership.'}), 403
+        if not d_id or not can_access_dealership(d_id):
+            return jsonify({'success': False, 'message': 'You Do Not Have Access To This Dealership.'}), 403
 
-    if not vehicle_model_id:
-        return jsonify({'success': False, 'message': 'Please select a target Vehicle Model.'})
+        if not vehicle_model_id:
+            return jsonify({'success': False, 'message': 'Please select a target Vehicle Model.'})
 
-    if not post_image or not post_image.filename:
-        return jsonify({'success': False, 'message': 'A Post Image Is Required.'})
+        if not post_image or not post_image.filename:
+            return jsonify({'success': False, 'message': 'A Post Image Is Required.'})
 
-    ext = post_image.filename.split('.')[-1].lower() if '.' in post_image.filename else 'jpg'
-    if ext not in ['jpg', 'jpeg', 'png', 'webp']:
-        return jsonify({'success': False, 'message': 'Only jpg, png, or webp Images Are Allowed.'})
+        ext = post_image.filename.split('.')[-1].lower() if '.' in post_image.filename else 'jpg'
+        if ext not in ['jpg', 'jpeg', 'png', 'webp']:
+            return jsonify({'success': False, 'message': 'Only jpg, png, or webp Images Are Allowed.'})
 
-    fname = f"submission_{int(time.time())}_{uuid.uuid4().hex[:6]}.{ext}"
-    rel_path = f"assets/uploads/submissions/{fname}"
-    full_path = os.path.join(UPLOAD_DIR, 'submissions', fname)
-    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        fname = f"submission_{int(time.time())}_{uuid.uuid4().hex[:6]}.{ext}"
+        rel_path = f"assets/uploads/submissions/{fname}"
+        full_path = os.path.join(UPLOAD_DIR, 'submissions', fname)
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
-    resizer = ImageResizer()
-    res = resizer.resize(post_image, max_width=800, max_height=800)
-    if res['success']:
-        with open(full_path, 'wb') as f_out:
-            f_out.write(res['data'])
-    else:
-        post_image.save(full_path)
+        resizer = ImageResizer()
+        res = resizer.resize(post_image, max_width=800, max_height=800)
+        if res['success']:
+            with open(full_path, 'wb') as f_out:
+                f_out.write(res['data'])
+        else:
+            post_image.save(full_path)
 
-    sub = PostSubmission(
-        dealership_id=d_id,
-        image_path=rel_path,
-        caption=caption,
-        status='pending',
-        submitted_at=current_time_pk()
-    )
-    db_session.add(sub)
-    db_session.commit()
+        sub = PostSubmission(
+            dealership_id=d_id,
+            image_path=rel_path,
+            caption=caption,
+            status='pending',
+            submitted_at=current_time_pk()
+        )
+        db_session.add(sub)
+        db_session.commit()
 
-    target_vehicle = db_session.query(VehicleModel).filter(VehicleModel.id == vehicle_model_id).first()
-    if not target_vehicle:
-        return jsonify({'success': False, 'message': 'Selected Vehicle Model not found in Brand Assets.'})
+        target_vehicle = db_session.query(VehicleModel).filter(VehicleModel.id == vehicle_model_id).first()
+        if not target_vehicle:
+            return jsonify({'success': False, 'message': 'Selected Vehicle Model not found in Brand Assets.'})
 
-    vm_images = db_session.query(VehicleModelImage).filter(
-        VehicleModelImage.vehicle_model_id == vehicle_model_id
-    ).order_by(VehicleModelImage.id).all()
+        vm_images = db_session.query(VehicleModelImage).filter(
+            VehicleModelImage.vehicle_model_id == vehicle_model_id
+        ).order_by(VehicleModelImage.id).all()
 
-    v_img_paths = [img.image_path for img in vm_images]
-    if not v_img_paths and target_vehicle.reference_image:
-        v_img_paths = [target_vehicle.reference_image]
+        v_img_paths = [img.image_path for img in vm_images]
+        if not v_img_paths and target_vehicle.reference_image:
+            v_img_paths = [target_vehicle.reference_image]
 
-    identity = db_session.query(BrandIdentity).first()
+        identity = db_session.query(BrandIdentity).first()
 
-    def encode_image_helper(rel_p, max_dim=720):
-        real_p = os.path.join(root_dir, rel_p.lstrip('/'))
-        if not os.path.exists(real_p):
-            return None
-        try:
-            with open(real_p, 'rb') as f:
-                raw_data = f.read()
-            mime = 'image/jpeg'
-            if rel_p.lower().endswith('.png'): mime = 'image/png'
-            elif rel_p.lower().endswith('.webp'): mime = 'image/webp'
-            return {
-                'inline_data': {
-                    'mime_type': mime,
-                    'data': base64.b64encode(raw_data).decode('utf-8')
+        def encode_image_helper(rel_p, max_dim=720):
+            real_p = os.path.join(root_dir, rel_p.lstrip('/'))
+            if not os.path.exists(real_p):
+                return None
+            try:
+                with open(real_p, 'rb') as f:
+                    raw_data = f.read()
+                mime = 'image/jpeg'
+                if rel_p.lower().endswith('.png'): mime = 'image/png'
+                elif rel_p.lower().endswith('.webp'): mime = 'image/webp'
+                return {
+                    'inline_data': {
+                        'mime_type': mime,
+                        'data': base64.b64encode(raw_data).decode('utf-8')
+                    }
                 }
-            }
-        except Exception:
-            return None
+            except Exception:
+                return None
 
-    image_parts = []
-    reference_descriptions = []
-    ref_index = 1
-    vehicle_img_count = 0
+        image_parts = []
+        reference_descriptions = []
+        ref_index = 1
+        vehicle_img_count = 0
 
-    for path in v_img_paths:
-        encoded = encode_image_helper(path)
-        if encoded:
-            image_parts.append(encoded)
-            reference_descriptions.append(f"Reference image {ref_index}: approved target vehicle — {target_vehicle.name}, color {target_vehicle.color}.")
-            ref_index += 1
-            vehicle_img_count += 1
+        for path in v_img_paths:
+            encoded = encode_image_helper(path)
+            if encoded:
+                image_parts.append(encoded)
+                reference_descriptions.append(f"Reference image {ref_index}: approved target vehicle — {target_vehicle.name}, color {target_vehicle.color}.")
+                ref_index += 1
+                vehicle_img_count += 1
 
-    if vehicle_img_count == 0:
-        return jsonify({'success': False, 'message': f"No reference photos uploaded yet for {target_vehicle.name} in Brand Assets."})
+        if vehicle_img_count == 0:
+            return jsonify({'success': False, 'message': f"No reference photos uploaded yet for {target_vehicle.name} in Brand Assets."})
 
-    if identity and identity.logo_light_path:
-        encoded = encode_image_helper(identity.logo_light_path)
-        if encoded:
-            image_parts.append(encoded)
-            reference_descriptions.append(f"Reference image {ref_index}: LIGHT logo variant (for dark/blue backgrounds).")
-            ref_index += 1
+        if identity and identity.logo_light_path:
+            encoded = encode_image_helper(identity.logo_light_path)
+            if encoded:
+                image_parts.append(encoded)
+                reference_descriptions.append(f"Reference image {ref_index}: LIGHT logo variant (for dark/blue backgrounds).")
+                ref_index += 1
 
-    if identity and identity.logo_dark_path:
-        encoded = encode_image_helper(identity.logo_dark_path)
-        if encoded:
-            image_parts.append(encoded)
-            reference_descriptions.append(f"Reference image {ref_index}: DARK logo variant (for white/light backgrounds).")
-            ref_index += 1
+        if identity and identity.logo_dark_path:
+            encoded = encode_image_helper(identity.logo_dark_path)
+            if encoded:
+                image_parts.append(encoded)
+                reference_descriptions.append(f"Reference image {ref_index}: DARK logo variant (for white/light backgrounds).")
+                ref_index += 1
 
-    if identity and identity.logo_white_bg_path:
-        encoded = encode_image_helper(identity.logo_white_bg_path)
-        if encoded:
-            image_parts.append(encoded)
-            reference_descriptions.append(f"Reference image {ref_index}: RED & BLUE logo variant (for white backgrounds).")
-            ref_index += 1
+        if identity and identity.logo_white_bg_path:
+            encoded = encode_image_helper(identity.logo_white_bg_path)
+            if encoded:
+                image_parts.append(encoded)
+                reference_descriptions.append(f"Reference image {ref_index}: RED & BLUE logo variant (for white backgrounds).")
+                ref_index += 1
 
-    submitted_encoded = encode_image_helper(rel_path)
-    if not submitted_encoded:
-        return jsonify({'success': False, 'message': 'Submitted post image could not be read.'})
+        submitted_encoded = encode_image_helper(rel_path)
+        if not submitted_encoded:
+            return jsonify({'success': False, 'message': 'Submitted post image could not be read.'})
 
-    rule_num = 1
-    prompt_lines = [
-        "You are a strict brand-compliance auditor for a car dealership's social media post.",
-        "Check the SUBMITTED POST IMAGE (the last image below) against ALL of these rules with 100% precision, using the earlier reference images as ground truth:",
-        ""
-    ]
+        rule_num = 1
+        prompt_lines = [
+            "You are a strict brand-compliance auditor for a car dealership's social media post.",
+            "Check the SUBMITTED POST IMAGE (the last image below) against ALL of these rules with 100% precision, using the earlier reference images as ground truth:",
+            ""
+        ]
 
-    target_name = target_vehicle.name
-    prompt_lines.append(f"{rule_num}. MANDATORY VEHICLE MODEL MATCH ({target_name}):\n"
-                        f"   Look at the car body shape, front grille, headlights, and ANY text overlay/badge on the submitted graphic (such as 'FRONX', 'ALTO', 'CULTUS', 'EVERY', 'SWIFT').\n"
-                        f"   The user explicitly selected '{target_name}' in the form as the target car model for this post.\n"
-                        f"   IF THE SUBMITTED GRAPHIC SHOWS A DIFFERENT CAR MODEL OR TEXT BADGE, YOU MUST REJECT IMMEDIATELY with reason 'Vehicle Model Mismatch: Graphic shows a different car model, but {target_name} was selected'.")
-    rule_num += 1
-
-    prompt_lines.append(f"{rule_num}. DOOR HANDLES STRICT CHROME AUDIT:\n"
-                        f"   Zoom in on the front and rear door handles of the car in the graphic.\n"
-                        f"   Standard approved {target_name} specification requires CHROME / METALLIC SILVER door handles.\n"
-                        f"   CRITICAL INSTRUCTION: If the door handles on the car are WHITE, PAINTED, BODY-COLOR, or if you cannot see a distinct metallic chrome shine on the handles, YOU MUST REJECT IMMEDIATELY with reason 'Vehicle Spec Violation: Door handles are painted white body-color, whereas approved {target_name} specification requires Chrome handles'. DO NOT APPROVE WHITE OR BODY-COLOR PAINTED DOOR HANDLES!")
-    rule_num += 1
-
-    if identity and (identity.logo_light_path or identity.logo_dark_path or identity.logo_white_bg_path):
-        prompt_lines.append(f"{rule_num}. LOGO VARIANT AUDIT:\n"
-                            f"   LOGO BACKGROUND CONTRAST: Examine the background patch directly behind the Suzuki logo. If the background is DARK or BLUE, the WHITE/LIGHT logo variant is required. If the background is WHITE, the RED & BLUE or DARK logo variant is required.")
+        target_name = target_vehicle.name
+        prompt_lines.append(f"{rule_num}. MANDATORY VEHICLE MODEL MATCH ({target_name}):\n"
+                            f"   Look at the car body shape, front grille, headlights, and ANY text overlay/badge on the submitted graphic (such as 'FRONX', 'ALTO', 'CULTUS', 'EVERY', 'SWIFT').\n"
+                            f"   The user explicitly selected '{target_name}' in the form as the target car model for this post.\n"
+                            f"   IF THE SUBMITTED GRAPHIC SHOWS A DIFFERENT CAR MODEL OR TEXT BADGE, YOU MUST REJECT IMMEDIATELY with reason 'Vehicle Model Mismatch: Graphic shows a different car model, but {target_name} was selected'.")
         rule_num += 1
 
-    if identity and identity.tagline:
-        prompt_lines.append(f"{rule_num}. TAGLINE: The post caption should include or closely reflect this tagline: \"{identity.tagline}\". Missing it = REJECT.")
+        prompt_lines.append(f"{rule_num}. DOOR HANDLES STRICT CHROME AUDIT:\n"
+                            f"   Zoom in on the front and rear door handles of the car in the graphic.\n"
+                            f"   Standard approved {target_name} specification requires CHROME / METALLIC SILVER door handles.\n"
+                            f"   CRITICAL INSTRUCTION: If the door handles on the car are WHITE, PAINTED, BODY-COLOR, or if you cannot see a distinct metallic chrome shine on the handles, YOU MUST REJECT IMMEDIATELY with reason 'Vehicle Spec Violation: Door handles are painted white body-color, whereas approved {target_name} specification requires Chrome handles'. DO NOT APPROVE WHITE OR BODY-COLOR PAINTED DOOR HANDLES!")
+        rule_num += 1
 
-    prompt_lines.append("")
-    prompt_lines.append(f"Submitted post caption: \"{caption if caption else '(no caption)'}\"")
-    prompt_lines.append("")
-    prompt_lines.append("Reference images attached below, in order:")
-    prompt_lines.extend(reference_descriptions)
-    prompt_lines.append("")
-    prompt_lines.append("Last image attached below is the SUBMITTED POST IMAGE to judge.")
-    prompt_lines.append("")
-    prompt_lines.append("COMPREHENSIVE AUDIT INSTRUCTION: Do NOT stop after finding the first violation. You MUST evaluate ALL rules. If multiple violations exist, YOU MUST INCLUDE ALL VIOLATIONS in the 'reasons' array so the user receives a complete report!")
-    prompt_lines.append('Respond with ONLY this JSON, no other text: {"approved": true|false, "reasons": ["violation 1", "violation 2", "..."], "suggestion": "better wording example, or null"}')
+        if identity and (identity.logo_light_path or identity.logo_dark_path or identity.logo_white_bg_path):
+            prompt_lines.append(f"{rule_num}. LOGO VARIANT AUDIT:\n"
+                                f"   LOGO BACKGROUND CONTRAST: Examine the background patch directly behind the Suzuki logo. If the background is DARK or BLUE, the WHITE/LIGHT logo variant is required. If the background is WHITE, the RED & BLUE or DARK logo variant is required.")
+            rule_num += 1
 
-    parts = [{'text': "\n".join(prompt_lines)}]
-    parts.extend(image_parts)
-    parts.append(submitted_encoded)
+        if identity and identity.tagline:
+            prompt_lines.append(f"{rule_num}. TAGLINE: The post caption should include or closely reflect this tagline: \"{identity.tagline}\". Missing it = REJECT.")
 
-    d_obj = db_session.query(Dealership).filter(Dealership.id == d_id).first()
-    d_name = d_obj.name if d_obj else 'Unknown Dealership'
+        prompt_lines.append("")
+        prompt_lines.append(f"Submitted post caption: \"{caption if caption else '(no caption)'}\"")
+        prompt_lines.append("")
+        prompt_lines.append("Reference images attached below, in order:")
+        prompt_lines.extend(reference_descriptions)
+        prompt_lines.append("")
+        prompt_lines.append("Last image attached below is the SUBMITTED POST IMAGE to judge.")
+        prompt_lines.append("")
+        prompt_lines.append("COMPREHENSIVE AUDIT INSTRUCTION: Do NOT stop after finding the first violation. You MUST evaluate ALL rules. If multiple violations exist, YOU MUST INCLUDE ALL VIOLATIONS in the 'reasons' array so the user receives a complete report!")
+        prompt_lines.append('Respond with ONLY this JSON, no other text: {"approved": true|false, "reasons": ["violation 1", "violation 2", "..."], "suggestion": "better wording example, or null"}')
 
-    gemini_key = db_session.query(AppSetting.setting_value).filter(AppSetting.setting_key == 'gemini_api_key').scalar() or os.environ.get('GEMINI_API_KEY', '')
+        parts = [{'text': "\n".join(prompt_lines)}]
+        parts.extend(image_parts)
+        parts.append(submitted_encoded)
 
-    return jsonify({
-        'success': True,
-        'submission_id': sub.id,
-        'dealership_name': d_name,
-        'image_path': rel_path,
-        'caption': caption,
-        'api_key': gemini_key,
-        'payload': {
-            'contents': [{'parts': parts}],
-            'generationConfig': {'response_mime_type': 'application/json'}
-        }
-    })
+        d_obj = db_session.query(Dealership).filter(Dealership.id == d_id).first()
+        d_name = d_obj.name if d_obj else 'Unknown Dealership'
+
+        gemini_key = db_session.query(AppSetting.setting_value).filter(AppSetting.setting_key == 'gemini_api_key').scalar() or os.environ.get('GEMINI_API_KEY', '')
+
+        return jsonify({
+            'success': True,
+            'submission_id': sub.id,
+            'dealership_name': d_name,
+            'image_path': rel_path,
+            'caption': caption,
+            'api_key': gemini_key,
+            'payload': {
+                'contents': [{'parts': parts}],
+                'generationConfig': {'response_mime_type': 'application/json'}
+            }
+        })
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({'success': False, 'message': f"Payload preparation error: {str(e)}"})
 
 @app.route('/save_compliance_result.php', methods=['POST'])
 @require_login
