@@ -2519,8 +2519,7 @@ def crm_parameters_view():
                     db_session.rollback()
                     error = f"Recalculation error: {str(e)}"
 
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'json' in request.headers.get('Accept', ''):
-                return jsonify({'success': not error, 'message': error or message})
+            return jsonify({'success': not error, 'message': error or message})
 
         elif action == 'add':
             name = request.form.get('parameter_name', '').strip()
