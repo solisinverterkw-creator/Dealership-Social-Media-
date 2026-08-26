@@ -153,13 +153,7 @@ desktop.ini
 .env.test.local
 .env.production.local
 
-# Scrapers status logs / uploads
-assets/uploads/
-# Keep placeholders but ignore dynamic images
-/assets/uploads/vehicles/*
-!/assets/uploads/vehicles/.gitkeep
-/assets/uploads/logos/*
-!/assets/uploads/logos/.gitkeep
+# Scrapers status logs / temporary files
 /assets/uploads/refresh_status/*
 !/assets/uploads/refresh_status/.gitkeep
 /assets/uploads/compliance/*

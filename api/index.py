@@ -1310,19 +1310,80 @@ def post_approval_view():
     if not can_view('submit_post_check'):
         abort(403)
     dealerships = get_allowed_dealerships()
-    
-    # Submissions stats
-    recent_submissions = db_session.query(PostSubmission).order_by(PostSubmission.submitted_at.desc()).limit(50).all()
-    success_count = db_session.query(PostSubmission).filter(PostSubmission.status == 'approved').count()
-    flagged_count = db_session.query(PostSubmission).filter(PostSubmission.status == 'flagged').count()
-    
+    accessible_ids = [d.id for d in dealerships]
+
+    d_map = {d.id: d.name for d in dealerships}
+
+    if accessible_ids:
+        raw_submissions = db_session.query(PostSubmission).filter(
+            PostSubmission.dealership_id.in_(accessible_ids)
+        ).order_by(PostSubmission.submitted_at.desc()).limit(50).all()
+    else:
+        raw_submissions = []
+
+    history = []
+    for ps in raw_submissions:
+        history.append({
+            'id': ps.id,
+            'dealership_id': ps.dealership_id,
+            'dealership_name': d_map.get(ps.dealership_id, 'Unknown Dealership'),
+            'image_path': ps.image_path.lstrip('/') if ps.image_path else '',
+            'caption': ps.caption or ps.post_text or '',
+            'status': ps.status or 'pending',
+            'reasons': ps.reasons or ps.compliance_reason or '',
+            'submitted_at': ps.submitted_at
+        })
+
+    all_vehicle_models = db_session.query(VehicleModel).order_by(VehicleModel.name.asc()).all()
+
+    def status_badge_class(status):
+        if status == 'approved': return 'status-done'
+        if status == 'rejected': return 'status-flag'
+        return 'status-pending'
+
+    def status_badge_label(status):
+        if status == 'approved': return '✓ Approved'
+        if status == 'rejected': return '✗ Rejected'
+        return (status or 'pending').capitalize()
+
+    def status_border_color(status):
+        if status == 'approved': return 'var(--green)'
+        if status == 'rejected': return 'var(--red)'
+        return 'var(--border)'
+
+    success_count = sum(1 for h in history if h['status'] == 'approved')
+    flagged_count = sum(1 for h in history if h['status'] == 'rejected')
+
     return render_template(
         'submit_post_check.html',
+        accessible_dealerships=dealerships,
         dealerships=dealerships,
-        recent_submissions=recent_submissions,
+        all_vehicle_models=all_vehicle_models,
+        history=history,
+        recent_submissions=history,
         success_count=success_count,
-        flagged_count=flagged_count
+        flagged_count=flagged_count,
+        status_badge_class=status_badge_class,
+        status_badge_label=status_badge_label,
+        status_border_color=status_border_color
     )
+
+@app.route('/delete_submission.php', methods=['POST'])
+@require_login
+def delete_submission():
+    if not is_super_admin():
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    sub_id = request.form.get('id', type=int)
+    if not sub_id:
+        return jsonify({'success': False, 'message': 'Submission ID missing'})
+
+    sub = db_session.query(PostSubmission).filter(PostSubmission.id == sub_id).first()
+    if not sub:
+        return jsonify({'success': False, 'message': 'Submission not found'})
+
+    db_session.delete(sub)
+    db_session.commit()
+    return jsonify({'success': True})
 
 @app.route('/prepare_compliance_payload.php', methods=['POST'])
 @require_login
