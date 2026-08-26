@@ -1328,9 +1328,9 @@ def post_approval_view():
             'dealership_id': ps.dealership_id,
             'dealership_name': d_map.get(ps.dealership_id, 'Unknown Dealership'),
             'image_path': ps.image_path.lstrip('/') if ps.image_path else '',
-            'caption': ps.caption or ps.post_text or '',
-            'status': ps.status or 'pending',
-            'reasons': ps.reasons or ps.compliance_reason or '',
+            'caption': getattr(ps, 'caption', '') or '',
+            'status': getattr(ps, 'status', 'pending') or 'pending',
+            'reasons': getattr(ps, 'reasons', '') or '',
             'submitted_at': ps.submitted_at
         })
 
