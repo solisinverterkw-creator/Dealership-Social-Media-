@@ -2278,6 +2278,10 @@ def crm_report_view():
             CrmScore.dealership_id.in_(allowed_ids)
         ).all()
         d_map = {d.id: d.name for d in dealerships}
+        for d in dealerships:
+            pivot[d.name] = {}
+            pivot_details[d.name] = {}
+
         for s in scores:
             d_name = d_map.get(s.dealership_id, 'Unknown')
             if d_name not in pivot:
