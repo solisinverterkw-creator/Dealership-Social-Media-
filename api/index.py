@@ -339,13 +339,46 @@ def login():
     if is_logged_in():
         return redirect(url_for('dashboard'))
     error = None
+    message = session.pop('reset_success_msg', None)
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         if attempt_login(username, password):
             return redirect(url_for('dashboard'))
         error = "Invalid Username or Password."
-    return render_template('login.html', error=error)
+    return render_template('login.html', error=error, message=message)
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+@app.route('/reset_password.php', methods=['GET', 'POST'])
+def reset_password():
+    error = None
+    message = None
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        new_password = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+
+        if not username or not new_password:
+            error = "Please fill in all fields."
+        elif new_password != confirm_password:
+            error = "New password and confirm password do not match."
+        elif len(new_password) < 4:
+            error = "Password must be at least 4 characters long."
+        else:
+            user = db_session.query(User).filter(User.username == username).first()
+            if not user:
+                error = f"Username '{username}' not found."
+            else:
+                try:
+                    user.password_hash = hash_password(new_password)
+                    db_session.commit()
+                    session['reset_success_msg'] = f"Password for '{username}' reset successfully! Please sign in with your new password."
+                    return redirect(url_for('login'))
+                except Exception as e:
+                    db_session.rollback()
+                    error = f"Error updating password: {str(e)}"
+
+    return render_template('reset_password.html', error=error, message=message)
 
 @app.route('/logout')
 @app.route('/logout.php')
