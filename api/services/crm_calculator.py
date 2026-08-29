@@ -52,12 +52,20 @@ class CrmScoreCalculator:
 
     @staticmethod
     def detailing_of_enquiry(raw: dict, max_points: float) -> float:
-        val = CrmScoreCalculator.extract_numeric_value(raw, ['fill', 'detail', 'complete', 'field'])
-        if val is None:
-            val = CrmScoreCalculator.extract_any_numeric(raw)
-        if val is None:
-            return 0.0
-        pct = min(100.0, float(val))
+        filled = CrmScoreCalculator.extract_numeric_value(raw, ['total fields filled', 'fields filled', 'filled'])
+        in_view = CrmScoreCalculator.extract_numeric_value(raw, ['total fields in view', 'fields in view', 'view'])
+
+        if filled is not None and in_view is not None and in_view > 0:
+            pct = (filled / in_view) * 100.0
+        else:
+            val = CrmScoreCalculator.extract_numeric_value(raw, ['detail', 'complete', 'field', 'fill'])
+            if val is None:
+                val = CrmScoreCalculator.extract_any_numeric(raw)
+            if val is None:
+                return 0.0
+            pct = float(val)
+
+        pct = min(100.0, max(0.0, pct))
         return round((pct / 100.0) * max_points, 2)
 
     @staticmethod

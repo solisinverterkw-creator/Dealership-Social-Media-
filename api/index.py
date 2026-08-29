@@ -2256,9 +2256,15 @@ def crm_report_view():
                             avg_m = t_sum / enq_c if t_sum > 120.0 else t_sum
                             ach_text = f"{avg_m:.1f} min"
                     elif ckey in ('detailing_of_enquiry', 'detailing'):
-                        v = CrmScoreCalculator.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
-                        if v is not None:
-                            ach_text = f"{v:.1f}%"
+                        filled = CrmScoreCalculator.extract_numeric_value(rdict, ['total fields filled', 'fields filled', 'filled'])
+                        in_view = CrmScoreCalculator.extract_numeric_value(rdict, ['total fields in view', 'fields in view', 'view'])
+                        if filled is not None and in_view is not None and in_view > 0:
+                            pct = (filled / in_view) * 100.0
+                            ach_text = f"{pct:.1f}%"
+                        else:
+                            v = CrmScoreCalculator.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
+                            if v is not None:
+                                ach_text = f"{v:.1f}%"
                     elif ckey in ('number_of_followups',):
                         f_ups = CrmScoreCalculator.extract_numeric_value(rdict, ['follow'])
                         enq = CrmScoreCalculator.extract_numeric_value(rdict, ['enquir', 'total', 'row count'])
@@ -2309,9 +2315,15 @@ def crm_report_view():
                             avg_m = t_sum / enq_c if t_sum > 120.0 else t_sum
                             ach_text = f"{avg_m:.1f} min"
                     elif ckey in ('detailing_of_enquiry', 'detailing'):
-                        v = CrmScoreCalculator.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
-                        if v is not None:
-                            ach_text = f"{v:.1f}%"
+                        filled = CrmScoreCalculator.extract_numeric_value(rdict, ['total fields filled', 'fields filled', 'filled'])
+                        in_view = CrmScoreCalculator.extract_numeric_value(rdict, ['total fields in view', 'fields in view', 'view'])
+                        if filled is not None and in_view is not None and in_view > 0:
+                            pct = (filled / in_view) * 100.0
+                            ach_text = f"{pct:.1f}%"
+                        else:
+                            v = CrmScoreCalculator.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
+                            if v is not None:
+                                ach_text = f"{v:.1f}%"
                     elif ckey in ('number_of_followups',):
                         f_ups = CrmScoreCalculator.extract_numeric_value(rdict, ['follow'])
                         enq = CrmScoreCalculator.extract_numeric_value(rdict, ['enquir', 'total', 'row count'])
