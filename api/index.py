@@ -62,6 +62,8 @@ app = Flask(
     static_folder=static_dir, 
     static_url_path='/assets'
 )
+application = app
+handler = app
 # Secret key - must NEVER be None/empty or Flask sessions will crash
 app.secret_key = (
     os.environ.get('FLASK_SECRET_KEY') or
@@ -2435,6 +2437,9 @@ def crm_parameters_view():
                     db_session.query(CrmParameter).filter(CrmParameter.id == pid).delete()
                     db_session.commit()
                     message = "Parameter deleted successfully."
+                except Exception as e:
+                    db_session.rollback()
+                    error = f"Error deleting parameter: {str(e)}"
         elif action == 'clear_all_raw':
             period_month = request.form.get('period_month', '').strip()
             try:
