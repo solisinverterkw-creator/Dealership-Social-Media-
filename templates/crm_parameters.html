@@ -32,7 +32,7 @@
   <form method="GET" class="search-panel" style="margin-bottom:0; flex:1;">
     <div class="field" style="margin-bottom:0;">
       <label>Raw Data / Calculation Month</label>
-      <input type="month" name="period" value="{{ selected_period }}" onchange="this.form.submit()">
+      <input type="month" name="period" id="crm-period-input" value="{{ selected_period }}" onchange="this.form.submit()">
     </div>
   </form>
 
@@ -73,23 +73,19 @@
     <tbody>
       {% for p in parameters %}
       <tr id="param-row-{{ p.id }}">
-        <form method="POST">
-          <input type="hidden" name="action" value="update">
-          <input type="hidden" name="id" value="{{ p.id }}">
-          <td><input type="number" name="display_order" value="{{ p.display_order }}" style="width:50px;"></td>
-          <td><input type="text" name="parameter_name" value="{{ p.parameter_name }}" style="width:100%;"></td>
-          <td><textarea name="criteria" rows="2" style="width:100%;">{{ p.criteria or '' }}</textarea></td>
-          <td class="th-center"><input type="number" step="0.01" name="max_points" value="{{ p.max_points }}" style="width:70px; text-align:center;"></td>
-          <td class="actions-cell">
-            <button type="submit" class="refresh-btn">Save</button>
-        </form>
-            <button class="delete-row-btn" onclick="deleteParameter({{ p.id }}, {{ p.parameter_name|tojson }})">Delete</button>
-          </td>
-          <td style="text-align:left; white-space:nowrap;">
+        <td><input type="number" id="order-{{ p.id }}" value="{{ p.display_order }}" style="width:50px;"></td>
+        <td><input type="text" id="name-{{ p.id }}" value="{{ p.parameter_name }}" style="width:100%;"></td>
+        <td><textarea id="criteria-{{ p.id }}" rows="2" style="width:100%;">{{ p.criteria or '' }}</textarea></td>
+        <td class="th-center"><input type="number" step="0.01" id="max-{{ p.id }}" value="{{ p.max_points }}" style="width:70px; text-align:center;"></td>
+        <td class="actions-cell" style="white-space:nowrap;">
+          <button type="button" class="refresh-btn" onclick="saveParameter({{ p.id }})">Save</button>
+          <button type="button" class="delete-row-btn" onclick="deleteParameter({{ p.id }}, {{ p.parameter_name|tojson }})">Delete</button>
+        </td>
+        <td style="text-align:left; white-space:nowrap;">
           <div style="font-size:11px; margin-bottom:4px; font-weight:600; color:{% if raw_count_by_param[p.id] %}#16a34a{% else %}var(--muted){% endif %};">
             {% if raw_count_by_param[p.id] %}✅{% endif %} {{ raw_count_by_param[p.id] or 0 }} / {{ dealership_count }} Uploaded
           </div>
-          <input type="file" id="raw-file-{{ p.id }}" accept=".csv,.xlsx,.xls" style="width:140px; font-size:11px;">
+          <input type="file" id="raw-file-{{ p.id }}" accept=".csv,.xlsx,.xls" style="width:150px; font-size:11px;">
           <button type="button" class="refresh-btn" id="upload-btn-{{ p.id }}" onclick="uploadRawData({{ p.id }})" style="font-size:11px;">Upload</button>
         </td>
         <td style="text-align:left; white-space:nowrap;">
@@ -128,6 +124,26 @@
 <script>
 const CRM_SELECTED_PERIOD = {{ selected_period|tojson }};
 
+async function saveParameter(id) {
+  const order = document.getElementById(`order-${id}`).value;
+  const name = document.getElementById(`name-${id}`).value;
+  const criteria = document.getElementById(`criteria-${id}`).value;
+  const max_points = document.getElementById(`max-${id}`).value;
+
+  const body = `action=update&id=${id}&display_order=${encodeURIComponent(order)}&parameter_name=${encodeURIComponent(name)}&criteria=${encodeURIComponent(criteria)}&max_points=${encodeURIComponent(max_points)}`;
+  try {
+    const res = await fetch('/crm_parameters.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+      body: body
+    });
+    const data = await res.json().catch(() => null);
+    alert(data && data.message ? data.message : 'Parameter updated successfully.');
+  } catch (err) {
+    alert('Save Error: ' + err.message);
+  }
+}
+
 async function deleteParameter(id, name) {
   if (!confirm(`Delete "${name}"? Any imported scores for it will also be removed.`)) return;
   const res = await fetch('/crm_parameters.php', {
@@ -136,15 +152,19 @@ async function deleteParameter(id, name) {
     body: `action=delete&id=${id}`,
   });
   if (res.ok) {
-    document.getElementById(`param-row-${id}`).remove();
+    const row = document.getElementById(`param-row-${id}`);
+    if (row) row.remove();
   }
 }
 
 async function uploadRawData(parameterId) {
   const fileInput = document.getElementById(`raw-file-${parameterId}`);
   const btn = document.getElementById(`upload-btn-${parameterId}`);
+  const periodEl = document.getElementById('crm-period-input');
+  const period = (periodEl && periodEl.value) ? periodEl.value : CRM_SELECTED_PERIOD;
+
   if (!fileInput || !fileInput.files.length) {
-    alert('Choose A CSV Or Excel File First.');
+    alert('Please choose a CSV or Excel file first.');
     return;
   }
   const file = fileInput.files[0];
@@ -159,10 +179,10 @@ async function uploadRawData(parameterId) {
   const formData = new FormData();
   formData.append('action', 'import_raw');
   formData.append('crm_parameter_id', parameterId);
-  formData.append('period_month', CRM_SELECTED_PERIOD);
-  formData.append('file', file);
+  formData.append('period_month', period);
   formData.append('file_upload', file);
   formData.append('raw_file', file);
+  formData.append('file', file);
 
   try {
     const res = await fetch('/crm_parameters.php', {
@@ -173,23 +193,28 @@ async function uploadRawData(parameterId) {
     const data = await res.json().catch(() => null);
     if (data && data.success) {
       alert('✅ ' + (data.message || 'Upload & calculation completed successfully!'));
+      window.location.href = `/crm_parameters.php?period=${encodeURIComponent(period)}`;
     } else {
-      alert('❌ ' + (data && data.message ? data.message : 'Upload failed. Please check file format.'));
+      alert('❌ ' + (data && data.message ? data.message : 'Upload failed. Please check Excel sheet format.'));
+      if (btn) { btn.disabled = false; btn.innerText = 'Upload'; }
     }
   } catch (err) {
     alert('Upload Error: ' + err.message);
+    if (btn) { btn.disabled = false; btn.innerText = 'Upload'; }
   }
-  window.location.href = `/crm_parameters.php?period=${encodeURIComponent(CRM_SELECTED_PERIOD)}`;
 }
 
 async function recalculate(parameterId, name) {
   const btn = document.getElementById(`recalc-btn-${parameterId}`);
+  const periodEl = document.getElementById('crm-period-input');
+  const period = (periodEl && periodEl.value) ? periodEl.value : CRM_SELECTED_PERIOD;
+
   if (btn) { btn.disabled = true; btn.innerText = 'Calculating...'; }
 
   const formData = new FormData();
   formData.append('action', 'recalculate');
   formData.append('crm_parameter_id', parameterId);
-  formData.append('period_month', CRM_SELECTED_PERIOD);
+  formData.append('period_month', period);
 
   try {
     const res = await fetch('/crm_parameters.php', {
@@ -198,11 +223,17 @@ async function recalculate(parameterId, name) {
       body: formData
     });
     const data = await res.json().catch(() => null);
-    alert('⚡ ' + (data ? data.message : 'Recalculated Successfully.'));
+    if (data && data.success) {
+      alert('⚡ ' + (data.message || 'Recalculated Successfully.'));
+      window.location.href = `/crm_parameters.php?period=${encodeURIComponent(period)}`;
+    } else {
+      alert('❌ ' + (data && data.message ? data.message : 'Recalculation failed.'));
+      if (btn) { btn.disabled = false; btn.innerText = 'Recalculate'; }
+    }
   } catch (err) {
     alert('Recalculate Error: ' + err.message);
+    if (btn) { btn.disabled = false; btn.innerText = 'Recalculate'; }
   }
-  window.location.href = `/crm_parameters.php?period=${encodeURIComponent(CRM_SELECTED_PERIOD)}`;
 }
 </script>
 {% endblock %}
