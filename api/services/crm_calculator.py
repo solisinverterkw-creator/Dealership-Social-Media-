@@ -62,12 +62,15 @@ class CrmScoreCalculator:
 
     @staticmethod
     def timed_response_bands(raw: dict, max_points: float) -> float:
-        row_count = float(raw.get('Row Count') or 1.0)
+        enquiries = CrmScoreCalculator.extract_numeric_value(raw, ['enquir', 'total enq', 'total enquiries'])
+        if enquiries is None or enquiries <= 0:
+            enquiries = float(raw.get('Row Count') or 1.0)
+
         avg_minutes = raw.get('Average Response Time (min)')
         if avg_minutes is None:
             time_sum = CrmScoreCalculator.extract_numeric_value(raw, ['response time', 'sales person response', 'min', 'time'])
-            if time_sum is not None and row_count > 0:
-                avg_minutes = time_sum / row_count if time_sum > 120.0 else time_sum
+            if time_sum is not None and enquiries > 0:
+                avg_minutes = time_sum / enquiries if time_sum > 120.0 else time_sum
             else:
                 avg_minutes = CrmScoreCalculator.extract_any_numeric(raw)
 
@@ -89,12 +92,15 @@ class CrmScoreCalculator:
 
     @staticmethod
     def manager_assigning_time_bands(raw: dict, max_points: float) -> float:
-        row_count = float(raw.get('Row Count') or 1.0)
+        enquiries = CrmScoreCalculator.extract_numeric_value(raw, ['enquir', 'total enq', 'total enquiries'])
+        if enquiries is None or enquiries <= 0:
+            enquiries = float(raw.get('Row Count') or 1.0)
+
         avg_minutes = raw.get('Average Response Time (min)')
         if avg_minutes is None:
             time_sum = CrmScoreCalculator.extract_numeric_value(raw, ['assign', 'min', 'time'])
-            if time_sum is not None and row_count > 0:
-                avg_minutes = time_sum / row_count if time_sum > 120.0 else time_sum
+            if time_sum is not None and enquiries > 0:
+                avg_minutes = time_sum / enquiries if time_sum > 120.0 else time_sum
             else:
                 avg_minutes = CrmScoreCalculator.extract_any_numeric(raw)
 

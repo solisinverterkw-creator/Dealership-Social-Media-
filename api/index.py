@@ -2248,9 +2248,12 @@ def crm_report_view():
                     row_c = float(rdict.get('Row Count') or 1.0)
 
                     if ckey in ('timely_followup', 'first_response_time', 'manager_assigning_time'):
+                        enq_c = CrmScoreCalculator.extract_numeric_value(rdict, ['enquir', 'total enq', 'total enquiries'])
+                        if enq_c is None or enq_c <= 0:
+                            enq_c = float(rdict.get('Row Count') or 1.0)
                         t_sum = CrmScoreCalculator.extract_numeric_value(rdict, ['response time', 'sales person response', 'assign', 'min', 'time'])
-                        if t_sum is not None and row_c > 0:
-                            avg_m = t_sum / row_c if t_sum > 120.0 else t_sum
+                        if t_sum is not None and enq_c > 0:
+                            avg_m = t_sum / enq_c if t_sum > 120.0 else t_sum
                             ach_text = f"{avg_m:.1f} min"
                     elif ckey in ('detailing_of_enquiry', 'detailing'):
                         v = CrmScoreCalculator.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
@@ -2294,9 +2297,12 @@ def crm_report_view():
                     row_c = float(rdict.get('Row Count') or 1.0)
 
                     if ckey in ('timely_followup', 'first_response_time', 'manager_assigning_time'):
+                        enq_c = CrmScoreCalculator.extract_numeric_value(rdict, ['enquir', 'total enq', 'total enquiries'])
+                        if enq_c is None or enq_c <= 0:
+                            enq_c = float(rdict.get('Row Count') or 1.0)
                         t_sum = CrmScoreCalculator.extract_numeric_value(rdict, ['response time', 'sales person response', 'assign', 'min', 'time'])
-                        if t_sum is not None and row_c > 0:
-                            avg_m = t_sum / row_c if t_sum > 120.0 else t_sum
+                        if t_sum is not None and enq_c > 0:
+                            avg_m = t_sum / enq_c if t_sum > 120.0 else t_sum
                             ach_text = f"{avg_m:.1f} min"
                     elif ckey in ('detailing_of_enquiry', 'detailing'):
                         v = CrmScoreCalculator.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
