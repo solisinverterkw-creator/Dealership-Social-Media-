@@ -2428,6 +2428,17 @@ def crm_parameters_view():
 
                                 rowCountByDealership[dealershipId] += 1
 
+                            # Clean wipe previous raw data and scores for this specific parameter & period before inserting new file data
+                            db_session.query(CrmRawData).filter(
+                                CrmRawData.crm_parameter_id == parameter_id,
+                                CrmRawData.period_month == period_month
+                            ).delete()
+                            db_session.query(CrmScore).filter(
+                                CrmScore.crm_parameter_id == parameter_id,
+                                CrmScore.period_month == period_month
+                            ).delete()
+                            db_session.commit()
+
                             imported_count = 0
                             for d_id, sums in sumsByDealership.items():
                                 rawData = dict(sums)
@@ -2442,26 +2453,51 @@ def crm_parameters_view():
                                     rawData['Max Business Days Difference'] = maxBusinessDaysByDealership[d_id]
 
                                 rawJson = json.dumps(rawData)
-                                existing_raw = db_session.query(CrmRawData).filter(
-                                    CrmRawData.dealership_id == d_id,
-                                    CrmRawData.crm_parameter_id == parameter_id,
-                                    CrmRawData.period_month == period_month
-                                ).first()
-
-                                if not existing_raw:
-                                    existing_raw = CrmRawData(
-                                        dealership_id=d_id,
-                                        crm_parameter_id=parameter_id,
-                                        period_month=period_month,
-                                        raw_json=rawJson
-                                    )
-                                    db_session.add(existing_raw)
-                                else:
-                                    existing_raw.raw_json = rawJson
+                                new_raw = CrmRawData(
+                                    dealership_id=d_id,
+                                    crm_parameter_id=parameter_id,
+                                    period_month=period_month,
+                                    raw_json=rawJson
+                                )
+                                db_session.add(new_raw)
                                 imported_count += 1
 
                             db_session.commit()
-                            message = f"{imported_count} Dealership(s) — Raw Data Imported (Summed From {sum(rowCountByDealership.values())} Row(s)) For {period_month}."
+
+                            # AUTOMATICALLY RECALCULATE SCORES IMMEDIATELY ACCORDING TO DEFINED LOGIC
+                            param = db_session.query(CrmParameter).filter(CrmParameter.id == parameter_id).first()
+                            if param and param.calc_key:
+                                from api.services.crm_calculator import CrmScoreCalculator
+                                raw_records = db_session.query(CrmRawData).filter(
+                                    CrmRawData.crm_parameter_id == parameter_id,
+                                    CrmRawData.period_month == period_month
+                                ).all()
+
+                                for rd in raw_records:
+                                    try:
+                                        raw_dict = json.loads(rd.raw_json) if rd.raw_json else {}
+                                    except Exception:
+                                        raw_dict = {}
+
+                                    d_obj = db_session.query(Dealership).filter(Dealership.id == rd.dealership_id).first()
+                                    dealership_dict = {
+                                        'digital_enquiry_target': d_obj.digital_enquiry_target if d_obj else 0.0,
+                                        'digital_enquiry_conversion_target': d_obj.digital_enquiry_conversion_target if d_obj else 0.0
+                                    }
+
+                                    pts = CrmScoreCalculator.calculate(param.calc_key, raw_dict, float(param.max_points or 0), dealership_dict) or 0.0
+
+                                    score = CrmScore(
+                                        dealership_id=rd.dealership_id,
+                                        crm_parameter_id=parameter_id,
+                                        period_month=period_month,
+                                        points_obtained=pts
+                                    )
+                                    db_session.add(score)
+
+                                db_session.commit()
+
+                            message = f"{imported_count} Dealership(s) — Raw Data Uploaded & Automatically Calculated (From {sum(rowCountByDealership.values())} Row(s)) For {period_month}."
                 except Exception as e:
                     db_session.rollback()
                     error = f"Error reading raw data sheet: {str(e)}"
