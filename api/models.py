@@ -340,3 +340,6 @@ class CrmRawData(Base):
     # Relationships
     dealership = relationship('Dealership', back_populates='crm_raw_data')
     parameter = relationship('CrmParameter', back_populates='raw_data')
+
+# Alias for backward compatibility
+ReshareSourcePost = ProcessedSourcePost

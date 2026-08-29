@@ -172,11 +172,8 @@ async function checkOne(id, btnEl, reload = true) {
     const { from, to } = currentRange();
     const r = await fetch(`/check_reshare_dealership.php?id=${id}&from=${from}&to=${to}`);
     let d = await r.json();
-    if (d.status === 'started') {
-      d = await pollJobStatus(`${id}_${from}_${to}`, 'reshare_check');
-    }
     if (!d.success) {
-      alert(`Dealership ${id}: ${d.message}`);
+      alert(`Dealership ${id}: ${d.message || 'Check failed'}`);
       return;
     }
     if (reload) {
@@ -192,26 +189,23 @@ async function checkOne(id, btnEl, reload = true) {
 
 async function refreshSource() {
   const btn = document.getElementById('refresh-source-btn');
-  btn.disabled = true;
-  const timer = startElapsedTimer(btn, 'Refreshing');
+  if (btn) btn.disabled = true;
+  const timer = btn ? startElapsedTimer(btn, 'Refreshing') : null;
   try {
     const { from, to } = currentRange();
     const r = await fetch(`/refresh_reshare_source.php?from=${from}&to=${to}`);
     let d = await r.json();
-    if (d.status === 'started') {
-      d = await pollJobStatus(`${from}_${to}`, 'reshare_source');
-    }
     if (d.success) {
-      alert(`Source posts refreshed — ${d.tracked} tracked, ${d.new_posts} new.`);
+      alert(`Source posts refreshed — ${d.tracked || 0} tracked, ${d.new_posts || 0} new.`);
+      reloadPreservingRange();
     } else {
-      alert(`Failed: ${d.message}`);
+      alert(`Failed: ${d.message || 'Error refreshing source'}`);
     }
   } catch (e) {
     console.error(e);
   } finally {
-    stopElapsedTimer(timer);
-    btn.disabled = false;
-    btn.textContent = 'Refresh Source Posts';
+    if (timer) stopElapsedTimer(timer);
+    if (btn) { btn.disabled = false; btn.textContent = 'Refresh Source Posts'; }
   }
 }
 
@@ -224,20 +218,20 @@ async function checkAll() {
   const progressFill = document.getElementById('check-progress-fill');
   const progressText = document.getElementById('check-progress-text');
 
-  btn.disabled = true;
-  progressWrap.style.display = '';
+  if (btn) btn.disabled = true;
+  if (progressWrap) progressWrap.style.display = '';
 
   let done = 0;
   for (const row of rows) {
     const id = row.id.replace('reshare-row-', '');
-    progressText.textContent = `Checking ${done + 1}/${rows.length}...`;
+    if (progressText) progressText.textContent = `Checking ${done + 1}/${rows.length}...`;
     const checkBtn = row.querySelector('.refresh-btn');
     await checkOne(id, checkBtn, false);
     done++;
-    progressFill.style.width = `${Math.round((done / rows.length) * 100)}%`;
+    if (progressFill) progressFill.style.width = `${Math.round((done / rows.length) * 100)}%`;
   }
 
-  progressText.textContent = `Done — ${rows.length} dealership(s) checked. Reloading...`;
+  if (progressText) progressText.textContent = `Done — ${rows.length} dealership(s) checked. Reloading...`;
   reloadPreservingRange();
 }
 </script>
