@@ -2301,9 +2301,21 @@ def crm_parameters_view():
                     db_session.query(CrmParameter).filter(CrmParameter.id == pid).delete()
                     db_session.commit()
                     message = "Parameter deleted successfully."
-                except Exception as e:
-                    db_session.rollback()
-                    error = f"Error deleting parameter: {str(e)}"
+        elif action == 'clear_all_raw':
+            period_month = request.form.get('period_month', '').strip()
+            try:
+                if period_month:
+                    r_deleted = db_session.query(CrmRawData).filter(CrmRawData.period_month == period_month).delete()
+                    s_deleted = db_session.query(CrmScore).filter(CrmScore.period_month == period_month).delete()
+                    message = f"Cleared raw data & scores for {period_month}."
+                else:
+                    r_deleted = db_session.query(CrmRawData).delete()
+                    s_deleted = db_session.query(CrmScore).delete()
+                    message = "Cleared all CRM raw data & scores."
+                db_session.commit()
+            except Exception as e:
+                db_session.rollback()
+                error = f"Error clearing data: {str(e)}"
 
         elif action == 'import_raw':
             parameter_id = int(request.form.get('crm_parameter_id') or 0)

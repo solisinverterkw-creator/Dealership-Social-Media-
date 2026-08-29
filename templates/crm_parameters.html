@@ -28,12 +28,22 @@
   </div>
 {% endif %}
 
-<form method="GET" class="search-panel" style="margin-bottom:16px;">
-  <div class="field">
-    <label>Raw Data / Calculation Month</label>
-    <input type="month" name="period" value="{{ selected_period }}" onchange="this.form.submit()">
-  </div>
-</form>
+<div style="display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
+  <form method="GET" class="search-panel" style="margin-bottom:0; flex:1;">
+    <div class="field" style="margin-bottom:0;">
+      <label>Raw Data / Calculation Month</label>
+      <input type="month" name="period" value="{{ selected_period }}" onchange="this.form.submit()">
+    </div>
+  </form>
+
+  <form method="POST" onsubmit="return confirm('Are you sure you want to clear all raw data and calculated scores for {{ selected_period }}?');" style="margin:0;">
+    <input type="hidden" name="action" value="clear_all_raw">
+    <input type="hidden" name="period_month" value="{{ selected_period }}">
+    <button type="submit" class="btn" style="background:rgba(239,68,68,0.12); color:var(--red); border:1px solid rgba(239,68,68,0.3); font-size:12px;">
+      🗑️ Clear Raw Data &amp; Scores ({{ selected_period }})
+    </button>
+  </form>
+</div>
 
 <details style="margin-bottom:20px;">
   <summary style="cursor:pointer; font-size:13px; color:var(--muted);">Dealership Names ({{ dealership_count }}) — Use These Exact Names In Your Raw Data Excel's "Dealer Name" Column</summary>
