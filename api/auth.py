@@ -95,6 +95,9 @@ def require_login(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not is_logged_in():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+                from flask import jsonify
+                return jsonify({'success': False, 'message': 'Your session has expired. Please log in again.'}), 401
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -102,9 +105,10 @@ def require_login(f):
 def require_super_admin(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not is_logged_in():
-            return redirect(url_for('login'))
         if not is_super_admin():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+                from flask import jsonify
+                return jsonify({'success': False, 'message': 'Super Admin privileges required or session expired. Please log in again.'}), 401
             abort(403, description="Only A Super Admin Can View This Page.")
         return f(*args, **kwargs)
     return decorated_function
