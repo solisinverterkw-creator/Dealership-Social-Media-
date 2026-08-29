@@ -2333,9 +2333,25 @@ def crm_parameters_view():
                     if not rows or len(rows) < 2:
                         error = "Sheet is empty or has no data rows."
                     else:
-                        headerIndex = helper.find_header_row_index(rows, ['dealer', 'company'])
+                        dealershipsByName = helper._build_dealership_map(db_session)
+
+                        headerIndex = helper.find_header_row_index(rows, ['dealer', 'company', 'agency', 'branch', 'showroom', 'name', 'dealership'])
                         headerRow = rows[headerIndex] if headerIndex < len(rows) else []
-                        dealerCol = helper.find_column(headerRow, ['dealer', 'dealership', 'company'])
+                        dealerCol = helper.find_column(headerRow, ['dealer', 'dealership', 'company', 'agency', 'branch', 'showroom', 'name', 'location'])
+
+                        if dealerCol is None:
+                            # Auto-detect column by searching for matching dealership names across all cells in first 25 rows
+                            col_matches = {}
+                            for r_idx, r in enumerate(rows[:25]):
+                                for c_idx, cell in enumerate(r):
+                                    val_str = str(cell).strip()
+                                    if val_str and helper.find_dealership_match(dealershipsByName, val_str):
+                                        col_matches[c_idx] = col_matches.get(c_idx, 0) + 1
+                            if col_matches:
+                                dealerCol = max(col_matches, key=col_matches.get)
+                                if headerIndex >= len(rows):
+                                    headerIndex = 0
+                                    headerRow = rows[0] if rows else []
 
                         if dealerCol is None:
                             error = "Could Not Find A \"Dealer\"/\"Dealership\"/\"Company\" Column In Header Row."

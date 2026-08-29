@@ -116,12 +116,11 @@ class SpreadsheetImportHelper:
 
     @staticmethod
     def matches_any_keyword(label: str, keywords: list) -> bool:
-        """Matches a label against a list of keywords as whole words."""
+        """Matches a label against a list of keywords."""
         label_lower = label.lower()
         for kw in keywords:
-            kw_escaped = re.escape(kw.lower())
-            pattern = rf'(?<![a-z0-9]){kw_escaped}(?![a-z0-9])'
-            if re.search(pattern, label_lower):
+            kw_lower = kw.lower()
+            if kw_lower in label_lower:
                 return True
         return False
 
