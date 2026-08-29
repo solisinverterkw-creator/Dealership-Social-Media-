@@ -2570,8 +2570,11 @@ def crm_parameters_view():
                         CrmRawData.period_month == period_month
                     ).all()
 
-                    calculated_count = 0
-                    skipped_count = 0
+                    if not raw_records:
+                        error = f"No raw data file has been uploaded for \"{param.parameter_name}\" in {period_month} yet. Please choose an Excel file and click 'Upload' first."
+                    else:
+                        calculated_count = 0
+                        skipped_count = 0
 
                     for rd in raw_records:
                         try:
