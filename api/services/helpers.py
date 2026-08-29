@@ -807,48 +807,60 @@ def read_excel_rows(file_input, sheet_name: str = None) -> list:
     if not file_bytes:
         return []
 
-    # Try CSV parsing if filename ends with .csv or text content
-    if filename.lower().endswith('.csv') or (isinstance(file_bytes, bytes) and not file_bytes.startswith(b'PK')):
+    # Try OpenPyXL XLSX
+    if file_bytes.startswith(b'PK'):
         try:
-            try:
-                text = file_bytes.decode('utf-8-sig')
-            except UnicodeDecodeError:
-                text = file_bytes.decode('latin-1', errors='ignore')
+            stream = io.BytesIO(file_bytes)
+            wb = openpyxl.load_workbook(stream, data_only=True)
+            if sheet_name:
+                if sheet_name in wb.sheetnames:
+                    sheet = wb[sheet_name]
+                else:
+                    match = [s for s in wb.sheetnames if s.strip().lower() == sheet_name.strip().lower()]
+                    sheet = wb[match[0]] if match else wb.active
+            else:
+                sheet = wb.active
 
-            reader = csv.reader(io.StringIO(text))
             rows = []
-            for row in reader:
+            for row in sheet.iter_rows(values_only=True):
                 rows.append([str(cell).strip() if cell is not None else "" for cell in row])
-            if rows:
+            if rows and any(any(c != "" for c in r) for r in rows):
                 return rows
         except Exception:
             pass
 
-    # Otherwise OpenPyXL XLSX
+    # Try XLS via xlrd if available
     try:
+        import xlrd
         stream = io.BytesIO(file_bytes)
-        wb = openpyxl.load_workbook(stream, data_only=True)
-        if sheet_name:
-            if sheet_name in wb.sheetnames:
-                sheet = wb[sheet_name]
-            else:
-                match = [s for s in wb.sheetnames if s.strip().lower() == sheet_name.strip().lower()]
-                if match:
-                    sheet = wb[match[0]]
-                else:
-                    sheet = wb.active
-        else:
-            if 'Undelivered Stock' in wb.sheetnames:
-                sheet = wb['Undelivered Stock']
-            else:
-                sheet = wb.active
-
+        wb = xlrd.open_workbook(file_contents=file_bytes)
+        sheet = wb.sheet_by_index(0)
         rows = []
-        for row in sheet.iter_rows(values_only=True):
-            rows.append([str(cell).strip() if cell is not None else "" for cell in row])
-        return rows
-    except Exception as e:
-        raise RuntimeError(f"Error reading Excel/CSV file: {str(e)}")
+        for r_idx in range(sheet.nrows):
+            row_vals = [str(sheet.cell_value(r_idx, c_idx)).strip() for c_idx in range(sheet.ncols)]
+            rows.append(row_vals)
+        if rows:
+            return rows
+    except Exception:
+        pass
+
+    # Try CSV / text decoding
+    try:
+        for enc in ['utf-8-sig', 'latin-1', 'cp1252']:
+            try:
+                text = file_bytes.decode(enc)
+                reader = csv.reader(io.StringIO(text))
+                rows = []
+                for row in reader:
+                    rows.append([str(cell).strip() if cell is not None else "" for cell in row])
+                if rows and len(rows) > 1:
+                    return rows
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    return []
 
 class DataQualityAnalyzer:
     FAKE_EMAIL_DOMAINS = ['test.com', 'example.com', 'test.test', 'asdf.com', 'abc.com', 'xyz.com', 'mail.com']
