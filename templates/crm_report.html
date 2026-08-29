@@ -185,8 +185,12 @@
             {% set target_max = 100 if is_direct_result else p.max_points %}
             {% set below_target = (obtained is not none and obtained < target_max) %}
             <td class="{% if below_target %}below-target{% endif %}">
+              {% set details = pivot_details[dealership_name][p.id] if (dealership_name in pivot_details and p.id in pivot_details[dealership_name]) else none %}
               {% if obtained is not none %}
-                {{ obtained|number_format(1) }}{% if is_direct_result %}%{% endif %}
+                <div style="font-weight:700;">{{ obtained|number_format(1) }}{% if is_direct_result %}%{% endif %}</div>
+                {% if details and details.achievement %}
+                  <div style="font-size:10px; opacity:0.85; font-weight:500; margin-top:2px; color:#a5b4fc;">({{ details.achievement }})</div>
+                {% endif %}
               {% else %}
                 —
               {% endif %}

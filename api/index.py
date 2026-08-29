@@ -2218,7 +2218,17 @@ def crm_report_view():
 
     score_by_param = {}
     pivot = {}
+    pivot_details = {}
     allowed_ids = {d.id for d in dealerships}
+
+    raw_records = db_session.query(CrmRawData).filter(
+        CrmRawData.period_month == selected_period,
+        CrmRawData.dealership_id.in_(allowed_ids)
+    ).all()
+    raw_map = {(r.dealership_id, r.crm_parameter_id): r.raw_json for r in raw_records}
+    param_map = {p.id: p for p in parameters}
+
+    from api.services.crm_calculator import CrmScoreCalculator
 
     if selected_dealership_id and selected_dealership:
         scores = db_session.query(CrmScore).filter(
@@ -2226,7 +2236,39 @@ def crm_report_view():
             CrmScore.period_month == selected_period
         ).all()
         for s in scores:
-            score_by_param[s.crm_parameter_id] = float(s.points_obtained)
+            pts = float(s.points_obtained)
+            score_by_param[s.crm_parameter_id] = pts
+            rjson = raw_map.get((s.dealership_id, s.crm_parameter_id))
+            ach_text = None
+            if rjson:
+                try:
+                    rdict = json.loads(rjson)
+                    pobj = param_map.get(s.crm_parameter_id)
+                    ckey = str(pobj.calc_key or '').lower() if pobj else ''
+                    row_c = float(rdict.get('Row Count') or 1.0)
+
+                    if ckey in ('timely_followup', 'first_response_time', 'manager_assigning_time'):
+                        t_sum = CrmScoreCalculator.extract_numeric_value(rdict, ['response time', 'sales person response', 'assign', 'min', 'time'])
+                        if t_sum is not None and row_c > 0:
+                            avg_m = t_sum / row_c if t_sum > 120.0 else t_sum
+                            ach_text = f"{avg_m:.1f} min"
+                    elif ckey in ('detailing_of_enquiry', 'detailing'):
+                        v = CrmScoreCalculator.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
+                        if v is not None:
+                            ach_text = f"{v:.1f}%"
+                    elif ckey in ('number_of_followups',):
+                        f_ups = CrmScoreCalculator.extract_numeric_value(rdict, ['follow'])
+                        enq = CrmScoreCalculator.extract_numeric_value(rdict, ['enquir', 'total', 'row count'])
+                        if f_ups is not None and enq and enq > 0:
+                            ach_text = f"{(f_ups / enq) * 100:.0f}%"
+                    elif ckey in ('voip_calling',):
+                        v_calls = CrmScoreCalculator.extract_numeric_value(rdict, ['voip', 'call'])
+                        f_ups = CrmScoreCalculator.extract_numeric_value(rdict, ['follow', 'total']) or 1.0
+                        if v_calls is not None and f_ups > 0:
+                            ach_text = f"{(v_calls / f_ups) * 100:.0f}%"
+                except Exception:
+                    pass
+            pivot_details[s.crm_parameter_id] = {'pts': pts, 'achievement': ach_text}
     else:
         scores = db_session.query(CrmScore).filter(
             CrmScore.period_month == selected_period,
@@ -2237,7 +2279,43 @@ def crm_report_view():
             d_name = d_map.get(s.dealership_id, 'Unknown')
             if d_name not in pivot:
                 pivot[d_name] = {}
-            pivot[d_name][s.crm_parameter_id] = float(s.points_obtained)
+                pivot_details[d_name] = {}
+
+            pts = float(s.points_obtained)
+            pivot[d_name][s.crm_parameter_id] = pts
+
+            rjson = raw_map.get((s.dealership_id, s.crm_parameter_id))
+            ach_text = None
+            if rjson:
+                try:
+                    rdict = json.loads(rjson)
+                    pobj = param_map.get(s.crm_parameter_id)
+                    ckey = str(pobj.calc_key or '').lower() if pobj else ''
+                    row_c = float(rdict.get('Row Count') or 1.0)
+
+                    if ckey in ('timely_followup', 'first_response_time', 'manager_assigning_time'):
+                        t_sum = CrmScoreCalculator.extract_numeric_value(rdict, ['response time', 'sales person response', 'assign', 'min', 'time'])
+                        if t_sum is not None and row_c > 0:
+                            avg_m = t_sum / row_c if t_sum > 120.0 else t_sum
+                            ach_text = f"{avg_m:.1f} min"
+                    elif ckey in ('detailing_of_enquiry', 'detailing'):
+                        v = CrmScoreCalculator.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
+                        if v is not None:
+                            ach_text = f"{v:.1f}%"
+                    elif ckey in ('number_of_followups',):
+                        f_ups = CrmScoreCalculator.extract_numeric_value(rdict, ['follow'])
+                        enq = CrmScoreCalculator.extract_numeric_value(rdict, ['enquir', 'total', 'row count'])
+                        if f_ups is not None and enq and enq > 0:
+                            ach_text = f"{(f_ups / enq) * 100:.0f}%"
+                    elif ckey in ('voip_calling',):
+                        v_calls = CrmScoreCalculator.extract_numeric_value(rdict, ['voip', 'call'])
+                        f_ups = CrmScoreCalculator.extract_numeric_value(rdict, ['follow', 'total']) or 1.0
+                        if v_calls is not None and f_ups > 0:
+                            ach_text = f"{(v_calls / f_ups) * 100:.0f}%"
+                except Exception:
+                    pass
+
+            pivot_details[d_name][s.crm_parameter_id] = {'pts': pts, 'achievement': ach_text}
         pivot = dict(sorted(pivot.items()))
 
     total_max_points = sum(float(p.max_points or 0) for p in parameters if p.max_points != 0.0)
@@ -2260,6 +2338,7 @@ def crm_report_view():
         total_max_points=total_max_points,
         score_by_param=score_by_param,
         pivot=pivot,
+        pivot_details=pivot_details,
         dealer_target_field_by_calc_key=dealer_target_field_by_calc_key,
         message=message,
         error=error,
