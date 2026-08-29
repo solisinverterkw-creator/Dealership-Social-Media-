@@ -161,6 +161,8 @@ async function uploadRawData(parameterId) {
   formData.append('crm_parameter_id', parameterId);
   formData.append('period_month', CRM_SELECTED_PERIOD);
   formData.append('file', file);
+  formData.append('file_upload', file);
+  formData.append('raw_file', file);
 
   try {
     const res = await fetch('/crm_parameters.php', {
@@ -169,22 +171,11 @@ async function uploadRawData(parameterId) {
       body: formData
     });
     const data = await res.json().catch(() => null);
-    
-    // Automatically recalculate scores immediately after raw data upload
-    const recalcFormData = new FormData();
-    recalcFormData.append('action', 'recalculate');
-    recalcFormData.append('crm_parameter_id', parameterId);
-    recalcFormData.append('period_month', CRM_SELECTED_PERIOD);
-
-    const recalcRes = await fetch('/crm_parameters.php', {
-      method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-      body: recalcFormData
-    });
-    const recalcData = await recalcRes.json().catch(() => null);
-
-    const msg = (data && data.message ? data.message : 'Upload successful.') + '\n\n' + (recalcData && recalcData.message ? recalcData.message : 'Calculated scores successfully.');
-    alert('✅ ' + msg);
+    if (data && data.success) {
+      alert('✅ ' + (data.message || 'Upload & calculation completed successfully!'));
+    } else {
+      alert('❌ ' + (data && data.message ? data.message : 'Upload failed. Please check file format.'));
+    }
   } catch (err) {
     alert('Upload Error: ' + err.message);
   }

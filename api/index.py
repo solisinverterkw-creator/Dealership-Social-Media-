@@ -2320,7 +2320,7 @@ def crm_parameters_view():
         elif action == 'import_raw':
             parameter_id = int(request.form.get('crm_parameter_id') or 0)
             period_month = request.form.get('period_month', '').strip()
-            file_upload = request.files.get('file_upload') or request.files.get('raw_file')
+            file_upload = request.files.get('file') or request.files.get('file_upload') or request.files.get('raw_file')
 
             if not parameter_id or not period_month:
                 error = "Missing Parameter Or Period."
