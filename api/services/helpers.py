@@ -175,22 +175,29 @@ class SpreadsheetImportHelper:
 
     @staticmethod
     def find_dealership_match(dealerships_by_normalized_name: dict, raw_name: str) -> int:
-        """Finds the database dealership ID matching a raw string name, with fuzzy fallback."""
+        """Finds the database dealership ID matching a raw string name, with fuzzy and substring fallback."""
         normalized = SpreadsheetImportHelper.normalize_dealership_name(raw_name)
-        if normalized == '':
+        if normalized == '' or 'regional' in normalized:
             return None
         if normalized in dealerships_by_normalized_name:
             return dealerships_by_normalized_name[normalized]
+
+        # Substring matching (e.g. 'pakpattan' matches 'pakpattanmotors', 'united' matches 'unitedmotors')
+        matches = []
+        for known_normalized, id_val in dealerships_by_normalized_name.items():
+            if len(normalized) >= 4 and (normalized in known_normalized or known_normalized in normalized):
+                matches.append(id_val)
+
+        if len(matches) == 1:
+            return matches[0]
 
         best_id = None
         best_distance = None
         ambiguous = False
 
         for known_normalized, id_val in dealerships_by_normalized_name.items():
-            if abs(len(known_normalized) - len(normalized)) > 2:
-                continue
             dist = levenshtein_distance(normalized, known_normalized)
-            tolerance = 2 if len(known_normalized) >= 12 else 1
+            tolerance = 4 if len(known_normalized) >= 10 else 2
             if dist > tolerance:
                 continue
             if best_distance is None or dist < best_distance:
