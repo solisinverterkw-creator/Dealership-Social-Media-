@@ -1,11 +1,32 @@
 {% set ep = request.endpoint %}
-<button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
-<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-<aside class="sidebar" id="app-sidebar">
-  <div class="sidebar-brand">
-    <span class="sidebar-logo-plate"><img src="/assets/suzuki-logo.png" alt="Suzuki" class="sidebar-logo"></span>
-    <span>ROSP - Dealers Social Media</span>
+
+<!-- Sleek Mobile Sticky Top Navigation Bar -->
+<div class="mobile-top-bar" id="mobile-top-bar">
+  <button class="mobile-menu-btn" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+    <span class="hamburger-lines">
+      <span></span>
+      <span></span>
+      <span></span>
+    </span>
+  </button>
+  <div class="mobile-brand">
+    <span class="mobile-logo-plate"><img src="/assets/suzuki-logo.png" alt="Suzuki" class="mobile-logo"></span>
+    <span class="mobile-brand-title">ROSP Suzuki</span>
   </div>
+  <button class="mobile-theme-btn" onclick="cycleTheme()" title="Switch Theme" aria-label="Switch Theme">🎨</button>
+</div>
+
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="app-sidebar">
+  <div class="sidebar-header-row">
+    <div class="sidebar-brand">
+      <span class="sidebar-logo-plate"><img src="/assets/suzuki-logo.png" alt="Suzuki" class="sidebar-logo"></span>
+      <span class="sidebar-brand-text">ROSP Suzuki</span>
+    </div>
+    <button class="sidebar-close-btn" id="sidebar-close-btn" onclick="closeSidebar()" aria-label="Close menu">✕</button>
+  </div>
+
   <nav>
     {% if can_view('dashboard') %}
       <a href="{{ url_for('dashboard') }}" class="sidebar-link {% if ep == 'dashboard' %}active{% endif %}">Dashboard</a>
@@ -85,7 +106,7 @@
     <a href="{{ url_for('change_password') }}" class="sidebar-link {% if ep == 'change_password' %}active{% endif %}">Change Password</a>
     <a href="{{ url_for('logout') }}" class="sidebar-link" style="color:var(--red); margin-top:8px; border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.08);">🚪 Logout</a>
   </nav>
-  
+
   <button class="btn primary" id="pwa-install-btn" style="display:none; width:100%; margin:10px 0 4px; font-size:12px; border-radius:8px;" onclick="installPWA()">📱 Install App</button>
   <select class="theme-select" id="theme-select" onchange="setTheme(this.value)">
     <option value="forest">🌲 Forest Gold</option>
@@ -116,24 +137,61 @@ function installPWA() {
   }
 }
 
+const themes = ['dark', 'forest', 'midnight', 'light'];
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
+  const themeSelect = document.getElementById('theme-select');
+  if (themeSelect) themeSelect.value = theme;
 }
-document.getElementById('theme-select').value = document.documentElement.getAttribute('data-theme') || 'dark';
+
+function cycleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const idx = themes.indexOf(current);
+  const next = themes[(idx + 1) % themes.length];
+  setTheme(next);
+}
+
+const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+const tSelect = document.getElementById('theme-select');
+if (tSelect) tSelect.value = currentTheme;
+
+function openSidebar() {
+  const sidebar = document.getElementById('app-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const toggle = document.getElementById('sidebar-toggle');
+  if (sidebar) sidebar.classList.add('open');
+  if (backdrop) backdrop.classList.add('visible');
+  if (toggle) toggle.classList.add('active');
+  document.body.classList.add('menu-open');
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById('app-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const toggle = document.getElementById('sidebar-toggle');
+  if (sidebar) sidebar.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('visible');
+  if (toggle) toggle.classList.remove('active');
+  document.body.classList.remove('menu-open');
+}
 
 function toggleSidebar() {
-  document.getElementById('app-sidebar').classList.toggle('open');
-  document.getElementById('sidebar-backdrop').classList.toggle('visible');
+  const sidebar = document.getElementById('app-sidebar');
+  if (sidebar && sidebar.classList.contains('open')) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
 }
-function closeSidebar() {
-  document.getElementById('app-sidebar').classList.remove('open');
-  document.getElementById('sidebar-backdrop').classList.remove('visible');
-}
-document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
-document.getElementById('sidebar-backdrop').addEventListener('click', toggleSidebar);
 
 document.querySelectorAll('.sidebar nav a').forEach((link) => {
   link.addEventListener('click', closeSidebar);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSidebar();
+});
+</script>debar);
 });
 </script>
