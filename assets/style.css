@@ -700,6 +700,111 @@ body.menu-open {
 }
 
 /* ==========================================================================
+   CARDS & GRID LAYOUTS
+   ========================================================================== */
+
+.feature-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.feature-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px !important;
+  text-decoration: none;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feature-card:hover, .feature-card:active {
+  border-color: var(--gold);
+  background: rgba(229, 184, 105, 0.08);
+  transform: translateY(-2px);
+  box-shadow: var(--glow-gold);
+}
+
+.feature-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card-icon {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+  transition: all 0.25s ease;
+}
+
+.stat-card-icon .badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.stat-card-icon .stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  font-family: 'Space Grotesk', sans-serif;
+  margin-bottom: 4px;
+}
+
+.stat-card-icon .stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-bottom: 12px;
+}
+
+.stat-card-icon .stat-link {
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: auto;
+}
+
+.chart-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.chart-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+/* ==========================================================================
    MOBILE & TABLET RESPONSIVE QUERIES
    ========================================================================== */
 
@@ -740,12 +845,12 @@ body.menu-open {
   }
   .main-content {
     width: 100%;
-    padding: 20px 16px;
-    padding-top: max(84px, calc(64px + env(safe-area-inset-top)));
+    padding: 16px 12px;
+    padding-top: max(80px, calc(64px + env(safe-area-inset-top)));
   }
   header {
     margin-bottom: 20px;
-    gap: 14px;
+    gap: 12px;
     flex-direction: column;
     align-items: flex-start;
   }
@@ -759,7 +864,7 @@ body.menu-open {
     flex: 1 1 calc(50% - 8px);
     text-align: center;
     justify-content: center;
-    padding: 10px 12px;
+    padding: 10px;
     font-size: 12px;
   }
   header h1 {
@@ -769,13 +874,47 @@ body.menu-open {
     font-size: 22px;
   }
   .feature-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .feature-card {
+    padding: 12px 14px !important;
+    border-radius: 10px;
+  }
+  .feature-card-title {
+    font-size: 12px !important;
   }
   .stat-cards {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-card-icon {
+    padding: 14px;
+    border-radius: 12px;
+  }
+  .stat-card-icon .stat-value {
+    font-size: 20px;
   }
   .chart-cards {
     grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .chart-card {
+    padding: 16px;
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  th, td {
+    padding: 12px 14px;
+    font-size: 12px;
   }
   .search-bar {
     flex-direction: column;
@@ -784,8 +923,29 @@ body.menu-open {
 }
 
 @media (max-width: 480px) {
-  .stat-cards { grid-template-columns: 1fr; }
-  header .toolbar a.btn, header .toolbar button.btn { flex: 1 1 100%; }
-  a.btn, button.btn { padding: 9px 14px; font-size: 12px; }
-  button.submit { padding: 14px; font-size: 14px; }
+  .feature-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .feature-card {
+    padding: 10px 8px !important;
+  }
+  .feature-card-title {
+    font-size: 11px !important;
+  }
+  .stat-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  header .toolbar a.btn, header .toolbar button.btn {
+    flex: 1 1 100%;
+  }
+  a.btn, button.btn {
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+  button.submit {
+    padding: 14px;
+    font-size: 14px;
+  }
 }
