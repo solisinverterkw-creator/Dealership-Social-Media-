@@ -12,12 +12,13 @@ def hash_password(password: str) -> str:
     return hashed.decode('utf-8')
 
 def verify_password(password: str, hashed: str) -> bool:
-    """Verify password against a bcrypt hash."""
+    """Verify password against a bcrypt hash, supporting both $2b$ and PHP $2y$ prefixes."""
     if not hashed:
         return False
     try:
-        # standard PHP hash format is string, bcrypt expects bytes
-        return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+        # PHP uses $2y$ prefix, Python bcrypt expects $2b$ or $2a$
+        h_bytes = hashed.replace('$2y$', '$2b$').encode('utf-8')
+        return bcrypt.checkpw(password.encode('utf-8'), h_bytes)
     except Exception:
         return False
 
