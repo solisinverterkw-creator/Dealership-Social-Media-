@@ -1,29 +1,8 @@
 {% set ep = request.endpoint %}
-
-<!-- Sleek Mobile Sticky Top Navigation Bar (Mobile Only) -->
-<div class="mobile-top-bar" id="mobile-top-bar">
-  <button class="mobile-menu-btn" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
-    <span class="hamburger-lines">
-      <span></span>
-      <span></span>
-      <span></span>
-    </span>
-  </button>
-  <div class="mobile-brand">
-    <span class="mobile-logo-plate"><img src="/assets/suzuki-logo.png" alt="Suzuki" class="mobile-logo"></span>
-    <span class="mobile-brand-title">ROSP Suzuki</span>
-  </div>
-  <button class="mobile-theme-btn" onclick="cycleTheme()" title="Switch Theme" aria-label="Switch Theme">🎨</button>
-</div>
-
-<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
-
 <aside class="sidebar" id="app-sidebar">
-  <div class="sidebar-header-row">
-    <div class="sidebar-brand">
-      <span class="sidebar-logo-plate"><img src="/assets/suzuki-logo.png" alt="Suzuki" class="sidebar-logo"></span>
-      <span class="sidebar-brand-text">ROSP Suzuki</span>
-    </div>
+  <div class="sidebar-brand">
+    <span class="sidebar-logo-plate"><img src="/assets/suzuki-logo.png" alt="Suzuki" class="sidebar-logo"></span>
+    <span class="sidebar-brand-text">ROSP Suzuki</span>
     <button class="sidebar-close-btn" id="sidebar-close-btn" onclick="closeSidebar()" aria-label="Close menu">✕</button>
   </div>
 

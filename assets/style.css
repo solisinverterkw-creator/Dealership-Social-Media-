@@ -558,7 +558,7 @@ body.menu-open {
 }
 
 .mobile-top-bar {
-  display: none;
+  display: none !important;
   position: fixed;
   top: 0;
   left: 0;
@@ -663,7 +663,7 @@ body.menu-open {
 }
 
 .sidebar-close-btn {
-  display: none;
+  display: none !important;
   width: 36px;
   height: 36px;
   border-radius: 8px;
@@ -682,7 +682,7 @@ body.menu-open {
 }
 
 .sidebar-backdrop {
-  display: block;
+  display: none !important;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
@@ -695,6 +695,7 @@ body.menu-open {
 }
 
 .sidebar-backdrop.visible {
+  display: block !important;
   opacity: 1;
   pointer-events: auto;
 }
@@ -816,10 +817,10 @@ body.menu-open {
 
 @media (max-width: 860px) {
   .mobile-top-bar {
-    display: flex;
+    display: flex !important;
   }
   .sidebar-close-btn {
-    display: flex;
+    display: flex !important;
   }
   .app-layout {
     display: block;
