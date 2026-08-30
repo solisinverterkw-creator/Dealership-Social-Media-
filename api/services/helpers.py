@@ -531,6 +531,8 @@ class SpreadsheetImportHelper:
                     continue
                 productCols[col] = labelStr
 
+            stock_sums = {}
+
             for i in range(headerIndex + 1, len(rows)):
                 row = rows[i]
                 rowNum = i + 1
@@ -560,7 +562,6 @@ class SpreadsheetImportHelper:
                             pass
 
                 if dealershipId not in touchedDealershipIds:
-                    db_session.query(StockRecord).filter(StockRecord.dealership_id == dealershipId).delete()
                     touchedDealershipIds.add(dealershipId)
 
                 for col, productName in productCols.items():
@@ -569,14 +570,21 @@ class SpreadsheetImportHelper:
                         qty = int(float(val_str.replace(',', ''))) if val_str else 0
                     except Exception:
                         qty = 0
-                    rec = StockRecord(
-                        dealership_id=dealershipId,
-                        product_name=productName,
-                        quantity=qty,
-                        column_order=col
-                    )
-                    db_session.add(rec)
-                    importedCount += 1
+                    key = (dealershipId, productName, col)
+                    stock_sums[key] = stock_sums.get(key, 0) + qty
+
+            if touchedDealershipIds:
+                db_session.query(StockRecord).filter(StockRecord.dealership_id.in_(list(touchedDealershipIds))).delete()
+
+            for (d_id, prod_name, col), qty in stock_sums.items():
+                rec = StockRecord(
+                    dealership_id=d_id,
+                    product_name=prod_name,
+                    quantity=qty,
+                    column_order=col
+                )
+                db_session.add(rec)
+                importedCount += 1
 
         db_session.commit()
         return {'success': True, 'imported_count': importedCount, 'import_errors': importErrors}

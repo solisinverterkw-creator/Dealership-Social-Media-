@@ -1974,6 +1974,7 @@ def stock_report_view():
                 else:
                     error = res['message']
             except Exception as e:
+                db_session.rollback()
                 error = f"Error reading sheet: {str(e)}"
 
     variant_priority = [
@@ -1984,7 +1985,11 @@ def stock_report_view():
         'EVERY'
     ]
 
-    stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
+    try:
+        stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
+    except Exception:
+        db_session.rollback()
+        stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
     product_names = SpreadsheetImportHelper.sort_product_columns_by_priority(stock_cols, variant_priority)
 
     column_sequence = [{'type': 'product', 'name': p} for p in product_names]
