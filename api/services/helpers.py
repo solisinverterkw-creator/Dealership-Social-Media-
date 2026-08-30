@@ -531,6 +531,7 @@ class SpreadsheetImportHelper:
         )
 
         if productDescCol is not None and not has_matrix_variants:
+            qtyCol = self.find_column(headerRow, ['qty', 'quantity', 'sum of quantity', 'stock qty', 'total qty', 'count'])
             counts = {}
             productOrder = {}
 
@@ -540,6 +541,7 @@ class SpreadsheetImportHelper:
                 if not any(str(c).strip() != '' for c in row):
                     continue
 
+                dealershipName = str(row[dealerNameCol]).strip() if dealerNameCol < len(row) else ''
                 raw_prod = str(row[productDescCol]).strip() if productDescCol < len(row) else ''
                 if not dealershipName or not raw_prod:
                     continue
@@ -551,6 +553,15 @@ class SpreadsheetImportHelper:
                     continue
                 if dealershipId in excludedStockIds:
                     continue
+
+                row_qty = 1
+                if qtyCol is not None and qtyCol < len(row):
+                    q_str = str(row[qtyCol]).strip()
+                    if q_str:
+                        try:
+                            row_qty = int(float(q_str.replace(',', '')))
+                        except Exception:
+                            row_qty = 1
 
                 if securityCol is not None and securityCol < len(row):
                     sec_str = str(row[securityCol]).strip()
@@ -565,7 +576,7 @@ class SpreadsheetImportHelper:
 
                 if dealershipId not in counts:
                     counts[dealershipId] = {}
-                counts[dealershipId][productName] = counts[dealershipId].get(productName, 0) + 1
+                counts[dealershipId][productName] = counts[dealershipId].get(productName, 0) + row_qty
                 if productName not in productOrder:
                     productOrder[productName] = len(productOrder)
 
