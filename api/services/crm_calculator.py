@@ -239,27 +239,40 @@ class CrmScoreCalculator:
 
     @staticmethod
     def digital_enquiry_targets(raw: dict, max_points: float, dealership: dict) -> float:
-        target = float(dealership.get('digital_enquiry_target') or 100.0)
-        achieved = CrmScoreCalculator.extract_numeric_value(raw, ['digital', 'achiev', 'actual', 'row count'])
+        target = float(dealership.get('digital_enquiry_target') or 0.0)
+        achieved = None
+
+        for k, v in raw.items():
+            k_lower = str(k).lower().strip()
+            if 'digital' in k_lower or 'facebook' in k_lower or 'instagram' in k_lower or 'youtube' in k_lower:
+                try:
+                    achieved = float(v)
+                    break
+                except Exception:
+                    pass
+
         if achieved is None:
-            achieved = CrmScoreCalculator.extract_any_numeric(raw) or 0.0
+            achieved = CrmScoreCalculator.extract_numeric_value(raw, ['digital', 'facebook', 'instagram', 'youtube', 'achiev', 'row count']) or 0.0
 
-        percentage = (achieved / target) * 100.0 if target > 0 else achieved
-
-        if percentage >= 100:
-            fraction = 1.0
-        elif percentage >= 90:
-            fraction = 0.8333
-        elif percentage >= 80:
-            fraction = 0.6667
-        elif percentage >= 70:
-            fraction = 0.50
-        elif percentage >= 60:
-            fraction = 0.3333
+        if target <= 0:
+            percentage = 100.0 if achieved > 0 else 0.0
         else:
-            fraction = 0.0
+            percentage = (achieved / target) * 100.0
 
-        return round(fraction * max_points, 2)
+        if percentage > 100.0:
+            pts = 30.0 if max_points == 30.0 else max_points
+        elif percentage >= 90.0:
+            pts = 25.0 if max_points == 30.0 else round((25.0 / 30.0) * max_points, 2)
+        elif percentage >= 80.0:
+            pts = 20.0 if max_points == 30.0 else round((20.0 / 30.0) * max_points, 2)
+        elif percentage >= 70.0:
+            pts = 15.0 if max_points == 30.0 else round((15.0 / 30.0) * max_points, 2)
+        elif percentage >= 60.0:
+            pts = 10.0 if max_points == 30.0 else round((10.0 / 30.0) * max_points, 2)
+        else:
+            pts = 0.0
+
+        return round(min(max_points, pts), 2)
 
     @staticmethod
     def stage_won_conversion(raw: dict, max_points: float, dealership: dict) -> float:

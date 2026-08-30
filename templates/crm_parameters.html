@@ -208,9 +208,16 @@ async function uploadRawData(parameterId) {
         if (dealerCol !== -1) {
           const headerRow = rows[headerIdx];
           const rawCols = {};
+          let sourceCol = -1;
+
           headerRow.forEach((lbl, c) => {
             const lstr = String(lbl).trim();
-            if (c !== dealerCol && lstr !== '') rawCols[c] = lstr;
+            if (c !== dealerCol && lstr !== '') {
+              rawCols[c] = lstr;
+              if (sourceCol === -1 && lstr.toLowerCase().includes('source')) {
+                sourceCol = c;
+              }
+            }
           });
 
           const summary = {};
@@ -221,8 +228,15 @@ async function uploadRawData(parameterId) {
             if (!dName) continue;
 
             if (!summary[dName]) {
-              summary[dName] = { 'Row Count': 0 };
+              summary[dName] = { 'Row Count': 0, 'Digital Enquiries (Dealer Facebook + Instagram + Youtube)': 0 };
               Object.values(rawCols).forEach(lbl => summary[dName][lbl] = 0.0);
+            }
+
+            if (sourceCol !== -1) {
+              const srcVal = String(row[sourceCol] || '').toLowerCase().trim();
+              if (srcVal.includes('dealer facebook') || srcVal.includes('dealer instagram') || srcVal.includes('dealer youtube')) {
+                summary[dName]['Digital Enquiries (Dealer Facebook + Instagram + Youtube)'] += 1;
+              }
             }
 
             Object.entries(rawCols).forEach(([cIdx, lbl]) => {

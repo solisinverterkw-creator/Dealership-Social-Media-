@@ -2362,6 +2362,27 @@ def crm_report_view():
 
                         if ratio_val is not None:
                             ach_text = f"{ratio_val:.0f}%"
+                    elif ckey in ('digital_enquiry_targets', 'digital_targets'):
+                        d_obj = db_session.query(Dealership).filter(Dealership.id == s.dealership_id).first()
+                        target = float(d_obj.digital_enquiry_target if d_obj else 0.0)
+                        achieved = None
+                        for k, v in rdict.items():
+                            k_lower = str(k).lower().strip()
+                            if 'digital' in k_lower or 'facebook' in k_lower or 'instagram' in k_lower or 'youtube' in k_lower:
+                                try:
+                                    achieved = float(v)
+                                    break
+                                except Exception:
+                                    pass
+
+                        if achieved is None:
+                            achieved = CrmScoreCalculator.extract_numeric_value(rdict, ['digital', 'facebook', 'instagram', 'youtube', 'achiev']) or 0.0
+
+                        if target > 0:
+                            pct = (achieved / target) * 100.0
+                            ach_text = f"{pct:.0f}%"
+                        elif achieved > 0:
+                            ach_text = f"{achieved:.0f}"
                 except Exception:
                     pass
 
