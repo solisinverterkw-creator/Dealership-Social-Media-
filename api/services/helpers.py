@@ -523,7 +523,11 @@ class SpreadsheetImportHelper:
                     db_session.add(rec)
                     importedCount += 1
         else:
-            skipKeywords = ['sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'security', 'region', 'total', 'ttl']
+            skipKeywords = [
+                'sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'security',
+                'region', 'total', 'ttl', 'code', 'sap', 'sap code', 'odoo', 'odoo code',
+                'tag', 'dealer tag', 'dealer name', 'company', 'branch', 'showroom'
+            ]
             productCols = {}
             for col, label in enumerate(headerRow):
                 labelStr = str(label).strip()
@@ -567,7 +571,8 @@ class SpreadsheetImportHelper:
                 for col, productName in productCols.items():
                     val_str = str(row[col]).strip() if col < len(row) else '0'
                     try:
-                        qty = int(float(val_str.replace(',', ''))) if val_str else 0
+                        q_float = float(val_str.replace(',', ''))
+                        qty = int(q_float) if q_float < 100000 else 0
                     except Exception:
                         qty = 0
                     key = (dealershipId, productName, col)
