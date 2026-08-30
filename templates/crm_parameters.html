@@ -211,6 +211,7 @@ async function uploadRawData(parameterId) {
           let sourceCol = -1;
           let bizCol = -1;
           let statusCol = -1;
+          let stageCol = -1;
 
           headerRow.forEach((lbl, c) => {
             const lstr = String(lbl).trim();
@@ -224,6 +225,9 @@ async function uploadRawData(parameterId) {
               }
               if (statusCol === -1 && lstr.toLowerCase().includes('status')) {
                 statusCol = c;
+              }
+              if (stageCol === -1 && (lstr.toLowerCase().includes('stage') || lstr.toLowerCase().includes('status'))) {
+                stageCol = c;
               }
             }
           });
@@ -240,7 +244,8 @@ async function uploadRawData(parameterId) {
                 'Row Count': 0,
                 'Digital Enquiries (Dealer Facebook + Instagram + Youtube)': 0,
                 'Enquiries (2+ Business Days)': 0,
-                'Completed Test Drives (Status = Complete)': 0
+                'Completed Test Drives (Status = Complete)': 0,
+                'Won Enquiries (Stage = Won)': 0
               };
               Object.values(rawCols).forEach(lbl => summary[dName][lbl] = 0.0);
             }
@@ -265,6 +270,13 @@ async function uploadRawData(parameterId) {
               const stVal = String(row[statusCol] || '').toLowerCase().trim();
               if (stVal.includes('complete')) {
                 summary[dName]['Completed Test Drives (Status = Complete)'] += 1;
+              }
+            }
+
+            if (stageCol !== -1) {
+              const stgVal = String(row[stageCol] || '').toLowerCase().trim();
+              if (stgVal === 'won' || stgVal.includes('won')) {
+                summary[dName]['Won Enquiries (Stage = Won)'] += 1;
               }
             }
 

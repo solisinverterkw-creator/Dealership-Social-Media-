@@ -276,12 +276,28 @@ class CrmScoreCalculator:
 
     @staticmethod
     def stage_won_conversion(raw: dict, max_points: float, dealership: dict) -> float:
-        target = float(dealership.get('digital_enquiry_conversion_target') or 100.0)
-        achieved = CrmScoreCalculator.extract_numeric_value(raw, ['won', 'conversion', 'achiev', 'actual'])
-        if achieved is None:
-            achieved = CrmScoreCalculator.extract_any_numeric(raw) or 0.0
+        target = float(dealership.get('digital_enquiry_conversion_target') or 0.0)
+        achieved = None
+        for k, v in raw.items():
+            k_lower = str(k).lower().strip()
+            if 'won' in k_lower or 'stage' in k_lower or 'conversion' in k_lower:
+                try:
+                    achieved = float(v)
+                    break
+                except Exception:
+                    pass
 
-        percentage = (achieved / target) * 100.0 if target > 0 else achieved
+        if achieved is None:
+            achieved = CrmScoreCalculator.extract_numeric_value(raw, ['won', 'stage', 'conversion', 'achiev', 'actual', 'row count']) or 0.0
+
+        if target <= 0:
+            return round((achieved / 100.0) * max_points, 2) if max_points > 0 else 0.0
+
+        percentage = (achieved / target) * 100.0
+
+        if max_points <= 0:
+            return round(percentage, 2)
+
         return round(min(1.0, percentage / 100.0) * max_points, 2)
 
     @staticmethod

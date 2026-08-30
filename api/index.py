@@ -2415,6 +2415,27 @@ def crm_report_view():
 
                         pct = (completed / 104.0) * 100.0
                         ach_text = f"{completed:.0f}/104 ({pct:.0f}%)"
+                    elif ckey in ('stage_won_conversion', 'digital_conversion'):
+                        d_obj = db_session.query(Dealership).filter(Dealership.id == s.dealership_id).first()
+                        target = float(d_obj.digital_enquiry_conversion_target if d_obj else 0.0)
+                        achieved = None
+                        for k, v in rdict.items():
+                            k_lower = str(k).lower().strip()
+                            if 'won' in k_lower or 'stage' in k_lower or 'conversion' in k_lower:
+                                try:
+                                    achieved = float(v)
+                                    break
+                                except Exception:
+                                    pass
+
+                        if achieved is None:
+                            achieved = CrmScoreCalculator.extract_numeric_value(rdict, ['won', 'stage', 'conversion', 'achiev', 'actual']) or 0.0
+
+                        if target > 0:
+                            pct = (achieved / target) * 100.0
+                            ach_text = f"{achieved:.0f}/{target:.0f} ({pct:.0f}%)"
+                        elif achieved > 0:
+                            ach_text = f"{achieved:.0f}"
                 except Exception:
                     pass
 
