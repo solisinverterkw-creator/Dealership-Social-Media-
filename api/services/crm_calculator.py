@@ -293,18 +293,35 @@ class CrmScoreCalculator:
 
     @staticmethod
     def pipeline_tracking(raw: dict, max_points: float) -> float:
-        max_days = CrmScoreCalculator.extract_numeric_value(raw, ['business days', 'days', 'pipeline'])
-        if max_days is None:
-            max_days = CrmScoreCalculator.extract_any_numeric(raw) or 0.0
+        days = None
+        for k, v in raw.items():
+            k_lower = str(k).lower().strip()
+            if 'business days' in k_lower or 'days difference' in k_lower or 'business days difference' in k_lower:
+                try:
+                    days = float(v)
+                    break
+                except Exception:
+                    pass
 
-        if max_days <= 1:
-            fraction = 1.0
-        elif max_days <= 3:
-            fraction = 0.6667
+        if days is None:
+            time_val = CrmScoreCalculator.extract_numeric_value(raw, ['business days difference', 'business days', 'days difference', 'days'])
+            row_c = float(raw.get('Row Count') or 1.0)
+            if time_val is not None and row_c > 0:
+                days = time_val / row_c if time_val > 50.0 else time_val
+            else:
+                days = time_val or 0.0
+
+        if days is None:
+            return 0.0
+
+        if days <= 1.0:
+            pts = 15.0 if max_points == 15.0 else max_points
+        elif days <= 3.0:
+            pts = 10.0 if max_points == 15.0 else round((10.0 / 15.0) * max_points, 2)
         else:
-            fraction = 0.0
+            pts = 0.0
 
-        return round(fraction * max_points, 2)
+        return round(pts, 2)
 
     @staticmethod
     def evaluation_feedback_accuracy(raw: dict, max_points: float) -> float:

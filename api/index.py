@@ -2383,6 +2383,26 @@ def crm_report_view():
                             ach_text = f"{pct:.0f}%"
                         elif achieved > 0:
                             ach_text = f"{achieved:.0f}"
+                    elif ckey in ('pipeline_tracking', 'pipeline'):
+                        days = None
+                        for k, v in rdict.items():
+                            k_lower = str(k).lower().strip()
+                            if 'business days' in k_lower or 'days difference' in k_lower:
+                                try:
+                                    days = float(v)
+                                    break
+                                except Exception:
+                                    pass
+                        if days is None:
+                            d_val = CrmScoreCalculator.extract_numeric_value(rdict, ['business days difference', 'business days', 'days difference', 'days'])
+                            row_c = float(rdict.get('Row Count') or 1.0)
+                            if d_val is not None and row_c > 0:
+                                days = d_val / row_c if d_val > 50.0 else d_val
+                            else:
+                                days = d_val or 0.0
+
+                        if days is not None:
+                            ach_text = f"{days:.1f} days"
                 except Exception:
                     pass
 
