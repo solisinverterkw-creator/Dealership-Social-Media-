@@ -440,55 +440,55 @@ class SpreadsheetImportHelper:
     def normalize_stock_product_name(self, desc: str) -> str:
         d = str(desc or '').upper().strip()
         if not d:
-            return 'Other'
+            return 'EVERY'
 
         # Alto variants
         if 'ALTO' in d or 'AET' in d:
             if 'VXL' in d:
-                return 'Alto VXL AGS' if ('AGS' in d or 'AUTO' in d) else 'Alto VXL'
+                return 'ALTO VXR AGS' if ('AGS' in d or 'AUTO' in d) else 'ALTO VXR'
             elif 'VXR' in d:
-                return 'Alto VXR AGS' if ('AGS' in d or 'AUTO' in d) else 'Alto VXR'
+                return 'ALTO VXR AGS' if ('AGS' in d or 'AUTO' in d) else 'ALTO VXR'
             elif 'AGS' in d:
-                return 'Alto VXR AGS'
-            return 'Alto VXR'
+                return 'ALTO AGS'
+            return 'ALTO VXR'
 
         # Cultus variants
         if 'CULTUS' in d or 'AVK' in d:
             if 'VXL' in d:
-                return 'Cultus VXL'
+                return 'CULTUS VXL'
             elif 'VXR' in d:
-                return 'Cultus VXR'
+                return 'CULTUS VXR'
             elif 'AGS' in d or 'AUTO' in d:
-                return 'Cultus AGS'
-            return 'Cultus VXR'
+                return 'CULTUS VXL'
+            return 'CULTUS VXR'
 
         # Swift variants
         if 'SWIFT' in d or 'A2L' in d:
             if 'GLX' in d:
-                return 'Swift GLX'
+                return 'SWIFT GLX'
             elif 'CVT' in d:
-                return 'Swift GL CVT'
+                return 'SWIFT GL CVT'
             elif 'GL' in d:
-                return 'Swift GL'
+                return 'SWIFT GL'
             elif 'MT' in d:
-                return 'Swift MT'
-            return 'Swift GL CVT'
+                return 'SWIFT GL'
+            return 'SWIFT GL CVT'
 
         # Fronx variants
         if 'FRONX' in d or 'NWD' in d or 'NWA' in d:
             if 'GLX' in d or 'HYBD' in d:
-                return 'Fronx GLX'
+                return 'FRONX GLX'
             elif 'GL' in d or 'AT' in d:
-                return 'Fronx GL AT'
+                return 'FRONX GL AT'
             elif 'MT' in d:
-                return 'Fronx MT'
-            return 'Fronx GL AT'
+                return 'FRONX GL AT'
+            return 'FRONX GL AT'
 
         # Every variants
         if 'EVERY' in d or 'A5H' in d:
-            return 'Every VXR'
+            return 'EVERY'
 
-        return d.title()
+        return 'EVERY'
 
     def import_stock_sheet(self, db_session, rows: list) -> dict:
         from api.models import StockRecord, Dealership

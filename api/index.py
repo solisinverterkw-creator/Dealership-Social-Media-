@@ -1978,11 +1978,11 @@ def stock_report_view():
                 error = f"Error reading sheet: {str(e)}"
 
     variant_priority = [
-        'Alto VXR', 'Alto VXR AGS', 'Alto AGS', 'Alto VXL', 'Alto VXL AGS',
-        'Cultus VXR', 'Cultus VXL', 'Cultus AGS',
-        'Swift MT', 'Swift GL', 'Swift GL CVT', 'Swift GLX',
-        'Every VXR',
-        'Fronx MT', 'Fronx GL AT', 'Fronx GLX'
+        'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS',
+        'FRONX GL AT', 'FRONX GLX',
+        'SWIFT GL', 'SWIFT GL CVT', 'SWIFT GLX',
+        'CULTUS VXR', 'CULTUS VXL',
+        'EVERY'
     ]
 
     try:
