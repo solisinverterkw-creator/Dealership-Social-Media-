@@ -443,12 +443,14 @@ class SpreadsheetImportHelper:
             return 'Every VXR'
 
         # Alto variants
-        if 'ALTO' in d or 'AET' in d:
+        if 'ALTO' in d or 'AET' in d or 'VXR M1' in d or 'VXR AGS M1' in d or 'AGS M1' in d:
             if 'VXL' in d:
                 return 'Alto VXL AGS' if ('AGS' in d or 'AUTO' in d) else 'Alto VXL'
-            elif 'VXR' in d:
-                return 'Alto VXR AGS' if ('AGS' in d or 'AUTO' in d) else 'Alto VXR'
-            elif 'AGS' in d:
+            elif 'VXR AGS' in d or 'VXR AGS M1' in d:
+                return 'Alto VXR AGS'
+            elif 'VXR' in d or 'VXR M1' in d:
+                return 'Alto VXR'
+            elif 'AGS' in d or 'AGS M1' in d:
                 return 'Alto AGS'
             return 'Alto VXR'
 
@@ -463,19 +465,19 @@ class SpreadsheetImportHelper:
             return 'Cultus VXR'
 
         # Swift variants
-        if 'SWIFT' in d or 'A2L' in d:
+        if 'SWIFT' in d or 'A2L' in d or 'GL CVT' in d or 'GL M2' in d or 'GL MT' in d:
             if 'GLX' in d:
                 return 'Swift GLX'
-            elif 'CVT' in d:
+            elif 'CVT' in d or 'GL CVT' in d:
                 return 'Swift GL CVT'
-            elif 'GL' in d:
-                return 'Swift GL'
-            elif 'MT' in d:
+            elif 'MT' in d or 'GL MT' in d:
                 return 'Swift MT'
+            elif 'GL' in d or 'GL M2' in d:
+                return 'Swift GL'
             return 'Swift GL CVT'
 
         # Fronx variants
-        if 'FRONX' in d or 'NWD' in d or 'NWA' in d:
+        if 'FRONX' in d or 'NWD' in d or 'NWA' in d or 'HYBD' in d or 'GL AT' in d:
             if 'GLX' in d or 'HYBD' in d:
                 return 'Fronx GLX'
             elif 'GL' in d or 'AT' in d:
@@ -487,6 +489,23 @@ class SpreadsheetImportHelper:
         # Every variants
         if 'EVERY' in d or 'A5H' in d:
             return 'Every VXR'
+
+        if d in ('VXR M1', 'VXR'):
+            return 'Alto VXR'
+        if d in ('VXR AGS M1', 'VXR AGS'):
+            return 'Alto VXR AGS'
+        if d in ('AGS M1', 'AGS'):
+            return 'Alto AGS'
+        if d in ('GL M2', 'GL'):
+            return 'Swift GL'
+        if d in ('GL CVT M2', 'GL CVT'):
+            return 'Swift GL CVT'
+        if d in ('GL MT', 'MT'):
+            return 'Swift MT'
+        if d in ('GLX AT HYBD', 'GLX AT', 'GLX'):
+            return 'Fronx GLX'
+        if d in ('GL AT', 'AT'):
+            return 'Fronx GL AT'
 
         return d.title()
 
@@ -693,13 +712,14 @@ class SpreadsheetImportHelper:
                 if dealershipId not in touchedDealershipIds:
                     touchedDealershipIds.add(dealershipId)
 
-                for col, productName in productCols.items():
+                for col, rawProductName in productCols.items():
                     val_str = str(row[col]).strip() if col < len(row) else '0'
                     try:
                         q_float = float(val_str.replace(',', ''))
                         qty = int(q_float) if q_float < 100000 else 0
                     except Exception:
                         qty = 0
+                    productName = self.normalize_stock_product_name(rawProductName)
                     key = (dealershipId, productName, col)
                     stock_sums[key] = stock_sums.get(key, 0) + qty
 
