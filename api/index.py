@@ -2399,6 +2399,22 @@ def crm_report_view():
 
                         if cnt is not None:
                             ach_text = f"{cnt} enquiries"
+                    elif ckey in ('fronx_test_drive_monthly', 'fronx_test_drive'):
+                        completed = None
+                        for k, v in rdict.items():
+                            k_lower = str(k).lower().strip()
+                            if 'complete' in k_lower or 'test drive' in k_lower or 'fronx' in k_lower:
+                                try:
+                                    completed = float(v)
+                                    break
+                                except Exception:
+                                    pass
+
+                        if completed is None:
+                            completed = CrmScoreCalculator.extract_numeric_value(rdict, ['complete', 'test drive', 'fronx', 'actual', 'row count']) or 0.0
+
+                        pct = (completed / 104.0) * 100.0
+                        ach_text = f"{completed:.0f}/104 ({pct:.0f}%)"
                 except Exception:
                     pass
 

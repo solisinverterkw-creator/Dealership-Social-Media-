@@ -286,10 +286,25 @@ class CrmScoreCalculator:
 
     @staticmethod
     def fronx_test_drive_monthly(raw: dict, max_points: float) -> float:
-        completed = CrmScoreCalculator.extract_numeric_value(raw, ['test', 'drive', 'fronx', 'completed', 'actual'])
+        completed = None
+        for k, v in raw.items():
+            k_lower = str(k).lower().strip()
+            if 'complete' in k_lower or 'test drive' in k_lower or 'fronx' in k_lower:
+                try:
+                    completed = float(v)
+                    break
+                except Exception:
+                    pass
+
         if completed is None:
-            completed = CrmScoreCalculator.extract_any_numeric(raw) or 0.0
-        return round(min(1.0, completed / 100.0) * max_points, 2)
+            completed = CrmScoreCalculator.extract_numeric_value(raw, ['complete', 'test drive', 'fronx', 'actual', 'row count']) or 0.0
+
+        target = 104.0
+        pct = (completed / target) * 100.0 if target > 0 else 0.0
+
+        if max_points <= 0:
+            return round(pct, 2)
+        return round(min(1.0, pct / 100.0) * max_points, 2)
 
     @staticmethod
     def pipeline_tracking(raw: dict, max_points: float) -> float:
