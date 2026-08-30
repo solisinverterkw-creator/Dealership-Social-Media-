@@ -190,6 +190,13 @@ async function uploadRawData(parameterId) {
       headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
       body: formData
     });
+
+    if (res.status === 401) {
+      alert('⚠️ Your session has expired or super admin login is required. Please log in again.');
+      window.location.href = '/login';
+      return;
+    }
+
     let data = null;
     try {
       data = await res.json();
@@ -197,11 +204,18 @@ async function uploadRawData(parameterId) {
       const txt = await res.text().catch(() => '');
       data = { success: false, message: 'Server response (' + res.status + '): ' + (txt.slice(0, 150) || res.statusText || 'Upload error') };
     }
+
     if (data && data.success) {
       alert('✅ ' + (data.message || 'Upload & calculation completed successfully!'));
       window.location.href = `/crm_parameters.php?period=${encodeURIComponent(period)}`;
     } else {
-      alert('❌ ' + (data && data.message ? data.message : 'Upload failed. Please check Excel sheet format.'));
+      const errMsg = (data && data.message) ? data.message : 'Upload failed.';
+      if (errMsg.toLowerCase().includes('expired') || errMsg.toLowerCase().includes('login') || errMsg.toLowerCase().includes('privilege')) {
+        alert('⚠️ ' + errMsg);
+        window.location.href = '/login';
+        return;
+      }
+      alert('❌ ' + errMsg);
       if (btn) { btn.disabled = false; btn.innerText = 'Upload'; }
     }
   } catch (err) {
@@ -228,12 +242,25 @@ async function recalculate(parameterId, name) {
       headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
       body: formData
     });
+
+    if (res.status === 401) {
+      alert('⚠️ Your session has expired or super admin login is required. Please log in again.');
+      window.location.href = '/login';
+      return;
+    }
+
     const data = await res.json().catch(() => null);
     if (data && data.success) {
       alert('⚡ ' + (data.message || 'Recalculated Successfully.'));
       window.location.href = `/crm_parameters.php?period=${encodeURIComponent(period)}`;
     } else {
-      alert('❌ ' + (data && data.message ? data.message : 'Recalculation failed.'));
+      const errMsg = (data && data.message) ? data.message : 'Recalculation failed.';
+      if (errMsg.toLowerCase().includes('expired') || errMsg.toLowerCase().includes('login') || errMsg.toLowerCase().includes('privilege')) {
+        alert('⚠️ ' + errMsg);
+        window.location.href = '/login';
+        return;
+      }
+      alert('❌ ' + errMsg);
       if (btn) { btn.disabled = false; btn.innerText = 'Recalculate'; }
     }
   } catch (err) {
