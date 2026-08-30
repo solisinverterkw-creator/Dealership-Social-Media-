@@ -541,8 +541,12 @@ class SpreadsheetImportHelper:
 
         if productDescCol is not None and not has_matrix_variants:
             qtyCol = self.find_column(headerRow, ['qty', 'quantity', 'sum of quantity', 'stock qty', 'total qty', 'count'])
+            regionCol = self.find_column(headerRow, ['region'], match_last=True)
             counts = {}
+            regionByDealer = {}
             productOrder = {}
+            orderCounter = 0
+            transactionRows = 0
 
             for i in range(headerIndex + 1, len(rows)):
                 row = rows[i]
@@ -596,12 +600,24 @@ class SpreadsheetImportHelper:
                         except Exception:
                             pass
 
+                if regionCol is not None and regionCol < len(row):
+                    reg_val = str(row[regionCol]).strip()
+                    if reg_val != '':
+                        regionByDealer[dealershipId] = reg_val
+
+                if productName not in productOrder:
+                    productOrder[productName] = orderCounter
+                    orderCounter += 1
+
                 if dealershipId not in counts:
                     counts[dealershipId] = {}
                 counts[dealershipId][productName] = counts[dealershipId].get(productName, 0) + row_qty
-                if productName not in productOrder:
-                    productOrder[productName] = len(productOrder)
+                transactionRows += 1
 
+            if not counts:
+                return {'success': False, 'message': 'No Matching Dealership Rows Found To Import.', 'import_errors': importErrors}
+
+            importedCount = 0
             for d_id, prod_dict in counts.items():
                 db_session.query(StockRecord).filter(StockRecord.dealership_id == d_id).delete()
                 for prod_name, qty in prod_dict.items():
@@ -613,6 +629,11 @@ class SpreadsheetImportHelper:
                     )
                     db_session.add(rec)
                     importedCount += 1
+
+                if d_id in regionByDealer:
+                    d_obj = db_session.query(Dealership).filter(Dealership.id == d_id).first()
+                    if d_obj:
+                        d_obj.region = regionByDealer[d_id]
         else:
             skipKeywords = [
                 'sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'security',

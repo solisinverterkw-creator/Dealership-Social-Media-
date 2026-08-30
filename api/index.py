@@ -1991,19 +1991,25 @@ def stock_report_view():
         db_session.rollback()
         stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
 
+    sorted_product_names = SpreadsheetImportHelper.sort_product_columns_by_priority(stock_cols, variant_priority)
+    master_columns = [{'product_name': p} for p in sorted_product_names]
+
+    # Combine with default variant priority if empty so table displays 16 standard columns
+    product_names = [c['product_name'] for c in master_columns] if master_columns else list(variant_priority)
+    column_sequence = [{'type': 'product', 'name': p} for p in product_names]
+
     allowed_ids = {d.id for d in dealerships}
     records = db_session.query(StockRecord).filter(StockRecord.dealership_id.in_(allowed_ids)).all()
 
     pivot = {}
     d_map = {d.id: d.name for d in dealerships}
+    security_map = {d.id: d.security_amount for d in dealerships}
+
     for r in records:
         d_name = d_map.get(r.dealership_id, 'Unknown')
         if d_name not in pivot:
-            pivot[d_name] = {'__id': r.dealership_id}
+            pivot[d_name] = {'__id': r.dealership_id, '__security': security_map.get(r.dealership_id)}
         pivot[d_name][r.product_name] = r.quantity
-
-    product_names = list(variant_priority)
-    column_sequence = [{'type': 'product', 'name': p} for p in product_names]
 
     security_by_dealership = {d.id: d.security_amount for d in dealerships if d.security_amount is not None}
     region_by_dealership = {d.id: d.region for d in dealerships if d.region}
@@ -2013,8 +2019,11 @@ def stock_report_view():
     if selected_region:
         pivot = {k: v for k, v in pivot.items() if region_by_dealership.get(v['__id']) == selected_region}
 
-    # Highest total stock first
-    pivot = dict(sorted(pivot.items(), key=lambda item: sum(v for k, v in item[1].items() if k != '__id'), reverse=True))
+    # Highest total stock first (matching reference PHP uasort $computeRowTotal)
+    def compute_row_total(prod_dict):
+        return sum(v for k, v in prod_dict.items() if k not in ('__id', '__security') and isinstance(v, (int, float)))
+
+    pivot = dict(sorted(pivot.items(), key=lambda item: compute_row_total(item[1]), reverse=True))
 
     has_data = bool(pivot)
     dealers_without_security = [d for d in dealerships if d.security_amount is None or d.security_amount == 0.0]
