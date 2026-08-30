@@ -2455,10 +2455,84 @@ def crm_parameters_view():
         elif action == 'import_raw':
             parameter_id = int(request.form.get('crm_parameter_id') or 0)
             period_month = request.form.get('period_month', '').strip()
+            summary_json_str = request.form.get('summary_json', '').strip()
             file_upload = request.files.get('file') or request.files.get('file_upload') or request.files.get('raw_file')
 
             if not parameter_id or not period_month:
                 error = "Missing Parameter Or Period."
+            elif summary_json_str:
+                try:
+                    summary_data = json.loads(summary_json_str)
+                    helper = SpreadsheetImportHelper()
+                    dealershipsByName = helper._build_dealership_map(db_session)
+
+                    db_session.query(CrmRawData).filter(
+                        CrmRawData.crm_parameter_id == parameter_id,
+                        CrmRawData.period_month == period_month
+                    ).delete()
+                    db_session.query(CrmScore).filter(
+                        CrmScore.crm_parameter_id == parameter_id,
+                        CrmScore.period_month == period_month
+                    ).delete()
+                    db_session.commit()
+
+                    imported_count = 0
+                    total_rows = 0
+                    for d_name, d_sums in summary_data.items():
+                        d_id = helper.find_dealership_match(dealershipsByName, d_name)
+                        if not d_id:
+                            import_errors.append(f"Dealership \"{d_name}\" Not Found — Skipped.")
+                            continue
+
+                        rawJson = json.dumps(d_sums)
+                        new_raw = CrmRawData(
+                            dealership_id=d_id,
+                            crm_parameter_id=parameter_id,
+                            period_month=period_month,
+                            raw_json=rawJson
+                        )
+                        db_session.add(new_raw)
+                        imported_count += 1
+                        total_rows += int(d_sums.get('Row Count') or 1)
+
+                    db_session.commit()
+
+                    param = db_session.query(CrmParameter).filter(CrmParameter.id == parameter_id).first()
+                    if param and param.calc_key:
+                        from api.services.crm_calculator import CrmScoreCalculator
+                        raw_records = db_session.query(CrmRawData).filter(
+                            CrmRawData.crm_parameter_id == parameter_id,
+                            CrmRawData.period_month == period_month
+                        ).all()
+
+                        for rd in raw_records:
+                            try:
+                                raw_dict = json.loads(rd.raw_json) if rd.raw_json else {}
+                            except Exception:
+                                raw_dict = {}
+
+                            d_obj = db_session.query(Dealership).filter(Dealership.id == rd.dealership_id).first()
+                            dealership_dict = {
+                                'digital_enquiry_target': d_obj.digital_enquiry_target if d_obj else 0.0,
+                                'digital_enquiry_conversion_target': d_obj.digital_enquiry_conversion_target if d_obj else 0.0
+                            }
+
+                            pts = CrmScoreCalculator.calculate(param.calc_key, raw_dict, float(param.max_points or 0), dealership_dict) or 0.0
+                            score = CrmScore(
+                                dealership_id=rd.dealership_id,
+                                crm_parameter_id=parameter_id,
+                                period_month=period_month,
+                                points_obtained=pts
+                            )
+                            db_session.add(score)
+
+                        db_session.commit()
+
+                    message = f"{imported_count} Dealership(s) — Raw Data Uploaded & Automatically Calculated (From {total_rows} Row(s)) For {period_month}."
+                except Exception as e:
+                    db_session.rollback()
+                    error = f"Error processing summary JSON: {str(e)}"
+                return jsonify({'success': not error, 'message': error or message, 'importErrors': import_errors})
             elif not file_upload:
                 error = "A CSV Or Excel File Is Required."
             else:
