@@ -2504,15 +2504,26 @@ def crm_parameters_view():
                     ).delete()
                     db_session.commit()
 
-                    imported_count = 0
-                    total_rows = 0
+                    grouped_by_did = {}
                     for d_name, d_sums in summary_data.items():
                         d_id = helper.find_dealership_match(dealershipsByName, d_name)
                         if not d_id:
                             import_errors.append(f"Dealership \"{d_name}\" Not Found — Skipped.")
                             continue
 
-                        rawJson = json.dumps(d_sums)
+                        if d_id not in grouped_by_did:
+                            grouped_by_did[d_id] = {}
+
+                        for k, v in d_sums.items():
+                            try:
+                                grouped_by_did[d_id][k] = grouped_by_did[d_id].get(k, 0.0) + float(v)
+                            except Exception:
+                                grouped_by_did[d_id][k] = v
+
+                    imported_count = 0
+                    total_rows = 0
+                    for d_id, merged_sums in grouped_by_did.items():
+                        rawJson = json.dumps(merged_sums)
                         new_raw = CrmRawData(
                             dealership_id=d_id,
                             crm_parameter_id=parameter_id,
@@ -2521,7 +2532,7 @@ def crm_parameters_view():
                         )
                         db_session.add(new_raw)
                         imported_count += 1
-                        total_rows += int(d_sums.get('Row Count') or 1)
+                        total_rows += int(merged_sums.get('Row Count') or 1)
 
                     db_session.commit()
 
