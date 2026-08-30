@@ -2308,9 +2308,21 @@ def crm_report_view():
 
                     if ckey in ('timely_followup', 'first_response_time', 'manager_assigning_time'):
                         row_c = float(rdict.get('Row Count') or 1.0)
-                        t_sum = CrmScoreCalculator.extract_numeric_value(rdict, ['sales person response time', 'salesperson response time', 'response time', 'sales person response', 'assign', 'min', 'time'])
+                        t_sum = None
+                        for k, v in rdict.items():
+                            k_lower = str(k).lower().strip()
+                            if 'response time (min)' in k_lower or 'response time min' in k_lower:
+                                try:
+                                    t_sum = float(v)
+                                    break
+                                except Exception:
+                                    pass
+
+                        if t_sum is None:
+                            t_sum = CrmScoreCalculator.extract_numeric_value(rdict, ['sales person response time (min)', 'sales person response time', 'response time', 'min'])
+
                         if t_sum is not None and row_c > 0:
-                            avg_m = t_sum / row_c if t_sum > 120.0 else t_sum
+                            avg_m = t_sum / row_c
                             ach_text = f"{avg_m:.1f} min"
                     elif ckey in ('detailing_of_enquiry', 'detailing'):
                         filled = CrmScoreCalculator.extract_numeric_value(rdict, ['total fields filled', 'fields filled', 'filled'])

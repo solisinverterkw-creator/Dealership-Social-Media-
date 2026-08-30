@@ -70,18 +70,22 @@ class CrmScoreCalculator:
 
     @staticmethod
     def timed_response_bands(raw: dict, max_points: float) -> float:
-        row_count = float(raw.get('Row Count') or 1.0)
+        # Prefer exact key containing '(min)' or numeric response time minutes sum
+        time_sum = None
+        for k, v in raw.items():
+            k_lower = str(k).lower().strip()
+            if 'response time (min)' in k_lower or 'response time min' in k_lower:
+                try:
+                    time_sum = float(v)
+                    break
+                except Exception:
+                    pass
 
-        avg_minutes = raw.get('Average Response Time (min)')
-        if avg_minutes is None:
-            time_sum = CrmScoreCalculator.extract_numeric_value(raw, ['sales person response time', 'salesperson response time', 'response time', 'sales person response', 'min', 'time'])
-            if time_sum is not None and row_count > 0:
-                avg_minutes = time_sum / row_count if time_sum > 120.0 else time_sum
-            else:
-                avg_minutes = CrmScoreCalculator.extract_any_numeric(raw)
+        if time_sum is None:
+            time_sum = CrmScoreCalculator.extract_numeric_value(raw, ['sales person response time (min)', 'sales person response time', 'response time', 'min'])
 
-        if avg_minutes is None:
-            return 0.0
+        count = float(raw.get('Row Count') or 1.0)
+        avg_minutes = (time_sum / count) if (time_sum is not None and count > 0) else 0.0
 
         if avg_minutes <= 20:
             fraction = 1.0
