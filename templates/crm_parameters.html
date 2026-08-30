@@ -226,8 +226,12 @@ async function uploadRawData(parameterId) {
             }
 
             Object.entries(rawCols).forEach(([cIdx, lbl]) => {
-              const valNum = parseFloat(String(row[cIdx] || '0').replace(/,/g, '')) || 0.0;
-              summary[dName][lbl] = (summary[dName][lbl] || 0.0) + valNum;
+              const valStr = String(row[cIdx] || '').trim();
+              if (valStr !== '') {
+                const valNum = parseFloat(valStr.replace(/,/g, '')) || 0.0;
+                summary[dName][lbl] = (summary[dName][lbl] || 0.0) + valNum;
+                summary[dName][lbl + ' Count'] = (summary[dName][lbl + ' Count'] || 0) + 1;
+              }
             });
             summary[dName]['Row Count'] += 1;
           }
