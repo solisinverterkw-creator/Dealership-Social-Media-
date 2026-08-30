@@ -21,7 +21,7 @@ class CrmScoreCalculator:
         elif key in ('voip_calling', 'voip'):
             return CrmScoreCalculator.voip_calling(raw, max_points)
         elif key in ('first_response_time', 'salesperson_first_response'):
-            return CrmScoreCalculator.timed_response_bands(raw, max_points)
+            return CrmScoreCalculator.first_response_time_bands(raw, max_points)
         elif key in ('manager_assigning_time', 'sales_manager_assigning'):
             return CrmScoreCalculator.manager_assigning_time_bands(raw, max_points)
         elif key in ('digital_enquiry_targets', 'digital_targets'):
@@ -95,6 +95,42 @@ class CrmScoreCalculator:
             fraction = 0.50
         elif avg_minutes <= 80:
             fraction = 0.25
+        else:
+            fraction = 0.0
+
+        return round(fraction * max_points, 2)
+
+    @staticmethod
+    def first_response_time_bands(raw: dict, max_points: float) -> float:
+        avg_minutes = None
+        for k, v in raw.items():
+            k_lower = str(k).lower().strip()
+            if 'average of min' in k_lower or 'avg of min' in k_lower or 'response time' in k_lower:
+                try:
+                    avg_minutes = float(v)
+                    break
+                except Exception:
+                    pass
+
+        if avg_minutes is None:
+            time_val = CrmScoreCalculator.extract_numeric_value(raw, ['average of min', 'min', 'response', 'time'])
+            row_c = float(raw.get('Row Count') or 1.0)
+            if time_val is not None and row_c > 0:
+                avg_minutes = time_val / row_c if time_val > 120.0 else time_val
+            else:
+                avg_minutes = time_val or 0.0
+
+        if avg_minutes is None:
+            return 0.0
+
+        if avg_minutes <= 20:
+            fraction = 1.0
+        elif avg_minutes <= 40:
+            fraction = 0.80
+        elif avg_minutes <= 60:
+            fraction = 0.60
+        elif avg_minutes <= 80:
+            fraction = 0.40
         else:
             fraction = 0.0
 
