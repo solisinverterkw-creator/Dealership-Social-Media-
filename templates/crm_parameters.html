@@ -190,7 +190,13 @@ async function uploadRawData(parameterId) {
       headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
       body: formData
     });
-    const data = await res.json().catch(() => null);
+    let data = null;
+    try {
+      data = await res.json();
+    } catch(e) {
+      const txt = await res.text().catch(() => '');
+      data = { success: false, message: 'Server response (' + res.status + '): ' + (txt.slice(0, 150) || res.statusText || 'Upload error') };
+    }
     if (data && data.success) {
       alert('✅ ' + (data.message || 'Upload & calculation completed successfully!'));
       window.location.href = `/crm_parameters.php?period=${encodeURIComponent(period)}`;
