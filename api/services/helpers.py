@@ -490,6 +490,15 @@ class SpreadsheetImportHelper:
 
         return d.title()
 
+    def clean_dealership_name_for_creation(self, raw_name: str) -> str:
+        s = str(raw_name or '').strip()
+        if not s or len(s) < 3:
+            return ''
+        low = s.lower()
+        if any(k in low for k in ['pak suzuki motor co', 'psmc insurance', 'slm pvt ltd', 'total', 'grand total', 'dealer name', 'dealer']):
+            return ''
+        return s
+
     def import_stock_sheet(self, db_session, rows: list) -> dict:
         from api.models import StockRecord, Dealership
         if not rows or len(rows) < 2:
@@ -549,8 +558,21 @@ class SpreadsheetImportHelper:
 
                 dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
                 if not dealershipId:
-                    importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
-                    continue
+                    clean_d_name = self.clean_dealership_name_for_creation(dealershipName)
+                    if clean_d_name:
+                        try:
+                            new_d = Dealership(name=clean_d_name, region='ROSP')
+                            db_session.add(new_d)
+                            db_session.flush()
+                            dealershipId = new_d.id
+                            dealershipsByName[self.normalize_dealership_name(clean_d_name)] = dealershipId
+                        except Exception:
+                            importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                            continue
+                    else:
+                        importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                        continue
+
                 if dealershipId in excludedStockIds:
                     continue
 
@@ -618,8 +640,21 @@ class SpreadsheetImportHelper:
 
                 dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
                 if not dealershipId:
-                    importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
-                    continue
+                    clean_d_name = self.clean_dealership_name_for_creation(dealershipName)
+                    if clean_d_name:
+                        try:
+                            new_d = Dealership(name=clean_d_name, region='ROSP')
+                            db_session.add(new_d)
+                            db_session.flush()
+                            dealershipId = new_d.id
+                            dealershipsByName[self.normalize_dealership_name(clean_d_name)] = dealershipId
+                        except Exception:
+                            importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                            continue
+                    else:
+                        importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                        continue
+
                 if dealershipId in excludedStockIds:
                     continue
 

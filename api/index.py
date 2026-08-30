@@ -2002,17 +2002,7 @@ def stock_report_view():
             pivot[d_name] = {'__id': r.dealership_id}
         pivot[d_name][r.product_name] = r.quantity
 
-    # Automatically hide columns where ALL dealerships have 0 stock
-    non_zero_cols = set()
-    for d_name, p_dict in pivot.items():
-        for p_k, p_v in p_dict.items():
-            if p_k != '__id' and p_v and p_v > 0:
-                non_zero_cols.add(p_k)
-
-    product_names = [v for v in variant_priority if v in non_zero_cols]
-    if not product_names:
-        product_names = [v for v in variant_priority if any(v.lower() == str(sc).lower() for sc in stock_cols)]
-
+    product_names = list(variant_priority)
     column_sequence = [{'type': 'product', 'name': p} for p in product_names]
 
     security_by_dealership = {d.id: d.security_amount for d in dealerships if d.security_amount is not None}
