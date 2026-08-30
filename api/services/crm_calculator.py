@@ -102,17 +102,23 @@ class CrmScoreCalculator:
 
     @staticmethod
     def manager_assigning_time_bands(raw: dict, max_points: float) -> float:
-        enquiries = CrmScoreCalculator.extract_numeric_value(raw, ['enquir', 'total enq', 'total enquiries'])
-        if enquiries is None or enquiries <= 0:
-            enquiries = float(raw.get('Row Count') or 1.0)
+        avg_minutes = None
+        for k, v in raw.items():
+            k_lower = str(k).lower().strip()
+            if 'average of min' in k_lower or 'avg of min' in k_lower or 'assigning time' in k_lower:
+                try:
+                    avg_minutes = float(v)
+                    break
+                except Exception:
+                    pass
 
-        avg_minutes = raw.get('Average Response Time (min)')
         if avg_minutes is None:
-            time_sum = CrmScoreCalculator.extract_numeric_value(raw, ['assign', 'min', 'time'])
-            if time_sum is not None and enquiries > 0:
-                avg_minutes = time_sum / enquiries if time_sum > 120.0 else time_sum
+            time_val = CrmScoreCalculator.extract_numeric_value(raw, ['average of min', 'min', 'assign', 'time'])
+            row_c = float(raw.get('Row Count') or 1.0)
+            if time_val is not None and row_c > 0:
+                avg_minutes = time_val / row_c if time_val > 120.0 else time_val
             else:
-                avg_minutes = CrmScoreCalculator.extract_any_numeric(raw)
+                avg_minutes = time_val or 0.0
 
         if avg_minutes is None:
             return 0.0
@@ -123,8 +129,10 @@ class CrmScoreCalculator:
             fraction = 0.75
         elif avg_minutes <= 60:
             fraction = 0.50
-        else:
+        elif avg_minutes <= 80:
             fraction = 0.25
+        else:
+            fraction = 0.0
 
         return round(fraction * max_points, 2)
 

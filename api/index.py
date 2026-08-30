@@ -2308,21 +2308,23 @@ def crm_report_view():
 
                     if ckey in ('timely_followup', 'first_response_time', 'manager_assigning_time'):
                         row_c = float(rdict.get('Row Count') or 1.0)
-                        t_sum = None
+                        avg_m = None
                         for k, v in rdict.items():
                             k_lower = str(k).lower().strip()
-                            if 'response time (min)' in k_lower or 'response time min' in k_lower:
+                            if 'average of min' in k_lower or 'avg of min' in k_lower or 'assigning time' in k_lower or 'response time (min)' in k_lower:
                                 try:
-                                    t_sum = float(v)
+                                    val = float(v)
+                                    avg_m = val / row_c if val > 120.0 else val
                                     break
                                 except Exception:
                                     pass
 
-                        if t_sum is None:
-                            t_sum = CrmScoreCalculator.extract_numeric_value(rdict, ['sales person response time (min)', 'sales person response time', 'response time', 'min'])
+                        if avg_m is None:
+                            t_sum = CrmScoreCalculator.extract_numeric_value(rdict, ['average of min', 'sales person response time (min)', 'sales person response time', 'response time', 'min'])
+                            if t_sum is not None and row_c > 0:
+                                avg_m = t_sum / row_c if t_sum > 120.0 else t_sum
 
-                        if t_sum is not None and row_c > 0:
-                            avg_m = t_sum / row_c
+                        if avg_m is not None:
                             ach_text = f"{avg_m:.1f} min"
                     elif ckey in ('detailing_of_enquiry', 'detailing'):
                         filled = CrmScoreCalculator.extract_numeric_value(rdict, ['total fields filled', 'fields filled', 'filled'])
