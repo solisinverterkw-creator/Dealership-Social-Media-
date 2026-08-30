@@ -1978,11 +1978,11 @@ def stock_report_view():
                 error = f"Error reading sheet: {str(e)}"
 
     variant_priority = [
-        'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS',
-        'FRONX GL AT', 'FRONX GLX',
-        'SWIFT GL', 'SWIFT GL CVT', 'SWIFT GLX',
-        'CULTUS VXR', 'CULTUS VXL',
-        'EVERY'
+        'Alto VXR', 'Alto VXR AGS', 'Alto AGS', 'Alto VXL', 'Alto VXL AGS',
+        'Cultus VXR', 'Cultus VXL', 'Cultus AGS',
+        'Swift MT', 'Swift GL', 'Swift GL CVT', 'Swift GLX',
+        'Every VXR',
+        'Fronx MT', 'Fronx GL AT', 'Fronx GLX'
     ]
 
     try:
@@ -1990,7 +1990,10 @@ def stock_report_view():
     except Exception:
         db_session.rollback()
         stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
-    product_names = SpreadsheetImportHelper.sort_product_columns_by_priority(stock_cols, variant_priority)
+
+    product_names = [v for v in variant_priority if any(v.lower() == str(sc).lower() for sc in stock_cols)]
+    if len(product_names) < len(variant_priority):
+        product_names = list(variant_priority)
 
     column_sequence = [{'type': 'product', 'name': p} for p in product_names]
 
