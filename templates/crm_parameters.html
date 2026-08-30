@@ -234,9 +234,7 @@ async function uploadRawData(parameterId) {
 
             if (sourceCol !== -1) {
               const srcVal = String(row[sourceCol] || '').toLowerCase().trim();
-              if (srcVal !== '' && !srcVal.includes('walk-in') && !srcVal.includes('referral')) {
-                summary[dName]['Digital Enquiries (Dealer Facebook + Instagram + Youtube)'] += 1;
-              } else {
+              if (srcVal.includes('dealer facebook') || srcVal.includes('dealer instagram') || srcVal.includes('dealer youtube')) {
                 summary[dName]['Digital Enquiries (Dealer Facebook + Instagram + Youtube)'] += 1;
               }
             } else {
