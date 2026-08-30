@@ -255,11 +255,11 @@ class CrmScoreCalculator:
             achieved = CrmScoreCalculator.extract_numeric_value(raw, ['digital', 'facebook', 'instagram', 'youtube', 'achiev', 'row count']) or 0.0
 
         if target <= 0:
-            percentage = 100.0 if achieved > 0 else 0.0
-        else:
-            percentage = (achieved / target) * 100.0
+            return 0.0
 
-        if percentage > 100.0:
+        percentage = (achieved / target) * 100.0
+
+        if percentage >= 100.0:
             pts = 30.0 if max_points == 30.0 else max_points
         elif percentage >= 90.0:
             pts = 25.0 if max_points == 30.0 else round((25.0 / 30.0) * max_points, 2)
