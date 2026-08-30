@@ -472,7 +472,12 @@ class SpreadsheetImportHelper:
         importedCount = 0
         importErrors = []
 
-        if productDescCol is not None:
+        has_matrix_variants = any(
+            self.matches_any_keyword(str(h).lower(), ['vxr', 'ags', 'vxl', 'gl', 'glx', 'swift', 'alto', 'cultus', 'every', 'fronx', 'cuc'])
+            for h in headerRow
+        )
+
+        if productDescCol is not None and not has_matrix_variants:
             counts = {}
             productOrder = {}
 
