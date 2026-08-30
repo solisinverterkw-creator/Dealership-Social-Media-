@@ -209,6 +209,7 @@ async function uploadRawData(parameterId) {
           const headerRow = rows[headerIdx];
           const rawCols = {};
           let sourceCol = -1;
+          let bizCol = -1;
 
           headerRow.forEach((lbl, c) => {
             const lstr = String(lbl).trim();
@@ -216,6 +217,9 @@ async function uploadRawData(parameterId) {
               rawCols[c] = lstr;
               if (sourceCol === -1 && lstr.toLowerCase().includes('source')) {
                 sourceCol = c;
+              }
+              if (bizCol === -1 && lstr.toLowerCase().includes('business days')) {
+                bizCol = c;
               }
             }
           });
@@ -228,7 +232,7 @@ async function uploadRawData(parameterId) {
             if (!dName) continue;
 
             if (!summary[dName]) {
-              summary[dName] = { 'Row Count': 0, 'Digital Enquiries (Dealer Facebook + Instagram + Youtube)': 0 };
+              summary[dName] = { 'Row Count': 0, 'Digital Enquiries (Dealer Facebook + Instagram + Youtube)': 0, 'Enquiries (2+ Business Days)': 0 };
               Object.values(rawCols).forEach(lbl => summary[dName][lbl] = 0.0);
             }
 
@@ -239,6 +243,13 @@ async function uploadRawData(parameterId) {
               }
             } else {
               summary[dName]['Digital Enquiries (Dealer Facebook + Instagram + Youtube)'] += 1;
+            }
+
+            if (bizCol !== -1) {
+              const bVal = parseFloat(String(row[bizCol] || '').trim()) || 0.0;
+              if (bVal >= 2.0) {
+                summary[dName]['Enquiries (2+ Business Days)'] += 1;
+              }
             }
 
             Object.entries(rawCols).forEach(([cIdx, lbl]) => {

@@ -293,30 +293,30 @@ class CrmScoreCalculator:
 
     @staticmethod
     def pipeline_tracking(raw: dict, max_points: float) -> float:
-        days = None
+        delayed_count = None
         for k, v in raw.items():
             k_lower = str(k).lower().strip()
-            if 'business days' in k_lower or 'days difference' in k_lower or 'business days difference' in k_lower:
+            if '2+ business' in k_lower or 'enquiries (2+' in k_lower or '2+ days' in k_lower:
                 try:
-                    days = float(v)
+                    delayed_count = float(v)
                     break
                 except Exception:
                     pass
 
-        if days is None:
-            time_val = CrmScoreCalculator.extract_numeric_value(raw, ['business days difference', 'business days', 'days difference', 'days'])
+        if delayed_count is None:
+            time_val = CrmScoreCalculator.extract_numeric_value(raw, ['business days difference', 'business days', 'days difference'])
             row_c = float(raw.get('Row Count') or 1.0)
             if time_val is not None and row_c > 0:
-                days = time_val / row_c if time_val > 50.0 else time_val
+                delayed_count = time_val / row_c if time_val > 50.0 else time_val
             else:
-                days = time_val or 0.0
+                delayed_count = time_val or 0.0
 
-        if days is None:
+        if delayed_count is None:
             return 0.0
 
-        if days <= 1.0:
+        if delayed_count <= 1.0:
             pts = 15.0 if max_points == 15.0 else max_points
-        elif days <= 3.0:
+        elif delayed_count <= 3.0:
             pts = 10.0 if max_points == 15.0 else round((10.0 / 15.0) * max_points, 2)
         else:
             pts = 0.0
