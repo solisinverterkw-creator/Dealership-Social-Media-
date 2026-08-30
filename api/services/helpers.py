@@ -437,6 +437,59 @@ class SpreadsheetImportHelper:
         db_session.commit()
         return {'success': True, 'imported_count': importedCount, 'import_errors': importErrors}
 
+    def normalize_stock_product_name(self, desc: str) -> str:
+        d = str(desc or '').upper().strip()
+        if not d:
+            return 'Other'
+
+        # Alto variants
+        if 'ALTO' in d or 'AET' in d:
+            if 'VXL' in d:
+                return 'Alto VXL AGS' if ('AGS' in d or 'AUTO' in d) else 'Alto VXL'
+            elif 'VXR' in d:
+                return 'Alto VXR AGS' if ('AGS' in d or 'AUTO' in d) else 'Alto VXR'
+            elif 'AGS' in d:
+                return 'Alto VXR AGS'
+            return 'Alto VXR'
+
+        # Cultus variants
+        if 'CULTUS' in d or 'AVK' in d:
+            if 'VXL' in d:
+                return 'Cultus VXL'
+            elif 'VXR' in d:
+                return 'Cultus VXR'
+            elif 'AGS' in d or 'AUTO' in d:
+                return 'Cultus AGS'
+            return 'Cultus VXR'
+
+        # Swift variants
+        if 'SWIFT' in d or 'A2L' in d:
+            if 'GLX' in d:
+                return 'Swift GLX'
+            elif 'CVT' in d:
+                return 'Swift GL CVT'
+            elif 'GL' in d:
+                return 'Swift GL'
+            elif 'MT' in d:
+                return 'Swift MT'
+            return 'Swift GL CVT'
+
+        # Fronx variants
+        if 'FRONX' in d or 'NWD' in d or 'NWA' in d:
+            if 'GLX' in d or 'HYBD' in d:
+                return 'Fronx GLX'
+            elif 'GL' in d or 'AT' in d:
+                return 'Fronx GL AT'
+            elif 'MT' in d:
+                return 'Fronx MT'
+            return 'Fronx GL AT'
+
+        # Every variants
+        if 'EVERY' in d or 'A5H' in d:
+            return 'Every VXR'
+
+        return d.title()
+
     def import_stock_sheet(self, db_session, rows: list) -> dict:
         from api.models import StockRecord, Dealership
         if not rows or len(rows) < 2:
@@ -487,10 +540,10 @@ class SpreadsheetImportHelper:
                 if not any(str(c).strip() != '' for c in row):
                     continue
 
-                dealershipName = str(row[dealerNameCol]).strip() if dealerNameCol < len(row) else ''
-                productName = str(row[productDescCol]).strip() if productDescCol < len(row) else ''
-                if not dealershipName or not productName:
+                raw_prod = str(row[productDescCol]).strip() if productDescCol < len(row) else ''
+                if not dealershipName or not raw_prod:
                     continue
+                productName = self.normalize_stock_product_name(raw_prod)
 
                 dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
                 if not dealershipId:
