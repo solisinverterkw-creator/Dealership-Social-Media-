@@ -289,13 +289,13 @@ def render_comparison_bar_chart(series):
     return svg
 
 def get_allowed_dealerships():
-    """Fetches list of dealerships the current user is allowed to access."""
+    """Fetches list of dealerships the current user is allowed to access (strictly 21 official dealerships)."""
     if is_super_admin():
-        return db_session.query(Dealership).order_by(Dealership.name).all()
+        return db_session.query(Dealership).filter(Dealership.id <= 21).order_by(Dealership.id).all()
     scoped_ids = get_dealership_ids()
     if not scoped_ids:
         return []
-    return db_session.query(Dealership).filter(Dealership.id.in_(scoped_ids)).order_by(Dealership.name).all()
+    return db_session.query(Dealership).filter(Dealership.id.in_(scoped_ids), Dealership.id <= 21).order_by(Dealership.id).all()
 
 # --- CORE USER VIEWS ---
 

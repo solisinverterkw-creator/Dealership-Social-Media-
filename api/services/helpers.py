@@ -581,20 +581,8 @@ class SpreadsheetImportHelper:
 
                 dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
                 if not dealershipId:
-                    clean_d_name = self.clean_dealership_name_for_creation(dealershipName)
-                    if clean_d_name:
-                        try:
-                            new_d = Dealership(name=clean_d_name, region='ROSP')
-                            db_session.add(new_d)
-                            db_session.flush()
-                            dealershipId = new_d.id
-                            dealershipsByName[self.normalize_dealership_name(clean_d_name)] = dealershipId
-                        except Exception:
-                            importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
-                            continue
-                    else:
-                        importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
-                        continue
+                    importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                    continue
 
                 if dealershipId in excludedStockIds:
                     continue
@@ -680,20 +668,8 @@ class SpreadsheetImportHelper:
 
                 dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
                 if not dealershipId:
-                    clean_d_name = self.clean_dealership_name_for_creation(dealershipName)
-                    if clean_d_name:
-                        try:
-                            new_d = Dealership(name=clean_d_name, region='ROSP')
-                            db_session.add(new_d)
-                            db_session.flush()
-                            dealershipId = new_d.id
-                            dealershipsByName[self.normalize_dealership_name(clean_d_name)] = dealershipId
-                        except Exception:
-                            importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
-                            continue
-                    else:
-                        importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
-                        continue
+                    importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                    continue
 
                 if dealershipId in excludedStockIds:
                     continue
