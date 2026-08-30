@@ -2340,10 +2340,26 @@ def crm_report_view():
                         if f_ups is not None and enq and enq > 0:
                             ach_text = f"{(f_ups / enq) * 100:.0f}%"
                     elif ckey in ('voip_calling',):
-                        v_calls = CrmScoreCalculator.extract_numeric_value(rdict, ['voip', 'call'])
-                        f_ups = CrmScoreCalculator.extract_numeric_value(rdict, ['follow', 'total']) or 1.0
-                        if v_calls is not None and f_ups > 0:
-                            ach_text = f"{(v_calls / f_ups) * 100:.0f}%"
+                        ratio_val = None
+                        for k, v in rdict.items():
+                            k_lower = str(k).lower().strip()
+                            if 'ratio of voip' in k_lower or 'voip calls against follow up' in k_lower or 'voip ratio' in k_lower:
+                                try:
+                                    val_str = str(v).replace('%', '').strip()
+                                    val_float = float(val_str)
+                                    ratio_val = val_float * 100.0 if (0.0 < val_float <= 1.0) else val_float
+                                    break
+                                except Exception:
+                                    pass
+
+                        if ratio_val is None:
+                            v_calls = CrmScoreCalculator.extract_numeric_value(rdict, ['total number of voip calls', 'voip calls', 'voip'])
+                            f_ups = CrmScoreCalculator.extract_numeric_value(rdict, ['total follow-up', 'total follow up', 'follow-up', 'follow up'])
+                            if v_calls is not None and f_ups and f_ups > 0:
+                                ratio_val = (v_calls / f_ups) * 100.0
+
+                        if ratio_val is not None:
+                            ach_text = f"{ratio_val:.0f}%"
                 except Exception:
                     pass
 

@@ -158,13 +158,27 @@ class CrmScoreCalculator:
 
     @staticmethod
     def voip_calling(raw: dict, max_points: float) -> float:
-        voip = CrmScoreCalculator.extract_numeric_value(raw, ['voip', 'call'])
-        if voip is None:
-            pct_val = CrmScoreCalculator.extract_any_numeric(raw)
-            percentage = pct_val if pct_val is not None else 0.0
-        else:
-            follow_ups = CrmScoreCalculator.extract_numeric_value(raw, ['follow', 'total']) or 1.0
-            percentage = (voip / follow_ups) * 100.0 if follow_ups > 0 else voip
+        ratio_val = None
+        for k, v in raw.items():
+            k_lower = str(k).lower().strip()
+            if 'ratio of voip' in k_lower or 'voip calls against follow up' in k_lower or 'voip ratio' in k_lower:
+                try:
+                    val_str = str(v).replace('%', '').strip()
+                    val_float = float(val_str)
+                    ratio_val = val_float * 100.0 if (0.0 < val_float <= 1.0) else val_float
+                    break
+                except Exception:
+                    pass
+
+        if ratio_val is None:
+            voip = CrmScoreCalculator.extract_numeric_value(raw, ['total number of voip calls', 'voip calls', 'voip'])
+            follow_ups = CrmScoreCalculator.extract_numeric_value(raw, ['total follow-up', 'total follow up', 'follow-up', 'follow up'])
+            if voip is not None and follow_ups is not None and follow_ups > 0:
+                ratio_val = (voip / follow_ups) * 100.0
+            elif voip is not None:
+                ratio_val = voip
+
+        percentage = ratio_val if ratio_val is not None else 0.0
 
         if percentage >= 90:
             fraction = 1.0
