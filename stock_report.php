@@ -8,43 +8,7 @@ if (!Auth::canView('stock_report')) {
 require_once __DIR__ . '/includes/Database.php';
 require_once __DIR__ . '/includes/SimpleXlsxReader.php';
 require_once __DIR__ . '/includes/SpreadsheetImportHelper.php';
-
-// Helper function to extract simplified product variant from full product description
-// e.g., "SUZUKI ALTO AET306 VXR AGS M1 658 CC" => "ALTO VXR"
-function extractProductVariant($fullProductName) {
-    $fullProductName = trim($fullProductName);
-    if (empty($fullProductName)) {
-        return '';
-    }
-    
-    // Remove leading "SUZUKI" if present
-    $productName = preg_replace('/^SUZUKI\s+/i', '', $fullProductName);
-    $productName = trim($productName);
-    
-    // Extract model name and variant using pattern matching
-    // Patterns: "ALTO VXR", "CULTUS VXL", "SWIFT GL CVT", "FRONX GLX", "EVERY VXR"
-    
-    if (preg_match('/^(ALTO|CULTUS|SWIFT|EVERY|FRONX)\s+([A-Z]+)(?:\s+[A-Z]+)?\s+/i', $productName, $matches)) {
-        $model = strtoupper($matches[1]);
-        $variant = strtoupper($matches[2]);
-        
-        // Handle CVT specially (can be two words: "GL CVT")
-        if (preg_match('/^(ALTO|CULTUS|SWIFT|EVERY|FRONX)\s+([A-Z]+\s+CVT)/i', $productName, $cvtMatches)) {
-            $model = strtoupper($cvtMatches[1]);
-            $variant = strtoupper($cvtMatches[2]);
-        }
-        
-        return "{$model} {$variant}";
-    }
-    
-    // Fallback: extract first two words (model and variant)
-    $parts = explode(' ', $productName);
-    if (count($parts) >= 2) {
-        return strtoupper($parts[0] . ' ' . $parts[1]);
-    }
-    
-    return strtoupper($productName);
-}
+require_once __DIR__ . '/includes/ProductCodeMapper.php';
 
 $db = Database::getConnection();
 $message = '';
@@ -297,33 +261,15 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
     }
 }
 
-// Master column list — every distinct product variant on record, ordered by a
-// hand-specified variant priority (e.g. "ALTO VXR" before "ALTO AGS")
-// rather than plain alphabetical.
-$variantPriority = [
-    'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS', 'ALTO VXL AGS',
-    'CULTUS VXR', 'CULTUS VXL', 'CULTUS AGS',
-    'FRONX GL', 'FRONX GL AT', 'FRONX GLX',
-    'SWIFT MT', 'SWIFT GL', 'SWIFT GL CVT', 'SWIFT GLX',
-    'EVERY VXR', 'EVERY',
-];
-
-// Get all distinct extracted product variants
+// Master column list — product codes ordered by priority
+// Get all distinct product codes from database and sort by priority
 $productNames = $db->query("SELECT DISTINCT product_name FROM stock_records")->fetchAll(PDO::FETCH_COLUMN);
-$extractedVariants = array_unique(array_map('extractProductVariant', $productNames));
-$extractedVariants = array_filter($extractedVariants); // Remove empty strings
+$productCodes = array_unique(array_map([ProductCodeMapper::class, 'getProductCode'], $productNames));
+$productCodes = array_filter($productCodes); // Remove empty strings
 
-// Sort by priority
-$sortedVariants = [];
-foreach ($variantPriority as $priority) {
-    if (in_array($priority, $extractedVariants, true)) {
-        $sortedVariants[] = $priority;
-        unset($extractedVariants[array_search($priority, $extractedVariants, true)]);
-    }
-}
-// Add remaining variants in alphabetical order
-sort($extractedVariants);
-$masterColumns = array_map(fn($v) => ['variant' => $v], array_merge($sortedVariants, $extractedVariants));
+// Sort by priority using the ProductCodeMapper priority list
+$sortedCodes = ProductCodeMapper::getSortedProductCodes($productCodes);
+$masterColumns = array_map(fn($code) => ['code' => $code], $sortedCodes);
 
 $regions = $db->query("SELECT DISTINCT region FROM dealerships WHERE region IS NOT NULL AND region != '' ORDER BY region")->fetchAll(PDO::FETCH_COLUMN);
 $selectedRegion = trim($_GET['region'] ?? '');
@@ -351,17 +297,17 @@ $rowsStmt = $db->prepare($rowsQuery);
 $rowsStmt->execute($rowsParams);
 $rows = $rowsStmt->fetchAll();
 
-// Group by dealership and extracted product variant
+// Group by dealership and product code
 $pivot = [];
-$variantAppearanceOrder = []; // Track order of first appearance for each variant
+$variantAppearanceOrder = []; // Track order of first appearance for each code
 
 foreach ($rows as $r) {
     $dealership = $r['dealership_name'];
-    $extractedVariant = extractProductVariant($r['product_name']);
+    $productCode = ProductCodeMapper::getProductCode($r['product_name']);
     
-    // Track first appearance order of variants
-    if (!isset($variantAppearanceOrder[$extractedVariant])) {
-        $variantAppearanceOrder[$extractedVariant] = count($variantAppearanceOrder);
+    // Track first appearance order of codes
+    if (!isset($variantAppearanceOrder[$productCode])) {
+        $variantAppearanceOrder[$productCode] = count($variantAppearanceOrder);
     }
     
     if (!isset($pivot[$dealership])) {
@@ -370,8 +316,8 @@ foreach ($rows as $r) {
     
     $pivot[$dealership]['__security'] = $r['security_amount'];
     
-    // Sum quantities if the same variant appears multiple times (e.g., different full product names)
-    $pivot[$dealership][$extractedVariant] = ($pivot[$dealership][$extractedVariant] ?? 0) + (int)$r['quantity'];
+    // Sum quantities if the same code appears multiple times (e.g., different full product names)
+    $pivot[$dealership][$productCode] = ($pivot[$dealership][$productCode] ?? 0) + (int)$r['quantity'];
 }
 
 // Highest total stock first.
@@ -466,7 +412,7 @@ uasort($pivot, fn($a, $b) => $computeRowTotal($b) <=> $computeRowTotal($a));
           <th>SR#</th>
           <th>DEALER</th>
           <?php foreach ($masterColumns as $c): ?>
-            <th><?= htmlspecialchars($c['variant']) ?></th>
+            <th><?= htmlspecialchars($c['code']) ?></th>
           <?php endforeach; ?>
           <th>TOTAL</th>
           <th>AVAILABLE SECURITY AMOUNT</th>
@@ -475,13 +421,13 @@ uasort($pivot, fn($a, $b) => $computeRowTotal($b) <=> $computeRowTotal($a));
       <tbody>
         <?php $sr = 0; foreach ($pivot as $dealershipName => $products): $sr++;
           $rowTotal = 0;
-          foreach ($masterColumns as $c) { $rowTotal += $products[$c['variant']] ?? 0; }
+          foreach ($masterColumns as $c) { $rowTotal += $products[$c['code']] ?? 0; }
         ?>
         <tr>
           <td><?= $sr ?></td>
           <td class="name-cell"><?= htmlspecialchars($dealershipName) ?></td>
           <?php foreach ($masterColumns as $c): ?>
-            <td><?= number_format($products[$c['variant']] ?? 0) ?></td>
+            <td><?= number_format($products[$c['code']] ?? 0) ?></td>
           <?php endforeach; ?>
           <td style="font-weight:600;"><?= number_format($rowTotal) ?></td>
           <td><?= $products['__security'] !== null ? number_format($products['__security'], 2) : '—' ?></td>
