@@ -8,6 +8,40 @@ if (!Auth::canView('stock_report')) {
 require_once __DIR__ . '/includes/Database.php';
 require_once __DIR__ . '/includes/SpreadsheetImportHelper.php';
 
+// Helper function to extract simplified product variant from full product description
+function extractProductVariant($fullProductName) {
+    $fullProductName = trim($fullProductName);
+    if (empty($fullProductName)) {
+        return '';
+    }
+    
+    // Remove leading "SUZUKI" if present
+    $productName = preg_replace('/^SUZUKI\s+/i', '', $fullProductName);
+    $productName = trim($productName);
+    
+    // Extract model name and variant using pattern matching
+    if (preg_match('/^(ALTO|CULTUS|SWIFT|EVERY|FRONX)\s+([A-Z]+)(?:\s+[A-Z]+)?\s+/i', $productName, $matches)) {
+        $model = strtoupper($matches[1]);
+        $variant = strtoupper($matches[2]);
+        
+        // Handle CVT specially (can be two words: "GL CVT")
+        if (preg_match('/^(ALTO|CULTUS|SWIFT|EVERY|FRONX)\s+([A-Z]+\s+CVT)/i', $productName, $cvtMatches)) {
+            $model = strtoupper($cvtMatches[1]);
+            $variant = strtoupper($cvtMatches[2]);
+        }
+        
+        return "{$model} {$variant}";
+    }
+    
+    // Fallback: extract first two words (model and variant)
+    $parts = explode(' ', $productName);
+    if (count($parts) >= 2) {
+        return strtoupper($parts[0] . ' ' . $parts[1]);
+    }
+    
+    return strtoupper($productName);
+}
+
 $db = Database::getConnection();
 $isSuperAdmin = Auth::isSuperAdmin();
 $scopedIds = Auth::dealershipIds();
@@ -21,14 +55,29 @@ foreach ($db->query("SELECT id, name FROM dealerships")->fetchAll() as $d) {
 }
 
 $variantPriority = [
-    'Alto VXR', 'Alto VXR AGS', 'Alto AGS', 'Alto VXL AGS',
-    'FRONX GL AT', 'FRONX GLX',
-    'SWIFT MT', 'Swift GL', 'Swift GL CVT', 'SWIFT GLX',
+    'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS', 'ALTO VXL AGS',
     'CULTUS VXR', 'CULTUS VXL', 'CULTUS AGS',
-    'EVERY',
+    'FRONX GL', 'FRONX GL AT', 'FRONX GLX',
+    'SWIFT MT', 'SWIFT GL', 'SWIFT GL CVT', 'SWIFT GLX',
+    'EVERY VXR', 'EVERY',
 ];
+
+// Get all distinct extracted product variants
 $productNames = $db->query("SELECT DISTINCT product_name FROM stock_records")->fetchAll(PDO::FETCH_COLUMN);
-$sortedProductNames = SpreadsheetImportHelper::sortProductColumnsByPriority($productNames, $variantPriority);
+$extractedVariants = array_unique(array_map('extractProductVariant', $productNames));
+$extractedVariants = array_filter($extractedVariants); // Remove empty strings
+
+// Sort by priority
+$sortedVariants = [];
+foreach ($variantPriority as $priority) {
+    if (in_array($priority, $extractedVariants, true)) {
+        $sortedVariants[] = $priority;
+        unset($extractedVariants[array_search($priority, $extractedVariants, true)]);
+    }
+}
+// Add remaining variants in alphabetical order
+sort($extractedVariants);
+$sortedVariants = array_merge($sortedVariants, $extractedVariants);
 
 $selectedRegion = trim($_GET['region'] ?? '');
 $rowsQuery = "
@@ -54,10 +103,20 @@ $rowsStmt = $db->prepare($rowsQuery);
 $rowsStmt->execute($rowsParams);
 $rows = $rowsStmt->fetchAll();
 
+// Group by dealership and extracted product variant
 $pivot = [];
 foreach ($rows as $r) {
-    $pivot[$r['dealership_name']]['__security'] = $r['security_amount'];
-    $pivot[$r['dealership_name']][$r['product_name']] = (int)$r['quantity'];
+    $dealership = $r['dealership_name'];
+    $extractedVariant = extractProductVariant($r['product_name']);
+    
+    if (!isset($pivot[$dealership])) {
+        $pivot[$dealership] = [];
+    }
+    
+    $pivot[$dealership]['__security'] = $r['security_amount'];
+    
+    // Sum quantities if the same variant appears multiple times
+    $pivot[$dealership][$extractedVariant] = ($pivot[$dealership][$extractedVariant] ?? 0) + (int)$r['quantity'];
 }
 
 $computeRowTotal = fn(array $products) => array_sum(array_diff_key($products, ['__security' => true]));
@@ -72,15 +131,14 @@ fputs($out, "\xEF\xBB\xBF");
 fputcsv($out, ['Stock Report — ' . date('d M, Y')]);
 fputcsv($out, []);
 
-$shortHeaders = array_map(fn($p) => SpreadsheetImportHelper::shortenProductLabel($p, $variantPriority), $sortedProductNames);
-fputcsv($out, array_merge(['Sr#', 'Dealer'], $shortHeaders, ['Total', 'Available Security Amount']));
+fputcsv($out, array_merge(['Sr#', 'Dealer'], $sortedVariants, ['Total', 'Available Security Amount']));
 
 $sr = 0;
 foreach ($pivot as $dealershipName => $products) {
     $sr++;
     $row = [$sr, $dealershipName];
-    foreach ($sortedProductNames as $p) {
-        $row[] = $products[$p] ?? 0;
+    foreach ($sortedVariants as $variant) {
+        $row[] = $products[$variant] ?? 0;
     }
     $row[] = $computeRowTotal($products);
     $row[] = $products['__security'] !== null ? $products['__security'] : '';
