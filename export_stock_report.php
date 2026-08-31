@@ -22,9 +22,18 @@ foreach ($db->query("SELECT id, name FROM dealerships")->fetchAll() as $d) {
 }
 
 // Get all distinct product codes from database and sort by priority
+// Only show codes from the priority list that have actual data
 $productNames = $db->query("SELECT DISTINCT product_name FROM stock_records")->fetchAll(PDO::FETCH_COLUMN);
-$productCodes = array_unique(array_map([ProductCodeMapper::class, 'getProductCode'], $productNames));
-$productCodes = array_filter($productCodes); // Remove empty strings
+
+// Convert to codes, filtering out null values (unmapped products)
+$productCodes = [];
+foreach ($productNames as $name) {
+    $code = ProductCodeMapper::getProductCode($name);
+    if ($code !== null) {
+        $productCodes[$code] = true;
+    }
+}
+$productCodes = array_keys($productCodes);
 
 // Sort by priority using the ProductCodeMapper priority list
 $sortedCodes = ProductCodeMapper::getSortedProductCodes($productCodes);
@@ -58,6 +67,11 @@ $pivot = [];
 foreach ($rows as $r) {
     $dealership = $r['dealership_name'];
     $productCode = ProductCodeMapper::getProductCode($r['product_name']);
+    
+    // Skip if product code not found in mapping
+    if ($productCode === null) {
+        continue;
+    }
     
     if (!isset($pivot[$dealership])) {
         $pivot[$dealership] = [];

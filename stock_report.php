@@ -263,11 +263,21 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
 
 // Master column list — product codes ordered by priority
 // Get all distinct product codes from database and sort by priority
+// Only show codes from the priority list that have actual data
 $productNames = $db->query("SELECT DISTINCT product_name FROM stock_records")->fetchAll(PDO::FETCH_COLUMN);
-$productCodes = array_unique(array_map([ProductCodeMapper::class, 'getProductCode'], $productNames));
-$productCodes = array_filter($productCodes); // Remove empty strings
+
+// Convert to codes, filtering out null values (unmapped products)
+$productCodes = [];
+foreach ($productNames as $name) {
+    $code = ProductCodeMapper::getProductCode($name);
+    if ($code !== null) {
+        $productCodes[$code] = true;
+    }
+}
+$productCodes = array_keys($productCodes);
 
 // Sort by priority using the ProductCodeMapper priority list
+// This returns only codes from the priority list that exist in data
 $sortedCodes = ProductCodeMapper::getSortedProductCodes($productCodes);
 $masterColumns = array_map(fn($code) => ['code' => $code], $sortedCodes);
 
@@ -305,6 +315,11 @@ foreach ($rows as $r) {
     $dealership = $r['dealership_name'];
     $productCode = ProductCodeMapper::getProductCode($r['product_name']);
     
+    // Skip if product code not found in mapping
+    if ($productCode === null) {
+        continue;
+    }
+    
     // Track first appearance order of codes
     if (!isset($variantAppearanceOrder[$productCode])) {
         $variantAppearanceOrder[$productCode] = count($variantAppearanceOrder);
@@ -316,7 +331,7 @@ foreach ($rows as $r) {
     
     $pivot[$dealership]['__security'] = $r['security_amount'];
     
-    // Sum quantities if the same code appears multiple times (e.g., different full product names)
+    // Sum quantities if the same code appears multiple times
     $pivot[$dealership][$productCode] = ($pivot[$dealership][$productCode] ?? 0) + (int)$r['quantity'];
 }
 

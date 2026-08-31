@@ -53,10 +53,10 @@ class ProductCodeMapper {
 
     /**
      * Convert full product description to standardized code
-     * Uses exact match first, then pattern matching as fallback
+     * Returns code only if exact match found, otherwise returns null
      * 
      * @param string $fullProductName Full product description
-     * @return string Standardized product code
+     * @return string|null Standardized product code or null if not found
      */
     public static function getProductCode($fullProductName) {
         $fullProductName = trim($fullProductName);
@@ -66,52 +66,15 @@ class ProductCodeMapper {
             return self::$productMapping[$fullProductName];
         }
 
-        // Case-insensitive match
+        // Try case-insensitive match
         foreach (self::$productMapping as $description => $code) {
-            if (strtoupper($fullProductName) === strtoupper($description)) {
+            if (strtoupper(trim($fullProductName)) === strtoupper(trim($description))) {
                 return $code;
             }
         }
 
-        // Pattern-based fallback: extract model + variant
-        return self::extractVariantFallback($fullProductName);
-    }
-
-    /**
-     * Fallback extraction if product not in mapping
-     * Extracts first two significant words as model and variant
-     */
-    private static function extractVariantFallback($fullProductName) {
-        $fullProductName = trim($fullProductName);
-        if (empty($fullProductName)) {
-            return '';
-        }
-
-        // Remove leading "SUZUKI" if present
-        $productName = preg_replace('/^SUZUKI\s+/i', '', $fullProductName);
-        $productName = trim($productName);
-
-        // Extract model + variant pattern
-        if (preg_match('/^(ALTO|CULTUS|SWIFT|EVERY|FRONX)\s+([A-Z]+)(?:\s+[A-Z]+)?\s+/i', $productName, $matches)) {
-            $model = strtoupper($matches[1]);
-            $variant = strtoupper($matches[2]);
-
-            // Handle CVT specially
-            if (preg_match('/^(ALTO|CULTUS|SWIFT|EVERY|FRONX)\s+([A-Z]+\s+CVT)/i', $productName, $cvtMatches)) {
-                $model = strtoupper($cvtMatches[1]);
-                $variant = strtoupper($cvtMatches[2]);
-            }
-
-            return "{$model} {$variant}";
-        }
-
-        // Final fallback: first two words
-        $parts = explode(' ', $productName);
-        if (count($parts) >= 2) {
-            return strtoupper($parts[0] . ' ' . $parts[1]);
-        }
-
-        return strtoupper($productName);
+        // If no exact match found, return null to exclude from report
+        return null;
     }
 
     /**
@@ -122,24 +85,25 @@ class ProductCodeMapper {
     }
 
     /**
-     * Get priority-sorted list of all codes
+     * Get priority-sorted list of codes that actually exist in data
+     * Only returns codes from the priority list to avoid unnecessary columns
      */
     public static function getSortedProductCodes($extractedCodes = []) {
+        if (empty($extractedCodes)) {
+            return self::$codePriority;
+        }
+
         $sorted = [];
 
-        // Add codes in priority order
+        // Add codes in priority order (ONLY from priority list)
         foreach (self::$codePriority as $code) {
-            if (empty($extractedCodes) || in_array($code, $extractedCodes)) {
+            if (in_array($code, $extractedCodes)) {
                 $sorted[] = $code;
             }
         }
 
-        // Add remaining codes alphabetically
-        if (!empty($extractedCodes)) {
-            $remaining = array_diff($extractedCodes, $sorted);
-            sort($remaining);
-            $sorted = array_merge($sorted, $remaining);
-        }
+        // DO NOT add codes that aren't in priority list
+        // This prevents unnecessary columns from showing up
 
         return $sorted;
     }
