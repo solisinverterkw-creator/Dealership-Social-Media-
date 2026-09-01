@@ -1947,6 +1947,42 @@ def sales_report_view():
         friendly_product_label=SpreadsheetImportHelper.friendly_product_label
     )
 
+# --- CLEAR STOCK DATA ENDPOINT ---
+@app.route('/clear_stock_data', methods=['GET'])
+@require_login
+def clear_stock_data():
+    """Admin endpoint to clear all old stock records from database"""
+    if not is_super_admin():
+        return jsonify({'success': False, 'message': 'Super admin access required'}), 403
+    
+    try:
+        count_before = db_session.query(StockRecord).count()
+        
+        # Show what's being deleted
+        products = db_session.query(distinct(StockRecord.product_name)).all()
+        product_list = [p[0] for p in products if p[0]]
+        
+        # Delete all records
+        db_session.query(StockRecord).delete()
+        db_session.commit()
+        
+        count_after = db_session.query(StockRecord).count()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully cleared {count_before} stock records',
+            'records_deleted': count_before,
+            'remaining': count_after,
+            'products_that_were_imported': product_list,
+            'next_step': 'Go to /stock_report and re-upload your CSV/Excel file'
+        })
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Error clearing data: {str(e)}'
+        }), 500
+
 # --- STOCK REPORT VIEW ---
 @app.route('/stock_report', methods=['GET', 'POST'])
 @app.route('/stock_report.php', endpoint='stock_report', methods=['GET', 'POST'])
