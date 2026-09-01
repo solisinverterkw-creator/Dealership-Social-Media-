@@ -645,7 +645,8 @@ class SpreadsheetImportHelper:
             skipKeywords = [
                 'sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'security',
                 'region', 'total', 'ttl', 'code', 'sap', 'sap code', 'odoo', 'odoo code',
-                'tag', 'dealer tag', 'dealer name', 'company', 'branch', 'showroom'
+                'tag', 'dealer tag', 'dealer name', 'company', 'branch', 'showroom',
+                'unpaid', 'paid', 'difference', 'open', 'closed', 'cuc', 'pending', 'status'
             ]
             productCols = {}
             for col, label in enumerate(headerRow):
