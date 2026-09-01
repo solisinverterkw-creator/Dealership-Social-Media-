@@ -588,7 +588,7 @@ class SpreadsheetImportHelper:
             for h in headerRow
         )
 
-        if productDescCol is not None and not has_matrix_variants:
+        if productDescCol is not None:
             qtyCol = self.find_column(headerRow, ['qty', 'quantity', 'sum of quantity', 'stock qty', 'total qty', 'count'])
             regionCol = self.find_column(headerRow, ['region'], prefer_last=True)
             counts = {}
@@ -677,9 +677,6 @@ class SpreadsheetImportHelper:
                     d_obj = db_session.query(Dealership).filter(Dealership.id == d_id).first()
                     if d_obj:
                         d_obj.region = regionByDealer[d_id]
-                    d_obj = db_session.query(Dealership).filter(Dealership.id == d_id).first()
-                    if d_obj:
-                        d_obj.region = regionByDealer[d_id]
         else:
             skipKeywords = [
                 'sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'security',
@@ -708,7 +705,6 @@ class SpreadsheetImportHelper:
 
                 dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
                 if not dealershipId:
-                    importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
                     continue
 
                 if dealershipId in excludedStockIds:
