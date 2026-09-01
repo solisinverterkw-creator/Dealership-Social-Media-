@@ -955,6 +955,13 @@ class SpreadsheetImportHelper:
 import zipfile
 import xml.etree.cElementTree as ET
 
+def col_letter_to_index(col_str: str) -> int:
+    idx = 0
+    for char in col_str.upper():
+        if 'A' <= char <= 'Z':
+            idx = idx * 26 + (ord(char) - ord('A') + 1)
+    return idx - 1 if idx > 0 else 0
+
 def fast_xlsx_parse(file_bytes):
     """Fast C-XML streaming parser for XLSX files (processes 30,000+ rows in <2 seconds)."""
     try:
@@ -980,6 +987,13 @@ def fast_xlsx_parse(file_bytes):
                 if elem.tag.endswith('row'):
                     row_vals = []
                     for cell in elem.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}c'):
+                        ref = cell.get('r', '')
+                        col_idx = len(row_vals)
+                        if ref:
+                            match = re.match(r'([A-Za-z]+)', ref)
+                            if match:
+                                col_idx = col_letter_to_index(match.group(1))
+
                         val_type = cell.get('t')
                         val_node = cell.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v')
                         cell_val = val_node.text if val_node is not None else ''
@@ -989,7 +1003,11 @@ def fast_xlsx_parse(file_bytes):
                         elif val_type == 'inlineStr':
                             is_node = cell.find('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t')
                             cell_val = is_node.text if is_node is not None else ''
+
+                        while len(row_vals) < col_idx:
+                            row_vals.append('')
                         row_vals.append(str(cell_val).strip())
+
                     if any(c != '' for c in row_vals):
                         rows.append(row_vals)
                     elem.clear()
