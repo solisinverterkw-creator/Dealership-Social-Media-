@@ -186,8 +186,11 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
                     // "TTL"/"Total" columns are per-model subtotals (there can be
                     // several, not just one overall total like Sales' Grand Total) —
                     // skipped rather than stored, so they don't get double-counted
-                    // as their own product.
-                    $skipKeywords = ['sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'security', 'ttl', 'total'];
+                    // as their own product. Also skip status columns like unpaid, paid, difference.
+                    $skipKeywords = [
+                        'sr#', 'sr.', 'sr no', 's.no', 's no', 'serial', 'dealer', 'security', 'ttl', 'total',
+                        'unpaid', 'paid', 'difference', 'open', 'closed', 'cuc', 'pending', 'status'
+                    ];
                     $productCols = [];
                     foreach ($effectiveHeader as $col => $label) {
                         $labelLower = trim((string)$label);
