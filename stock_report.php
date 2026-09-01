@@ -133,7 +133,7 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
 
                         $dealershipId = SpreadsheetImportHelper::findDealershipMatch($dealershipsByName, $dealershipName);
                         if (!$dealershipId) {
-                            $importErrors[] = "Row {$rowNum}: Dealership \"{$dealershipName}\" Not Found — Skipped.";
+                            $skippedNonTracked++;
                             continue;
                         }
                         if (in_array($dealershipId, $excludedStockIds, true)) {
@@ -154,7 +154,7 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
                     }
 
                     if (empty($counts)) {
-                        $error = 'No Matching Dealership Rows Found To Import.';
+                        $error = 'No Matching Tracked Dealership Rows Found To Import.';
                     } else {
                         $insert = $db->prepare("INSERT INTO stock_records (dealership_id, product_name, quantity, column_order) VALUES (:did, :product, :qty, :order)");
                         $updateRegion = $db->prepare("UPDATE dealerships SET region = :region WHERE id = :id");
@@ -169,7 +169,10 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
                                 $updateRegion->execute(['region' => $regionByDealer[$dealershipId], 'id' => $dealershipId]);
                             }
                         }
-                        $message = "{$transactionRows} Transaction Row(s) Auto-Pivoted Into {$importedCount} Dealership/Product Stock Entries.";
+                        $message = "{$transactionRows} Transaction Row(s) Auto-Pivoted Into {$importedCount} Dealership/Product Stock Entries for Tracked Dealerships.";
+                        if ($skippedNonTracked > 0) {
+                            $message .= " ({$skippedNonTracked} Raw Row(s) For Non-Tracked Dealerships Skipped).";
+                        }
                     }
                 } else {
                     // ---- Wide pre-aggregated: one column per product/variant ----
@@ -230,8 +233,7 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
 
                             $dealershipId = SpreadsheetImportHelper::findDealershipMatch($dealershipsByName, $dealershipName);
                             if (!$dealershipId) {
-                                $importErrors[] = "Row {$rowNum}: Dealership \"{$dealershipName}\" Not Found — Skipped.";
-                                continue;
+                                continue; // Skip non-tracked dealerships
                             }
                             if (in_array($dealershipId, $excludedStockIds, true)) {
                                 continue; // intentionally excluded from this report
@@ -264,29 +266,32 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
     }
 }
 
-// Master column list — product codes ordered by priority
-// Get all distinct product codes from database and sort by priority
-// Only show codes from the priority list that have actual data
-$productNames = $db->query("SELECT DISTINCT product_name FROM stock_records")->fetchAll(PDO::FETCH_COLUMN);
-
-// Convert to codes, filtering out null values (unmapped products)
-$productCodes = [];
-foreach ($productNames as $name) {
-    $code = ProductCodeMapper::getProductCode($name);
-    if ($code !== null) {
-        $productCodes[$code] = true;
-    }
+// Fetch all tracked dealerships so all 21 added dealerships always appear in the report
+$selectedRegion = trim($_GET['region'] ?? '');
+$dealershipsQuery = "SELECT id, name, security_amount, region FROM dealerships";
+$dealershipsConditions = [];
+$dealershipsParams = [];
+if (!empty($excludedStockIds)) {
+    $dealershipsConditions[] = "id NOT IN (" . implode(',', $excludedStockIds) . ")";
 }
-$productCodes = array_keys($productCodes);
-
-// Sort by priority using the ProductCodeMapper priority list
-// This returns only codes from the priority list that exist in data
-$sortedCodes = ProductCodeMapper::getSortedProductCodes($productCodes);
-$masterColumns = array_map(fn($code) => ['code' => $code], $sortedCodes);
+if ($selectedRegion !== '') {
+    $dealershipsConditions[] = "region = :region";
+    $dealershipsParams['region'] = $selectedRegion;
+}
+if (!$isSuperAdmin) {
+    $dealershipsConditions[] = !empty($scopedIds) ? "id IN (" . implode(',', array_map('intval', $scopedIds)) . ")" : "1 = 0";
+}
+if (!empty($dealershipsConditions)) {
+    $dealershipsQuery .= " WHERE " . implode(' AND ', $dealershipsConditions);
+}
+$dealershipsQuery .= " ORDER BY id ASC";
+$dealershipsStmt = $db->prepare($dealershipsQuery);
+$dealershipsStmt->execute($dealershipsParams);
+$allDealerships = $dealershipsStmt->fetchAll();
 
 $regions = $db->query("SELECT DISTINCT region FROM dealerships WHERE region IS NOT NULL AND region != '' ORDER BY region")->fetchAll(PDO::FETCH_COLUMN);
-$selectedRegion = trim($_GET['region'] ?? '');
 
+// Fetch stock records
 $rowsQuery = "
     SELECT sr.*, d.name AS dealership_name, d.security_amount, d.region FROM stock_records sr
     JOIN dealerships d ON d.id = sr.dealership_id
@@ -310,35 +315,41 @@ $rowsStmt = $db->prepare($rowsQuery);
 $rowsStmt->execute($rowsParams);
 $rows = $rowsStmt->fetchAll();
 
-// Group by dealership and product code
-$pivot = [];
-$variantAppearanceOrder = []; // Track order of first appearance for each code
-
+// Extract all unique mapped product codes present in the database
+$extractedCodesMap = [];
 foreach ($rows as $r) {
-    $dealership = $r['dealership_name'];
-    $productCode = ProductCodeMapper::getProductCode($r['product_name']);
-    
-    // Skip if product code not found in mapping
-    if ($productCode === null) {
-        continue;
+    $code = ProductCodeMapper::getProductCode($r['product_name']);
+    if ($code !== null && $code !== '') {
+        $extractedCodesMap[$code] = true;
     }
-    
-    // Track first appearance order of codes
-    if (!isset($variantAppearanceOrder[$productCode])) {
-        $variantAppearanceOrder[$productCode] = count($variantAppearanceOrder);
-    }
-    
-    if (!isset($pivot[$dealership])) {
-        $pivot[$dealership] = [];
-    }
-    
-    $pivot[$dealership]['__security'] = $r['security_amount'];
-    
-    // Sum quantities if the same code appears multiple times
-    $pivot[$dealership][$productCode] = ($pivot[$dealership][$productCode] ?? 0) + (int)$r['quantity'];
 }
 
-// Highest total stock first.
+// Sort by priority using ProductCodeMapper
+$sortedCodes = ProductCodeMapper::getSortedProductCodes(array_keys($extractedCodesMap));
+$masterColumns = array_map(fn($code) => ['code' => $code], $sortedCodes);
+
+// Group by dealership and product code — ensuring ALL tracked dealerships appear in the table
+$pivot = [];
+foreach ($allDealerships as $d) {
+    $dealershipName = $d['name'];
+    $pivot[$dealershipName] = ['__security' => $d['security_amount']];
+    foreach ($sortedCodes as $code) {
+        $pivot[$dealershipName][$code] = 0;
+    }
+}
+
+foreach ($rows as $r) {
+    $dealershipName = $r['dealership_name'];
+    if (!isset($pivot[$dealershipName])) {
+        continue;
+    }
+    $productCode = ProductCodeMapper::getProductCode($r['product_name']);
+    if ($productCode !== null && $productCode !== '') {
+        $pivot[$dealershipName][$productCode] = ($pivot[$dealershipName][$productCode] ?? 0) + (int)$r['quantity'];
+    }
+}
+
+// Order by total stock descending if data exists, keeping all dealerships
 $computeRowTotal = fn(array $products) => array_sum(array_diff_key($products, ['__security' => true]));
 uasort($pivot, fn($a, $b) => $computeRowTotal($b) <=> $computeRowTotal($a));
 ?>

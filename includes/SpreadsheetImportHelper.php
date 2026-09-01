@@ -173,12 +173,37 @@ class SpreadsheetImportHelper
      */
     public static function findDealershipMatch(array $dealershipsByNormalizedName, string $rawName): ?int
     {
-        $normalized = self::normalizeDealershipName($rawName);
-        if ($normalized === '') {
+        $rawStr = trim($rawName);
+        if ($rawStr === '' || str_contains(strtolower($rawStr), 'regional')) {
             return null;
         }
+
+        $normalized = self::normalizeDealershipName($rawStr);
         if (isset($dealershipsByNormalizedName[$normalized])) {
             return $dealershipsByNormalizedName[$normalized];
+        }
+
+        // Core Keyword Matching for all 21 tracked dealerships
+        $rawLower = strtolower($rawStr);
+        $coreKeywords = [
+            'multan city' => 17, 'multancity' => 17,
+            'south punjab' => 3, 'southpunjab' => 3, 'ssp' => 3,
+            'rahim yar khan' => 6, 'rahimyarkhan' => 6, 'ryk' => 6,
+            'bahawalnagar' => 12, 'bahawal nagar' => 12,
+            'bahawalpur' => 13, 'bahawal pur' => 13,
+            'chichawatni' => 10, 'chicha watni' => 10,
+            'muzaffargarh' => 19, 'muzaffar garh' => 19,
+            'mianchannu' => 18, 'mian channu' => 18, 'mianchanu' => 18,
+            'pakpattan' => 4, 'khanewal' => 5, 'sadiqabad' => 7, 'sadiq abad' => 7,
+            'gateway' => 8, 'shorkot' => 9, 'sahiwal' => 11, 'derawar' => 14,
+            'fort' => 15, 'unique' => 16, 'rajanpur' => 20, 'depalpur' => 21,
+            'pioneer' => 2, 'united' => 1,
+        ];
+
+        foreach ($coreKeywords as $kw => $dId) {
+            if (str_contains($rawLower, $kw) || str_contains($normalized, $kw)) {
+                return $dId;
+            }
         }
 
         $bestId = null;
@@ -186,13 +211,8 @@ class SpreadsheetImportHelper
         $ambiguous = false;
 
         foreach ($dealershipsByNormalizedName as $knownNormalized => $id) {
-            // Skip names too different in length to plausibly be a typo of
-            // each other — keeps this fast and avoids far-fetched matches.
-            if (abs(strlen($knownNormalized) - strlen($normalized)) > 2) {
-                continue;
-            }
             $distance = levenshtein($normalized, $knownNormalized);
-            $tolerance = strlen($knownNormalized) >= 12 ? 2 : 1;
+            $tolerance = strlen($knownNormalized) >= 8 ? 6 : 3;
             if ($distance > $tolerance) {
                 continue;
             }

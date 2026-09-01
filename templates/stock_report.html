@@ -69,15 +69,15 @@
   <table class="wide-report-table sortable-table" id="stock-report-table">
     <thead>
       <tr>
-        <th>Sr#</th>
-        <th>Dealer</th>
+        <th>SR#</th>
+        <th>DEALER</th>
         {% for c in column_sequence %}
           {% if c.type == 'product' %}
-            <th title="{{ c.name }}">{{ shorten_product_label(c.name) }}</th>
+            <th title="{{ c.name }}">{{ shorten_product_label(c.name)|upper }}</th>
           {% endif %}
         {% endfor %}
-        <th>Total</th>
-        <th>Available Security Amount</th>
+        <th>TOTAL</th>
+        <th>AVAILABLE SECURITY AMOUNT</th>
       </tr>
     </thead>
     <tbody>

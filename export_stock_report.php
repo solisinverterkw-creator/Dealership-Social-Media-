@@ -21,24 +21,31 @@ foreach ($db->query("SELECT id, name FROM dealerships")->fetchAll() as $d) {
     }
 }
 
-// Get all distinct product codes from database and sort by priority
-// Only show codes from the priority list that have actual data
-$productNames = $db->query("SELECT DISTINCT product_name FROM stock_records")->fetchAll(PDO::FETCH_COLUMN);
-
-// Convert to codes, filtering out null values (unmapped products)
-$productCodes = [];
-foreach ($productNames as $name) {
-    $code = ProductCodeMapper::getProductCode($name);
-    if ($code !== null) {
-        $productCodes[$code] = true;
-    }
-}
-$productCodes = array_keys($productCodes);
-
-// Sort by priority using the ProductCodeMapper priority list
-$sortedCodes = ProductCodeMapper::getSortedProductCodes($productCodes);
-
 $selectedRegion = trim($_GET['region'] ?? '');
+
+// Fetch all tracked dealerships
+$dealershipsQuery = "SELECT id, name, security_amount, region FROM dealerships";
+$dealershipsConditions = [];
+$dealershipsParams = [];
+if (!empty($excludedStockIds)) {
+    $dealershipsConditions[] = "id NOT IN (" . implode(',', $excludedStockIds) . ")";
+}
+if ($selectedRegion !== '') {
+    $dealershipsConditions[] = "region = :region";
+    $dealershipsParams['region'] = $selectedRegion;
+}
+if (!$isSuperAdmin) {
+    $dealershipsConditions[] = !empty($scopedIds) ? "id IN (" . implode(',', array_map('intval', $scopedIds)) . ")" : "1 = 0";
+}
+if (!empty($dealershipsConditions)) {
+    $dealershipsQuery .= " WHERE " . implode(' AND ', $dealershipsConditions);
+}
+$dealershipsQuery .= " ORDER BY id ASC";
+$dealershipsStmt = $db->prepare($dealershipsQuery);
+$dealershipsStmt->execute($dealershipsParams);
+$allDealerships = $dealershipsStmt->fetchAll();
+
+// Fetch stock records
 $rowsQuery = "
     SELECT sr.*, d.name AS dealership_name, d.security_amount, d.region FROM stock_records sr
     JOIN dealerships d ON d.id = sr.dealership_id
@@ -62,25 +69,37 @@ $rowsStmt = $db->prepare($rowsQuery);
 $rowsStmt->execute($rowsParams);
 $rows = $rowsStmt->fetchAll();
 
-// Group by dealership and product code
-$pivot = [];
+// Extract all unique mapped product codes present in the database
+$extractedCodesMap = [];
 foreach ($rows as $r) {
-    $dealership = $r['dealership_name'];
-    $productCode = ProductCodeMapper::getProductCode($r['product_name']);
-    
-    // Skip if product code not found in mapping
-    if ($productCode === null) {
+    $code = ProductCodeMapper::getProductCode($r['product_name']);
+    if ($code !== null && $code !== '') {
+        $extractedCodesMap[$code] = true;
+    }
+}
+
+// Sort by priority using ProductCodeMapper
+$sortedCodes = ProductCodeMapper::getSortedProductCodes(array_keys($extractedCodesMap));
+
+// Group by dealership and product code — ensuring ALL tracked dealerships appear in the export
+$pivot = [];
+foreach ($allDealerships as $d) {
+    $dealershipName = $d['name'];
+    $pivot[$dealershipName] = ['__security' => $d['security_amount']];
+    foreach ($sortedCodes as $code) {
+        $pivot[$dealershipName][$code] = 0;
+    }
+}
+
+foreach ($rows as $r) {
+    $dealershipName = $r['dealership_name'];
+    if (!isset($pivot[$dealershipName])) {
         continue;
     }
-    
-    if (!isset($pivot[$dealership])) {
-        $pivot[$dealership] = [];
+    $productCode = ProductCodeMapper::getProductCode($r['product_name']);
+    if ($productCode !== null && $productCode !== '') {
+        $pivot[$dealershipName][$productCode] = ($pivot[$dealershipName][$productCode] ?? 0) + (int)$r['quantity'];
     }
-    
-    $pivot[$dealership]['__security'] = $r['security_amount'];
-    
-    // Sum quantities if the same code appears multiple times
-    $pivot[$dealership][$productCode] = ($pivot[$dealership][$productCode] ?? 0) + (int)$r['quantity'];
 }
 
 $computeRowTotal = fn(array $products) => array_sum(array_diff_key($products, ['__security' => true]));

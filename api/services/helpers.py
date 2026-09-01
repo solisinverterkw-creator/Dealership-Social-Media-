@@ -175,29 +175,54 @@ class SpreadsheetImportHelper:
 
     @staticmethod
     def find_dealership_match(dealerships_by_normalized_name: dict, raw_name: str) -> int:
-        """Finds the database dealership ID matching a raw string name, with fuzzy and substring fallback."""
-        normalized = SpreadsheetImportHelper.normalize_dealership_name(raw_name)
-        if normalized == '' or 'regional' in normalized:
+        """Leniently matches a raw dealership string to a DB dealership ID to avoid skipping valid dealership data."""
+        raw_str = str(raw_name or '').strip()
+        if not raw_str or 'regional' in raw_str.lower():
             return None
+
+        normalized = SpreadsheetImportHelper.normalize_dealership_name(raw_str)
+
+        # 1. Exact match on normalized name
         if normalized in dealerships_by_normalized_name:
             return dealerships_by_normalized_name[normalized]
 
-        # Substring matching (e.g. 'pakpattan' matches 'pakpattanmotors', 'united' matches 'unitedmotors')
+        # 2. Core Keyword Matching for all 21 tracked dealerships
+        raw_lower = raw_str.lower()
+        core_keywords = [
+            ('multan city', 17), ('multancity', 17),
+            ('south punjab', 3), ('southpunjab', 3), ('ssp', 3),
+            ('rahim yar khan', 6), ('rahimyarkhan', 6), ('ryk', 6),
+            ('bahawalnagar', 12), ('bahawal nagar', 12),
+            ('bahawalpur', 13), ('bahawal pur', 13),
+            ('chichawatni', 10), ('chicha watni', 10),
+            ('muzaffargarh', 19), ('muzaffar garh', 19),
+            ('mianchannu', 18), ('mian channu', 18), ('mianchanu', 18),
+            ('pakpattan', 4), ('khanewal', 5), ('sadiqabad', 7), ('sadiq abad', 7),
+            ('gateway', 8), ('shorkot', 9), ('sahiwal', 11), ('derawar', 14),
+            ('fort', 15), ('unique', 16), ('rajanpur', 20), ('depalpur', 21),
+            ('pioneer', 2), ('united', 1)
+        ]
+        for kw, d_id in core_keywords:
+            if kw in raw_lower or kw in normalized:
+                return d_id
+
+        # 3. Substring matching
         matches = []
         for known_normalized, id_val in dealerships_by_normalized_name.items():
-            if len(normalized) >= 4 and (normalized in known_normalized or known_normalized in normalized):
+            if len(normalized) >= 3 and (normalized in known_normalized or known_normalized in normalized):
                 matches.append(id_val)
 
         if len(matches) == 1:
             return matches[0]
 
+        # 4. High-tolerance Levenshtein fuzzy distance matching
         best_id = None
         best_distance = None
         ambiguous = False
 
         for known_normalized, id_val in dealerships_by_normalized_name.items():
             dist = levenshtein_distance(normalized, known_normalized)
-            tolerance = 4 if len(known_normalized) >= 10 else 2
+            tolerance = 6 if len(known_normalized) >= 8 else 3
             if dist > tolerance:
                 continue
             if best_distance is None or dist < best_distance:
@@ -443,14 +468,14 @@ class SpreadsheetImportHelper:
             return 'Every VXR'
 
         # Alto variants
-        if 'ALTO' in d or 'AET' in d or 'VXR M1' in d or 'VXR AGS M1' in d or 'AGS M1' in d:
+        if 'ALTO' in d or 'AET' in d:
             if 'VXL' in d:
                 return 'Alto VXL AGS' if ('AGS' in d or 'AUTO' in d) else 'Alto VXL'
-            elif 'VXR AGS' in d or 'VXR AGS M1' in d:
+            elif 'VXR AGS' in d or ('VXR' in d and 'AGS' in d):
                 return 'Alto VXR AGS'
-            elif 'VXR' in d or 'VXR M1' in d:
+            elif 'VXR' in d:
                 return 'Alto VXR'
-            elif 'AGS' in d or 'AGS M1' in d:
+            elif 'AGS' in d:
                 return 'Alto AGS'
             return 'Alto VXR'
 
@@ -465,19 +490,19 @@ class SpreadsheetImportHelper:
             return 'Cultus VXR'
 
         # Swift variants
-        if 'SWIFT' in d or 'A2L' in d or 'GL CVT' in d or 'GL M2' in d or 'GL MT' in d:
+        if 'SWIFT' in d or 'A2L' in d:
             if 'GLX' in d:
                 return 'Swift GLX'
-            elif 'CVT' in d or 'GL CVT' in d:
+            elif 'CVT' in d:
                 return 'Swift GL CVT'
-            elif 'MT' in d or 'GL MT' in d:
+            elif 'MT' in d:
                 return 'Swift MT'
-            elif 'GL' in d or 'GL M2' in d:
+            elif 'GL' in d:
                 return 'Swift GL'
             return 'Swift GL CVT'
 
         # Fronx variants
-        if 'FRONX' in d or 'NWD' in d or 'NWA' in d or 'HYBD' in d or 'GL AT' in d:
+        if 'FRONX' in d or 'NWD' in d or 'NWA' in d:
             if 'GLX' in d or 'HYBD' in d:
                 return 'Fronx GLX'
             elif 'GL' in d or 'AT' in d:
@@ -488,26 +513,29 @@ class SpreadsheetImportHelper:
 
         # Every variants
         if 'EVERY' in d or 'A5H' in d:
+            if 'VX' in d and 'VXR' not in d:
+                return 'Every VX'
             return 'Every VXR'
 
-        if d in ('VXR M1', 'VXR'):
-            return 'Alto VXR'
-        if d in ('VXR AGS M1', 'VXR AGS'):
-            return 'Alto VXR AGS'
-        if d in ('AGS M1', 'AGS'):
-            return 'Alto AGS'
-        if d in ('GL M2', 'GL'):
-            return 'Swift GL'
-        if d in ('GL CVT M2', 'GL CVT'):
-            return 'Swift GL CVT'
-        if d in ('GL MT', 'MT'):
-            return 'Swift MT'
-        if d in ('GLX AT HYBD', 'GLX AT', 'GLX'):
-            return 'Fronx GLX'
-        if d in ('GL AT', 'AT'):
-            return 'Fronx GL AT'
+        # Wagon R
+        if 'WAGON' in d:
+            if 'VXL' in d:
+                return 'Wagon R VXL'
+            elif 'VXR' in d:
+                return 'Wagon R VXR'
+            return 'Wagon R'
 
-        return d.title()
+        # Bolan
+        if 'BOLAN' in d:
+            return 'Bolan'
+
+        # Mehran
+        if 'MEHRAN' in d:
+            return 'Mehran'
+
+        # Clean fallback title
+        clean = re.sub(r'^suzuki\s+', '', d, flags=re.IGNORECASE).strip()
+        return clean.title() if clean else d.title()
 
     def clean_dealership_name_for_creation(self, raw_name: str) -> str:
         s = str(raw_name or '').strip()
@@ -540,7 +568,9 @@ class SpreadsheetImportHelper:
         if dealerCol is None:
             return {'success': False, 'message': 'Could not find a "Dealer"/"Dealership" column in the header row.'}
 
-        dealerNameCol = self.find_column(headerRow, ['dealer name']) or dealerCol
+        dealerNameCol = self.find_column(headerRow, ['dealer name', 'dealership name', 'dealer_name'])
+        if dealerNameCol is None:
+            dealerNameCol = dealerCol
         securityCol = self.find_column(headerRow, ['security'])
 
         productDescCol = self.find_column(headerRow, ['product desc', 'product description'])
@@ -560,12 +590,13 @@ class SpreadsheetImportHelper:
 
         if productDescCol is not None and not has_matrix_variants:
             qtyCol = self.find_column(headerRow, ['qty', 'quantity', 'sum of quantity', 'stock qty', 'total qty', 'count'])
-            regionCol = self.find_column(headerRow, ['region'], match_last=True)
+            regionCol = self.find_column(headerRow, ['region'], prefer_last=True)
             counts = {}
             regionByDealer = {}
             productOrder = {}
             orderCounter = 0
             transactionRows = 0
+            skippedNonTracked = 0
 
             for i in range(headerIndex + 1, len(rows)):
                 row = rows[i]
@@ -575,13 +606,18 @@ class SpreadsheetImportHelper:
 
                 dealershipName = str(row[dealerNameCol]).strip() if dealerNameCol < len(row) else ''
                 raw_prod = str(row[productDescCol]).strip() if productDescCol < len(row) else ''
-                if not dealershipName or not raw_prod:
+                if not raw_prod:
                     continue
                 productName = self.normalize_stock_product_name(raw_prod)
 
                 dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
+                if not dealershipId and dealerCol is not None and dealerCol < len(row):
+                    alt_name = str(row[dealerCol]).strip()
+                    if alt_name:
+                        dealershipId = self.find_dealership_match(dealershipsByName, alt_name)
+
                 if not dealershipId:
-                    importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                    skippedNonTracked += 1
                     continue
 
                 if dealershipId in excludedStockIds:
@@ -622,7 +658,7 @@ class SpreadsheetImportHelper:
                 transactionRows += 1
 
             if not counts:
-                return {'success': False, 'message': 'No Matching Dealership Rows Found To Import.', 'import_errors': importErrors}
+                return {'success': False, 'message': 'No Matching Tracked Dealership Rows Found To Import.', 'import_errors': importErrors}
 
             importedCount = 0
             for d_id, prod_dict in counts.items():
@@ -638,6 +674,9 @@ class SpreadsheetImportHelper:
                     importedCount += 1
 
                 if d_id in regionByDealer:
+                    d_obj = db_session.query(Dealership).filter(Dealership.id == d_id).first()
+                    if d_obj:
+                        d_obj.region = regionByDealer[d_id]
                     d_obj = db_session.query(Dealership).filter(Dealership.id == d_id).first()
                     if d_obj:
                         d_obj.region = regionByDealer[d_id]

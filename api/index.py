@@ -2041,11 +2041,28 @@ def stock_report_view():
     d_map = {d.id: d.name for d in dealerships}
     security_map = {d.id: d.security_amount for d in dealerships}
 
+    # Ensure all tracked dealerships (1 to 21) are present in pivot
+    for d in dealerships:
+        pivot[d.name] = {'__id': d.id, '__security': d.security_amount}
+        for p in product_names:
+            pivot[d.name][p] = 0
+
+    helper = SpreadsheetImportHelper()
     for r in records:
-        d_name = d_map.get(r.dealership_id, 'Unknown')
-        if d_name not in pivot:
-            pivot[d_name] = {'__id': r.dealership_id, '__security': security_map.get(r.dealership_id)}
-        pivot[d_name][r.product_name] = r.quantity
+        d_name = d_map.get(r.dealership_id)
+        if d_name and d_name in pivot:
+            norm_prod = helper.normalize_stock_product_name(r.product_name)
+            matched_key = None
+            for p in product_names:
+                if p.lower() == norm_prod.lower() or p.lower() == str(r.product_name or '').lower():
+                    matched_key = p
+                    break
+            if not matched_key:
+                matched_key = norm_prod
+
+            if matched_key not in pivot[d_name]:
+                pivot[d_name][matched_key] = 0
+            pivot[d_name][matched_key] += r.quantity
 
     security_by_dealership = {d.id: d.security_amount for d in dealerships if d.security_amount is not None}
     region_by_dealership = {d.id: d.region for d in dealerships if d.region}
