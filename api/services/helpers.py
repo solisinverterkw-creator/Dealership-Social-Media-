@@ -91,13 +91,14 @@ def levenshtein_distance(s1: str, s2: str) -> int:
 class SpreadsheetImportHelper:
     @staticmethod
     def find_header_row_index(rows: list, must_contain_any: list) -> int:
-        """Returns the 0-based row index of the first row containing a cell that matches keyword."""
+        """Returns the 0-based row index of the first real table header row."""
         for i, row in enumerate(rows):
-            for cell in row:
-                cell_str = str(cell).lower().strip()
-                for needle in must_contain_any:
-                    if cell_str != '' and needle.lower() in cell_str:
-                        return i
+            non_empty_cells = [str(c).strip() for c in row if str(c).strip() != '']
+            if len(non_empty_cells) < 2:
+                continue  # Skip title rows or single-cell header lines
+            for cell in non_empty_cells:
+                if SpreadsheetImportHelper.matches_any_keyword(cell, must_contain_any):
+                    return i
         return 0
 
     @staticmethod
@@ -116,11 +117,17 @@ class SpreadsheetImportHelper:
 
     @staticmethod
     def matches_any_keyword(label: str, keywords: list) -> bool:
-        """Matches a label against a list of keywords."""
-        label_lower = label.lower()
+        """Matches a label against a list of keywords using whole word / token boundary check."""
+        label_lower = label.lower().strip()
+        if not label_lower:
+            return False
         for kw in keywords:
-            kw_lower = kw.lower()
-            if kw_lower in label_lower:
+            kw_lower = kw.lower().strip()
+            if not kw_lower:
+                continue
+            # Whole word boundary matching so "dealer" doesn't match inside "dealership"
+            pattern = rf'(?<![a-z0-9]){re.escape(kw_lower)}(?![a-z0-9])'
+            if re.search(pattern, label_lower):
                 return True
         return False
 
@@ -589,7 +596,7 @@ class SpreadsheetImportHelper:
         )
 
         if productDescCol is not None:
-            qtyCol = self.find_column(headerRow, ['qty', 'quantity', 'sum of quantity', 'stock qty', 'total qty', 'count'])
+            qtyCol = self.find_column(headerRow, ['sum of quantity', 'sum of qty', 'sum quantity', 'quantity', 'qty', 'stock qty', 'total qty', 'count', 'units', 'no of units', 'delivered qty', 'no. of units'])
             regionCol = self.find_column(headerRow, ['region'], prefer_last=True)
             counts = {}
             regionByDealer = {}
