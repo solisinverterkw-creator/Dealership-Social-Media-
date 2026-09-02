@@ -2014,11 +2014,11 @@ def stock_report_view():
                 error = f"Error reading sheet: {str(e)}"
 
     variant_priority = [
-        'Alto VXR', 'Alto VXR AGS', 'Alto AGS', 'Alto VXL', 'Alto VXL AGS',
-        'Cultus VXR', 'Cultus VXL', 'Cultus AGS',
-        'Swift MT', 'Swift GL', 'Swift GL CVT', 'Swift GLX',
-        'Every VXR',
-        'Fronx MT', 'Fronx GL AT', 'Fronx GLX'
+        'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS',
+        'FRONX MT', 'FRONX GL AT', 'FRONX GLX',
+        'SWIFT GL', 'SWIFT GL CVT', 'SWIFT GLX',
+        'CULTUS VXR', 'CULTUS VXL',
+        'EVERY'
     ]
 
     try:
@@ -2027,11 +2027,18 @@ def stock_report_view():
         db_session.rollback()
         stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
 
-    sorted_product_names = SpreadsheetImportHelper.sort_product_columns_by_priority(stock_cols, variant_priority)
-    master_columns = [{'product_name': p} for p in sorted_product_names]
+    # Ensure columns match variant_priority order first, plus any extra models
+    sorted_product_names = []
+    for vp in variant_priority:
+        if any(sc.upper() == vp.upper() for sc in stock_cols) or not stock_cols:
+            sorted_product_names.append(vp)
 
-    # Combine with default variant priority if empty so table displays 16 standard columns
-    product_names = [c['product_name'] for c in master_columns] if master_columns else list(variant_priority)
+    for sc in stock_cols:
+        sc_up = str(sc).upper()
+        if sc_up not in sorted_product_names:
+            sorted_product_names.append(sc_up)
+
+    product_names = sorted_product_names if sorted_product_names else list(variant_priority)
     column_sequence = [{'type': 'product', 'name': p} for p in product_names]
 
     allowed_ids = {d.id for d in dealerships}
@@ -2039,7 +2046,6 @@ def stock_report_view():
 
     pivot = {}
     d_map = {d.id: d.name for d in dealerships}
-    security_map = {d.id: d.security_amount for d in dealerships}
 
     # Ensure all tracked dealerships (1 to 21) are present in pivot
     for d in dealerships:
@@ -2054,7 +2060,7 @@ def stock_report_view():
             norm_prod = helper.normalize_stock_product_name(r.product_name)
             matched_key = None
             for p in product_names:
-                if p.lower() == norm_prod.lower() or p.lower() == str(r.product_name or '').lower():
+                if p.upper() == norm_prod.upper() or p.upper() == str(r.product_name or '').upper():
                     matched_key = p
                     break
             if not matched_key:

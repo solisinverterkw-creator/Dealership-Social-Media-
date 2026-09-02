@@ -472,77 +472,74 @@ class SpreadsheetImportHelper:
     def normalize_stock_product_name(self, desc: str) -> str:
         d = str(desc or '').upper().strip()
         if not d:
-            return 'Every VXR'
+            return 'EVERY'
 
         # Alto variants
         if 'ALTO' in d or 'AET' in d:
             if 'VXL' in d:
-                return 'Alto VXL AGS' if ('AGS' in d or 'AUTO' in d) else 'Alto VXL'
-            elif 'VXR AGS' in d or ('VXR' in d and 'AGS' in d):
-                return 'Alto VXR AGS'
+                return 'ALTO VXL AGS' if ('AGS' in d or 'AUTO' in d) else 'ALTO VXL'
+            elif 'VXR' in d and 'AGS' in d:
+                return 'ALTO VXR AGS'
             elif 'VXR' in d:
-                return 'Alto VXR'
+                return 'ALTO VXR'
             elif 'AGS' in d:
-                return 'Alto AGS'
-            return 'Alto VXR'
-
-        # Cultus variants
-        if 'CULTUS' in d or 'AVK' in d:
-            if 'VXL' in d:
-                return 'Cultus VXL'
-            elif 'VXR' in d:
-                return 'Cultus VXR'
-            elif 'AGS' in d or 'AUTO' in d:
-                return 'Cultus AGS'
-            return 'Cultus VXR'
-
-        # Swift variants
-        if 'SWIFT' in d or 'A2L' in d:
-            if 'GLX' in d:
-                return 'Swift GLX'
-            elif 'CVT' in d:
-                return 'Swift GL CVT'
-            elif 'MT' in d:
-                return 'Swift MT'
-            elif 'GL' in d:
-                return 'Swift GL'
-            return 'Swift GL CVT'
+                return 'ALTO AGS'
+            return 'ALTO VXR'
 
         # Fronx variants
         if 'FRONX' in d or 'NWD' in d or 'NWA' in d:
             if 'GLX' in d or 'HYBD' in d:
-                return 'Fronx GLX'
-            elif 'GL' in d or 'AT' in d:
-                return 'Fronx GL AT'
+                return 'FRONX GLX'
             elif 'MT' in d:
-                return 'Fronx MT'
-            return 'Fronx GL AT'
+                return 'FRONX MT'
+            elif 'GL' in d or 'AT' in d:
+                return 'FRONX GL AT'
+            return 'FRONX GL AT'
+
+        # Swift variants
+        if 'SWIFT' in d or 'A2L' in d:
+            if 'GLX' in d:
+                return 'SWIFT GLX'
+            elif 'CVT' in d:
+                return 'SWIFT GL CVT'
+            elif 'MT' in d:
+                return 'SWIFT MT'
+            elif 'GL' in d:
+                return 'SWIFT GL'
+            return 'SWIFT GL CVT'
+
+        # Cultus variants
+        if 'CULTUS' in d or 'AVK' in d:
+            if 'VXL' in d:
+                return 'CULTUS VXL'
+            elif 'VXR' in d:
+                return 'CULTUS VXR'
+            elif 'AGS' in d or 'AUTO' in d:
+                return 'CULTUS AGS'
+            return 'CULTUS VXR'
 
         # Every variants
         if 'EVERY' in d or 'A5H' in d:
-            if 'VX' in d and 'VXR' not in d:
-                return 'Every VX'
-            return 'Every VXR'
+            return 'EVERY'
 
         # Wagon R
         if 'WAGON' in d:
             if 'VXL' in d:
-                return 'Wagon R VXL'
+                return 'WAGON R VXL'
             elif 'VXR' in d:
-                return 'Wagon R VXR'
-            return 'Wagon R'
+                return 'WAGON R VXR'
+            return 'WAGON R'
 
         # Bolan
         if 'BOLAN' in d:
-            return 'Bolan'
+            return 'BOLAN'
 
         # Mehran
         if 'MEHRAN' in d:
-            return 'Mehran'
+            return 'MEHRAN'
 
-        # Clean fallback title
         clean = re.sub(r'^suzuki\s+', '', d, flags=re.IGNORECASE).strip()
-        return clean.title() if clean else d.title()
+        return clean.upper() if clean else d.upper()
 
     def clean_dealership_name_for_creation(self, raw_name: str) -> str:
         s = str(raw_name or '').strip()

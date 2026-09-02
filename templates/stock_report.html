@@ -73,7 +73,7 @@
         <th>DEALER</th>
         {% for c in column_sequence %}
           {% if c.type == 'product' %}
-            <th title="{{ c.name }}">{{ shorten_product_label(c.name)|upper }}</th>
+            <th>{{ c.name|upper }}</th>
           {% endif %}
         {% endfor %}
         <th>TOTAL</th>
