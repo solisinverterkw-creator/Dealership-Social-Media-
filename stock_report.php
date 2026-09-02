@@ -134,11 +134,8 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($rawProductName === '') {
                             continue;
                         }
-                        // Normalize raw product description to canonical variant name
-                        $productName = ProductCodeMapper::getVariantName($rawProductName);
-                        if (!$productName) {
-                            continue; // skip unknown products
-                        }
+                        // Use raw product name as-is from PRODUCT DESC. column
+                        $productName = $rawProductName;
 
                         $dealershipId = SpreadsheetImportHelper::findDealershipMatch($dealershipsByName, $dealershipName);
                         if (!$dealershipId) {

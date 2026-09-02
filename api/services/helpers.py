@@ -616,7 +616,7 @@ class SpreadsheetImportHelper:
                 raw_prod = str(row[productDescCol]).strip() if productDescCol < len(row) else ''
                 if not raw_prod:
                     continue
-                productName = self.normalize_stock_product_name(raw_prod)
+                productName = raw_prod  # Save as-is from PRODUCT DESC. column
 
                 dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
                 if not dealershipId and dealerCol is not None and dealerCol < len(row):

@@ -2024,32 +2024,17 @@ def stock_report_view():
                     db_session.rollback()
                     error = f"Error reading sheet: {str(e)}"
 
-    variant_priority = [
-        'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS',
-        'FRONX MT', 'FRONX GL AT', 'FRONX GLX',
-        'SWIFT GL', 'SWIFT GL CVT', 'SWIFT GLX',
-        'CULTUS VXR', 'CULTUS VXL',
-        'EVERY'
-    ]
-
     try:
-        stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
+        # Use actual product names stored in DB, ordered by column_order as they appeared in the file
+        stock_col_rows = db_session.query(
+            StockRecord.product_name,
+            func.min(StockRecord.column_order).label('col_order')
+        ).group_by(StockRecord.product_name).order_by('col_order').all()
+        product_names = [r[0] for r in stock_col_rows if r[0]]
     except Exception:
         db_session.rollback()
-        stock_cols = [r[0] for r in db_session.query(distinct(StockRecord.product_name)).all() if r[0]]
+        product_names = []
 
-    # Ensure columns match variant_priority order first, plus any extra models
-    sorted_product_names = []
-    for vp in variant_priority:
-        if any(sc.upper() == vp.upper() for sc in stock_cols) or not stock_cols:
-            sorted_product_names.append(vp)
-
-    for sc in stock_cols:
-        sc_up = str(sc).upper()
-        if sc_up not in sorted_product_names:
-            sorted_product_names.append(sc_up)
-
-    product_names = sorted_product_names if sorted_product_names else list(variant_priority)
     column_sequence = [{'type': 'product', 'name': p} for p in product_names]
 
     allowed_ids = {d.id for d in dealerships}
@@ -2068,18 +2053,10 @@ def stock_report_view():
     for r in records:
         d_name = d_map.get(r.dealership_id)
         if d_name and d_name in pivot:
-            norm_prod = helper.normalize_stock_product_name(r.product_name)
-            matched_key = None
-            for p in product_names:
-                if p.upper() == norm_prod.upper() or p.upper() == str(r.product_name or '').upper():
-                    matched_key = p
-                    break
-            if not matched_key:
-                matched_key = norm_prod
-
-            if matched_key not in pivot[d_name]:
-                pivot[d_name][matched_key] = 0
-            pivot[d_name][matched_key] += r.quantity
+            prod_key = r.product_name
+            if prod_key not in pivot[d_name]:
+                pivot[d_name][prod_key] = 0
+            pivot[d_name][prod_key] += r.quantity
 
     security_by_dealership = {d.id: d.security_amount for d in dealerships if d.security_amount is not None}
     region_by_dealership = {d.id: d.region for d in dealerships if d.region}
