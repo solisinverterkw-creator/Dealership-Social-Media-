@@ -2231,9 +2231,19 @@ def ageing_report_view():
         if days > dealership_groups[d_name]['oldest_days']:
             dealership_groups[d_name]['oldest_days'] = days
 
+        MODEL_CODE_MAP = {
+            'NWDA3S': 'SUZUKI FRONX SUV GL AT 1462CC',
+            'NWDB3S': 'SUZUKI FRONX SUV GLX AT 1462CC HYBD',
+            'A2L412': 'SUZUKI SWIFT GL CVT M2 1197 CC',
+            'AET306': 'SUZUKI ALTO AET306 AGS M1 658 CC',
+            'A5H306': 'SUZUKI EVERY VXR 658 CC',
+            'AVK310': 'SUZUKI CULTUS AVK310 VXL M2 998 CC',
+        }
+        prod_display = MODEL_CODE_MAP.get(str(r.product_name).strip(), r.product_name)
+
         dealership_groups[d_name]['vehicles'].append({
             'chassis_number': r.chassis_number,
-            'product_name': r.product_name,
+            'product_name': prod_display,
             'delivery_date': r.delivery_date.strftime('%d %b, %Y'),
             'days_aged': days
         })

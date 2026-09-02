@@ -772,7 +772,15 @@ class SpreadsheetImportHelper:
 
         # Locate columns
         dealerNameCol   = self.find_column(headerRow, ['dealer name'])
-        modelNameCol    = self.find_column(headerRow, ['model name', 'product desc', 'product description', 'model'])
+        # Specifically match 'model name' or 'product desc' first to avoid matching 'mode' or 'model code'
+        modelNameCol    = self.find_column(headerRow, ['model name', 'product desc', 'product description', 'vehicle name'])
+        if modelNameCol is None:
+            # Fallback search specifically ignoring 'mode' or 'color' or 'code'
+            for idx, cell in enumerate(headerRow):
+                c_str = str(cell).lower().strip()
+                if ('model' in c_str or 'product' in c_str) and not any(x in c_str for x in ['code', 'mode', 'color', 'version']):
+                    modelNameCol = idx
+                    break
         chassisCol      = self.find_column(headerRow, ['chassis'])
         deliveryDateCol = self.find_column(headerRow, ['delivery date', 'delivery dat'])
 
