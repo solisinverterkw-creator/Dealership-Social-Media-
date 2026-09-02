@@ -482,9 +482,9 @@ class SpreadsheetImportHelper:
                 return 'ALTO VXR AGS'
             elif 'VXR' in d:
                 return 'ALTO VXR'
-            elif 'AGS' in d:
+            elif 'AGS' in d or 'AET' in d:
                 return 'ALTO AGS'
-            return 'ALTO VXR'
+            return 'ALTO AGS'
 
         # Fronx variants
         if 'FRONX' in d or 'NWD' in d or 'NWA' in d:
