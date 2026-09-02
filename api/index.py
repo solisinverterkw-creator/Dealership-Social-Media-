@@ -2035,6 +2035,25 @@ def stock_report_view():
         db_session.rollback()
         product_names = []
 
+    # Short display names for column headers
+    SHORT_NAME_MAP = {
+        'SUZUKI ALTO AET306 VXR M1 658 CC':          'ALTO VXR',
+        'SUZUKI ALTO AET306 VXR AGS M1 658 CC':      'ALTO VXR AGS',
+        'SUZUKI ALTO AET306 AGS M1 658 CC':          'ALTO AGS',
+        'SUZUKI FRONX SUV GL MT 1462CC':             'FRONX MT',
+        'SUZUKI FRONX SUV GL AT 1462CC':             'FRONX GL AT',
+        'SUZUKI FRONX SUV GLX AT 1462CC HYBD':       'FRONX GLX',
+        'SUZUKI SWIFT GL M2 1197 CC':                'SWIFT GL',
+        'SUZUKI SWIFT GL CVT M2 1197 CC':            'SWIFT GL CVT',
+        'SUZUKI SWIFT GLX CVT M2 1197 CC':           'SWIFT GLX',
+        'SUZUKI CULTUS AVK310 VXR M2 998 CC':        'CULTUS VXR',
+        'SUZUKI CULTUS AVK310 VXL M2 998 CC':        'CULTUS VXL',
+        'SUZUKI EVERY VXR 658 CC':                   'EVERY',
+    }
+
+    def short_name(p):
+        return SHORT_NAME_MAP.get(str(p).strip(), str(p).strip())
+
     column_sequence = [{'type': 'product', 'name': p} for p in product_names]
 
     allowed_ids = {d.id for d in dealerships}
@@ -2092,8 +2111,8 @@ def stock_report_view():
         message=message,
         error=error,
         import_errors=import_errors,
+        short_name=short_name,
         friendly_product_label=SpreadsheetImportHelper.friendly_product_label,
-        shorten_product_label=lambda p: SpreadsheetImportHelper.shorten_product_label(p, variant_priority)
     )
 
 # --- AGEING REPORT VIEW ---
