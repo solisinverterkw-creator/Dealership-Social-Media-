@@ -605,11 +605,12 @@ class SpreadsheetImportHelper:
         headerRow = rows[headerIndex] if headerIndex < len(rows) else []
 
         # Locate key columns
-        dealerNameCol = self.find_column(headerRow, ['dealer name'])
-        dealerCol     = self.find_column(headerRow, ['dealer'])
+        dealerNameCol  = self.find_column(headerRow, ['dealer name'])
+        dealerCol      = self.find_column(headerRow, ['dealer'])
         productDescCol = self.find_column(headerRow, ['product desc', 'product description'])
         qtyCol         = self.find_column(headerRow, ['sum of quantity', 'sum of qty', 'quantity', 'qty'])
         regionCol      = self.find_column(headerRow, ['region'], prefer_last=True)
+        chassisCol     = self.find_column(headerRow, ['chassis'])
 
         if dealerNameCol is None:
             dealerNameCol = dealerCol
@@ -668,6 +669,17 @@ class SpreadsheetImportHelper:
             if dealershipId not in counts:
                 counts[dealershipId] = {}
             counts[dealershipId][raw_prod] = counts[dealershipId].get(raw_prod, 0) + row_qty
+
+            # Also record individual chassis for cross-match with ageing
+            if chassisCol is not None and chassisCol < len(row):
+                chassis_val = str(row[chassisCol]).strip().upper()
+                if chassis_val and chassis_val not in ('NONE', 'N/A', ''):
+                    counts.setdefault(dealershipId, {})
+                    # Store chassis in a side dict
+                    if not hasattr(self, '_chassis_buffer'):
+                        self._chassis_buffer = []
+                    self._chassis_buffer.append((dealershipId, chassis_val))
+
             transactionRows += 1
 
         if not counts:
@@ -693,6 +705,14 @@ class SpreadsheetImportHelper:
                 if d_obj:
                     d_obj.region = regionByDealer[d_id]
 
+        # Save stock chassis records for ageing cross-match
+        from api.models import StockChassisRecord
+        db_session.query(StockChassisRecord).delete(synchronize_session=False)
+        if hasattr(self, '_chassis_buffer') and self._chassis_buffer:
+            for d_id, chassis in self._chassis_buffer:
+                db_session.add(StockChassisRecord(dealership_id=d_id, chassis_number=chassis))
+            self._chassis_buffer = []
+
         db_session.commit()
         return {
             'success': True,
@@ -702,71 +722,107 @@ class SpreadsheetImportHelper:
         }
 
     def import_ageing_sheet(self, db_session, rows: list) -> dict:
-        from api.models import AgeingRecord
-        if not rows or len(rows) < 2:
-            return {'success': False, 'message': 'Sheet is empty or has no data rows.'}
+        from api.models import AgeingRecord, Dealership
 
-        dealershipsByName = self._build_dealership_map(db_session)
-        headerIndex = self.find_header_row_index(rows, ['dealer'])
+        if not rows or len(rows) < 2:
+            return {'success': False, 'message': 'Sheet is empty or has no data rows.', 'import_errors': []}
+
+        # Always wipe previous ageing records completely on fresh import
+        db_session.query(AgeingRecord).delete(synchronize_session=False)
+        db_session.commit()
+
+        # Same 21-dealership exact keyword map as stock import
+        EXACT_KEYWORD_MAP = [
+            ('fort motors',          'SUZUKI FORT MOTORS'),
+            ('sahiwal motors',       'SUZUKI SAHIWAL MOTORS'),
+            ('sadiqabad motors',     'SUZUKI SADIQABAD MOTORS'),
+            ('rajanpur motors',      'SUZUKI RAJANPUR MOTORS'),
+            ('gateway motors',       'SUZUKI GATEWAY MOTORS'),
+            ('south punjab',         'SUZUKI SOUTH PUNJAB'),
+            ('muzaffargarh',         'SUZUKI MUZAFFARGARH MOTORS'),
+            ('pioneer motors',       'SUZUKI PIONEER MOTORS'),
+            ('derawar motors',       'SUZUKI DERAWAR MOTORS'),
+            ('mian channu',          'SUZUKI MIANCHANNU MOTORS'),
+            ('mianchannu',           'SUZUKI MIANCHANNU MOTORS'),
+            ('khanewal motors',      'SUZUKI KHANEWAL MOTORS'),
+            ('bahawalpur motors',    'SUZUKI BAHAWALPUR MOTORS'),
+            ('multan city',          'SUZUKI MULTAN CITY MOTORS'),
+            ('united motors',        'SUZUKI UNITED MOTORS'),
+            ('bahawalnagar',         'SUZUKI BAHAWALNAGAR MOTORS'),
+            ('rahim yar khan',       'SUZUKI RAHIM YAR KHAN MOTORS'),
+            ('shorkot motors',       'SUZUKI SHORKOT MOTORS'),
+            ('unique motors',        'SUZUKI UNIQUE MOTORS'),
+            ('depalpur motors',      'SUZUKI DEPALPUR MOTORS'),
+            ('pakpattan motors',     'SUZUKI PAKPATTAN MOTORS'),
+            ('chichawatni',          'SUZUKI CHICHAWATNI MOTORS'),
+        ]
+
+        name_to_id = {d.name.strip().upper(): d.id for d in db_session.query(Dealership).all()}
+
+        def match_dealership(raw_name):
+            n = str(raw_name or '').lower()
+            for kw, db_name in EXACT_KEYWORD_MAP:
+                if kw in n:
+                    return name_to_id.get(db_name.upper())
+            return None
+
+        # Find header row — ageing file has REGION, MODE, VERSION, COLOR, DEALER, DEALER NAME, MODEL NAME, etc.
+        headerIndex = self.find_header_row_index(rows, ['dealer', 'chassis'])
         headerRow = rows[headerIndex] if headerIndex < len(rows) else []
 
-        dealerCol = self.find_column(headerRow, ['dealer'])
-        dealerNameCol = self.find_column(headerRow, ['dealer name']) or dealerCol
+        # Locate columns
+        dealerNameCol   = self.find_column(headerRow, ['dealer name'])
+        modelNameCol    = self.find_column(headerRow, ['model name', 'product desc', 'product description', 'model'])
+        chassisCol      = self.find_column(headerRow, ['chassis'])
+        deliveryDateCol = self.find_column(headerRow, ['delivery date', 'delivery dat'])
 
-        productCol = self.find_column(headerRow, ['product desc', 'product description']) \
-            or self.find_column(headerRow, ['model name']) \
-            or self.find_column(headerRow, ['product']) \
-            or self.find_column(headerRow, ['model'])
+        missing = []
+        if dealerNameCol is None:   missing.append('DEALER NAME')
+        if chassisCol is None:      missing.append('CHASSIS')
+        if deliveryDateCol is None: missing.append('DELIVERY DATE')
+        if missing:
+            return {'success': False, 'message': f'Cannot find column(s): {", ".join(missing)}', 'import_errors': []}
 
-        chassisCol = self.find_column(headerRow, ['chassis'])
-        deliveryDateCol = self.find_column(headerRow, ['delivery date', 'deilvery date'])
-
-        if dealerNameCol is None or chassisCol is None or deliveryDateCol is None:
-            return {'success': False, 'message': 'Could not find "Dealer Name", "Chassis", and "Delivery Date" columns.'}
-
-        touchedDealershipIds = set()
-        importedCount = 0
-        importErrors = []
+        importedCount  = 0
+        skipped        = 0
+        importErrors   = []
 
         for i in range(headerIndex + 1, len(rows)):
             row = rows[i]
-            rowNum = i + 1
-            if not any(str(c).strip() != '' for c in row):
+            if not any(str(c).strip() not in ('', 'None') for c in row):
                 continue
 
-            dealershipName = str(row[dealerNameCol]).strip() if dealerNameCol < len(row) else ''
-            chassis = str(row[chassisCol]).strip() if chassisCol < len(row) else ''
-            deliveryDateRaw = str(row[deliveryDateCol]).strip() if deliveryDateCol < len(row) else ''
+            raw_dealer  = str(row[dealerNameCol]).strip() if dealerNameCol < len(row) else ''
+            raw_chassis = str(row[chassisCol]).strip().upper() if chassisCol < len(row) else ''
+            raw_date    = str(row[deliveryDateCol]).strip() if deliveryDateCol < len(row) else ''
+            raw_model   = str(row[modelNameCol]).strip() if (modelNameCol is not None and modelNameCol < len(row)) else ''
 
-            if not dealershipName or not chassis or not deliveryDateRaw:
+            if not raw_dealer or not raw_chassis or not raw_date:
+                skipped += 1
                 continue
 
-            dealershipId = self.find_dealership_match(dealershipsByName, dealershipName)
+            dealershipId = match_dealership(raw_dealer)
             if not dealershipId:
-                importErrors.append(f"Row {rowNum}: Dealership \"{dealershipName}\" Not Found — Skipped.")
+                # Only skip non-tracked dealerships silently
                 continue
 
-            deliveryDateStr = self.parse_flexible_date(deliveryDateRaw)
-            if not deliveryDateStr:
-                importErrors.append(f"Row {rowNum}: Could Not Parse Delivery Date \"{deliveryDateRaw}\" — Skipped.")
+            # Parse delivery date — supports: 30/06/2026, 2026-06-30, 20260630 formats
+            del_date = None
+            date_str = self.parse_flexible_date(raw_date)
+            if date_str:
+                try:
+                    del_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                except Exception:
+                    pass
+            if del_date is None:
+                importErrors.append(f"Row {i+1}: Cannot parse date '{raw_date}' — Skipped.")
                 continue
-
-            try:
-                delDate = datetime.strptime(deliveryDateStr, '%Y-%m-%d').date()
-            except Exception:
-                continue
-
-            productName = str(row[productCol]).strip() if (productCol is not None and productCol < len(row)) else 'Vehicle'
-
-            if dealershipId not in touchedDealershipIds:
-                db_session.query(AgeingRecord).filter(AgeingRecord.dealership_id == dealershipId).delete()
-                touchedDealershipIds.add(dealershipId)
 
             rec = AgeingRecord(
                 dealership_id=dealershipId,
-                product_name=productName,
-                chassis_number=chassis,
-                delivery_date=delDate
+                product_name=raw_model or 'Unknown',
+                chassis_number=raw_chassis,
+                delivery_date=del_date
             )
             db_session.add(rec)
             importedCount += 1

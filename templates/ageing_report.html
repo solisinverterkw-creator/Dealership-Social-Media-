@@ -99,68 +99,46 @@
       {% endfor %}
     </select>
   </div>
-  <a href="{{ url_for('export_ageing_report') }}" class="btn">Export CSV</a>
 </form>
 
-<h2>Ageing Summary By Dealership</h2>
-<div class="table-wrap" style="margin-bottom:32px;">
-  <table class="wide-report-table sortable-table">
-    <thead>
-      <tr>
-        <th>Sr#</th>
-        <th>Dealership</th>
-        <th>Region</th>
-        <th>60 - 89 Days</th>
-        <th>90+ Days</th>
-        <th>Total Aged (60+ Days)</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for name, s in summary_pivot.items() %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td class="name-cell">{{ name }}</td>
-        <td>{{ s.region or '—' }}</td>
-        <td>{{ s.tier1 }}</td>
-        <td>{{ s.tier2 }}</td>
-        <td style="font-weight:600; color:var(--red);">{{ s.total }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% for g in groups %}
+<div class="dealership-group" style="margin-bottom:28px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <h3 style="margin:0; font-size:15px; font-weight:700;">{{ g.dealership_name }}</h3>
+    <span style="font-size:13px; color:var(--text-muted);">
+      Oldest: <strong>{{ g.oldest_days }} Days</strong> — <strong>{{ g.vehicles|length }} Vehicle(s)</strong>
+    </span>
+  </div>
+  <div class="table-wrap">
+    <table class="wide-report-table">
+      <thead>
+        <tr>
+          <th>VEHICLE</th>
+          <th>CHASSIS</th>
+          <th>DELIVERY DATE</th>
+          <th>DAYS AGED</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in g.vehicles %}
+        <tr>
+          <td class="name-cell">{{ v.product_name }}</td>
+          <td style="font-family:'IBM Plex Mono', monospace; font-size:11px;">{{ v.chassis_number }}</td>
+          <td>{{ v.delivery_date }}</td>
+          <td class="{% if v.days_aged >= 90 %}age-alert-red{% else %}age-alert-orange{% endif %}" style="font-weight:600;">
+            {{ v.days_aged }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
-
-<h2>Ageing Detail By Vehicle</h2>
-<div class="table-wrap">
-  <table class="wide-report-table sortable-table" id="ageing-detail-table">
-    <thead>
-      <tr>
-        <th>Sr#</th>
-        <th>Dealership</th>
-        <th>Product/Model</th>
-        <th>Chassis Number</th>
-        <th>Delivery Date</th>
-        <th>Days Aged</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in filtered_rows %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td class="name-cell">{{ r.dealership_name }}</td>
-        <td>{{ friendly_product_label(r.product_name) }}</td>
-        <td style="font-family:'IBM Plex Mono', monospace; font-size:11px;">{{ r.chassis_number }}</td>
-        <td>{{ r.delivery_date.strftime('%Y-%m-%d') }}</td>
-        <td class="{% if r.days_aged >= 90 %}age-alert-red{% else %}age-alert-orange{% endif %}">
-          {{ r.days_aged }} days
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+{% endfor %}
 {% else %}
-  <div class="empty-state">No Aged Vehicles Found — Verify That Both Datasets (Ageing dates + Stock snapshot) Have Been Imported.</div>
+  <div class="empty-state" style="padding:32px; text-align:center; background:var(--panel-bg); border:1px solid var(--border); border-radius:8px;">
+    No Aged Vehicles Found (60+ Days) — Ensure Both Ageing Import (Delivery Dates) And Stock Snapshot Have Been Uploaded.
+  </div>
 {% endif %}
 {% endblock %}
 

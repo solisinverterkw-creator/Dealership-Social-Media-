@@ -2169,71 +2169,71 @@ def ageing_report_view():
 
     pk_today = current_time_pk()
     if pk_today.month == 12:
-        month_end = datetime(pk_today.year + 1, 1, 1) - timedelta(days=1)
+        month_end = datetime(pk_today.year + 1, 1, 1).date() - timedelta(days=1)
     else:
-        month_end = datetime(pk_today.year, pk_today.month + 1, 1) - timedelta(days=1)
+        month_end = datetime(pk_today.year, pk_today.month + 1, 1).date() - timedelta(days=1)
 
-    variant_priority = [
-        'Alto VXR', 'Alto VXR AGS', 'Alto AGS', 'Alto VXL AGS',
-        'FRONX GL AT', 'FRONX GLX',
-        'SWIFT MT', 'Swift GL', 'Swift GL CVT', 'SWIFT GLX',
-        'CULTUS VXR', 'CULTUS VXL', 'CULTUS AGS',
-        'EVERY'
-    ]
-
-    subquery = db_session.query(StockChassisRecord.chassis_number)
+    # Subquery: get upper/trimmed chassis numbers from stock_chassis_records
+    subquery = db_session.query(func.upper(func.trim(StockChassisRecord.chassis_number)))
     allowed_ids = {d.id for d in dealerships}
+    d_map = {d.id: d for d in dealerships}
+
     ageing_records = db_session.query(AgeingRecord).filter(
         AgeingRecord.dealership_id.in_(allowed_ids),
         func.upper(func.trim(AgeingRecord.chassis_number)).in_(subquery)
     ).all()
 
-    pivot = {}
-    oldest_days = {}
+    dealership_groups = {}
     total_aged_count = 0
-    product_set = set()
-    chassis_records = []
-    d_map = {d.id: d.name for d in dealerships}
-
-    for r in ageing_records:
-        try:
-            del_dt = datetime.combine(r.delivery_date, datetime.min.time())
-            days = (month_end - del_dt).days
-        except Exception:
-            continue
-
-        if days >= 60:
-            d_name = d_map.get(r.dealership_id, 'Unknown')
-            product_set.add(r.product_name)
-            total_aged_count += 1
-            if d_name not in pivot:
-                pivot[d_name] = {'__id': r.dealership_id}
-                oldest_days[d_name] = {}
-
-            pivot[d_name][r.product_name] = pivot[d_name].get(r.product_name, 0) + 1
-            oldest_days[d_name][r.product_name] = max(oldest_days[d_name].get(r.product_name, 0), days)
-
-            chassis_records.append({
-                'dealership_name': d_name,
-                'chassis_number': r.chassis_number,
-                'product_name': r.product_name,
-                'delivery_date': r.delivery_date.strftime('%d-%m-%Y') if r.delivery_date else '',
-                'days_aged': days
-            })
-
-    product_names = SpreadsheetImportHelper.sort_product_columns_by_priority(list(product_set), variant_priority)
-    regions = sorted(list(set(d.region for d in dealerships if d.region)))
     selected_region = request.args.get('region', '').strip()
     selected_dealership_id = request.args.get('dealership_id', '').strip()
 
-    if selected_region:
-        pivot = {k: v for k, v in pivot.items() if any(d.id == v['__id'] and d.region == selected_region for d in dealerships)}
+    for r in ageing_records:
+        if not r.delivery_date:
+            continue
+        days = (month_end - r.delivery_date).days
+        if days < 60:
+            continue
 
-    # Oldest vehicle first
-    chassis_records.sort(key=lambda x: x['days_aged'], reverse=True)
-    pivot = dict(sorted(pivot.items(), key=lambda item: max(oldest_days.get(item[0], {}).values() or [0]), reverse=True))
+        d_obj = d_map.get(r.dealership_id)
+        if not d_obj:
+            continue
 
-    has_data = bool(pivot)
+        if selected_region and d_obj.region != selected_region:
+            continue
+        if selected_dealership_id and str(d_obj.id) != selected_dealership_id:
+            continue
+
+        d_name = d_obj.name
+        total_aged_count += 1
+
+        if d_name not in dealership_groups:
+            dealership_groups[d_name] = {
+                'dealership_id': d_obj.id,
+                'dealership_name': d_name,
+                'region': d_obj.region or '',
+                'oldest_days': days,
+                'vehicles': []
+            }
+
+        if days > dealership_groups[d_name]['oldest_days']:
+            dealership_groups[d_name]['oldest_days'] = days
+
+        dealership_groups[d_name]['vehicles'].append({
+            'chassis_number': r.chassis_number,
+            'product_name': r.product_name,
+            'delivery_date': r.delivery_date.strftime('%d %b, %Y'),
+            'days_aged': days
+        })
+
+    # Sort vehicles inside each dealership by oldest days first
+    for group in dealership_groups.values():
+        group['vehicles'].sort(key=lambda x: x['days_aged'], reverse=True)
+
+    # Sort dealerships by oldest vehicle days aged descending
+    sorted_groups = sorted(dealership_groups.values(), key=lambda g: g['oldest_days'], reverse=True)
+
+    regions = sorted(list(set(d.region for d in dealerships if d.region)))
     ageing_records_count = db_session.query(AgeingRecord).filter(AgeingRecord.dealership_id.in_(allowed_ids)).count()
     stock_chassis_count = db_session.query(StockChassisRecord).filter(StockChassisRecord.dealership_id.in_(allowed_ids)).count()
 
@@ -2241,17 +2241,14 @@ def ageing_report_view():
         'ageing_report.html',
         dealerships=dealerships,
         dealerships_filter=dealerships,
-        has_data=has_data,
-        pivot=pivot,
-        oldest_days=oldest_days,
-        product_names=product_names,
+        has_data=bool(sorted_groups),
+        groups=sorted_groups,
         regions=regions,
         selected_region=selected_region,
         selected_dealership_id=selected_dealership_id,
         total_aged_count=total_aged_count,
         ageing_records_count=ageing_records_count,
         stock_chassis_count=stock_chassis_count,
-        chassis_records=chassis_records,
         month_end_str=month_end.strftime('%d %b, %Y'),
         date_str=pk_today.strftime('%d %b, %Y'),
         message=message,
