@@ -2254,7 +2254,10 @@ def ageing_report_view():
         message=message,
         error=error,
         import_errors=import_errors,
-        friendly_product_label=SpreadsheetImportHelper.friendly_product_label
+        friendly_product_label=SpreadsheetImportHelper.friendly_product_label,
+        summary_pivot={},
+        pivot={},
+        filtered_rows=[]
     )
 
 # --- CRM REPORT VIEW ---
