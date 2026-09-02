@@ -1996,23 +1996,33 @@ def stock_report_view():
     import_errors = []
 
     if request.method == 'POST' and can_perform('edit'):
-        file_upload = request.files.get('file_upload') or request.files.get('stock_csv')
-        if not file_upload:
-            error = "Excel File is required."
-        else:
+        action = request.form.get('action')
+        if action == 'clear_stock':
             try:
-                helper = SpreadsheetImportHelper()
-                rows = read_excel_rows(file_upload)
-                res = helper.import_stock_sheet(db_session, rows)
-                if res['success']:
-                    tot_vehicles = res.get('total_vehicles', res.get('imported_count', 0))
-                    message = f"Stock snapshot data imported successfully. {tot_vehicles} total vehicle(s) loaded."
-                    import_errors = res.get('import_errors', [])
-                else:
-                    error = res['message']
+                num_del = db_session.query(StockRecord).delete(synchronize_session=False)
+                db_session.commit()
+                message = f"Current stock snapshot data has been completely cleared ({num_del} records deleted)."
             except Exception as e:
                 db_session.rollback()
-                error = f"Error reading sheet: {str(e)}"
+                error = f"Error clearing stock data: {str(e)}"
+        else:
+            file_upload = request.files.get('file_upload') or request.files.get('stock_csv')
+            if not file_upload:
+                error = "Excel File is required."
+            else:
+                try:
+                    helper = SpreadsheetImportHelper()
+                    rows = read_excel_rows(file_upload)
+                    res = helper.import_stock_sheet(db_session, rows)
+                    if res['success']:
+                        tot_vehicles = res.get('total_vehicles', res.get('imported_count', 0))
+                        message = f"Stock snapshot data imported successfully. {tot_vehicles} total vehicle(s) loaded."
+                        import_errors = res.get('import_errors', [])
+                    else:
+                        error = res['message']
+                except Exception as e:
+                    db_session.rollback()
+                    error = f"Error reading sheet: {str(e)}"
 
     variant_priority = [
         'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS',

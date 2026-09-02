@@ -562,7 +562,7 @@ class SpreadsheetImportHelper:
                 excludedStockIds.add(d.id)
 
         # Always wipe all previous StockRecords so fresh upload completely replaces stock snapshot
-        db_session.query(StockRecord).delete()
+        db_session.query(StockRecord).delete(synchronize_session=False)
         db_session.commit()
 
         if excludedStockIds:

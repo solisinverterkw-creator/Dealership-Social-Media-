@@ -42,14 +42,20 @@
 {% endif %}
 
 {% if is_super_admin() %}
-<form method="POST" enctype="multipart/form-data" class="search-panel no-print" style="margin-bottom:28px;">
-  <input type="hidden" name="action" value="import_csv">
-  <div class="field" style="flex:2;">
-    <label>Stock CSV Or Excel</label>
-    <input type="file" name="stock_csv" accept=".csv,.xlsx" required>
-  </div>
-  <button type="submit" class="submit">Import CSV</button>
-</form>
+<div class="search-panel no-print" style="margin-bottom:28px; display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap;">
+  <form method="POST" enctype="multipart/form-data" style="display:flex; align-items:flex-end; gap:12px; flex:1; min-width:300px;">
+    <input type="hidden" name="action" value="import_csv">
+    <div class="field" style="flex:1;">
+      <label>Stock CSV Or Excel</label>
+      <input type="file" name="stock_csv" accept=".csv,.xlsx" required>
+    </div>
+    <button type="submit" class="submit">Import CSV</button>
+  </form>
+  <form method="POST" onsubmit="return confirm('Are you sure you want to delete all current stock data? This action cannot be undone.');">
+    <input type="hidden" name="action" value="clear_stock">
+    <button type="submit" class="submit" style="background:#dc3545; border-color:#dc3545; color:#ffffff;">🗑️ Clear Current Stock Data</button>
+  </form>
+</div>
 {% endif %}
 
 {% if has_data %}
