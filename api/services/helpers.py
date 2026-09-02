@@ -756,7 +756,8 @@ class SpreadsheetImportHelper:
                 importedCount += 1
 
         db_session.commit()
-        return {'success': True, 'imported_count': importedCount, 'import_errors': importErrors}
+        total_vehicles = sum(sum(p.values()) for p in counts.values()) if counts else 0
+        return {'success': True, 'imported_count': importedCount, 'total_vehicles': total_vehicles, 'transaction_rows': transactionRows, 'import_errors': importErrors}
 
     def import_ageing_sheet(self, db_session, rows: list) -> dict:
         from api.models import AgeingRecord

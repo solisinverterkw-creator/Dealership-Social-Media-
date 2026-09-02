@@ -2005,7 +2005,8 @@ def stock_report_view():
                 rows = read_excel_rows(file_upload)
                 res = helper.import_stock_sheet(db_session, rows)
                 if res['success']:
-                    message = f"Stock snapshot data imported successfully. {res['imported_count']} record(s) loaded."
+                    tot_vehicles = res.get('total_vehicles', res.get('imported_count', 0))
+                    message = f"Stock snapshot data imported successfully. {tot_vehicles} total vehicle(s) loaded."
                     import_errors = res.get('import_errors', [])
                 else:
                     error = res['message']
