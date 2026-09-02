@@ -324,41 +324,76 @@ $rowsStmt = $db->prepare($rowsQuery);
 $rowsStmt->execute($rowsParams);
 $rows = $rowsStmt->fetchAll();
 
-// Extract all unique mapped product codes present in the database
-$extractedCodesMap = [];
+// Short name mapping: raw PRODUCT DESC. -> short display name
+$SHORT_NAME_MAP = [
+    'SUZUKI ALTO AET306 VXR M1 658 CC'       => 'ALTO VXR',
+    'SUZUKI ALTO AET306 VXR AGS M1 658 CC'   => 'ALTO VXR AGS',
+    'SUZUKI ALTO AET306 AGS M1 658 CC'        => 'ALTO AGS',
+    'SUZUKI FRONX SUV GL MT 1462CC'           => 'FRONX MT',
+    'SUZUKI FRONX SUV GL AT 1462CC'           => 'FRONX GL AT',
+    'SUZUKI FRONX SUV GLX AT 1462CC HYBD'     => 'FRONX GLX',
+    'SUZUKI SWIFT GL M2 1197 CC'              => 'SWIFT GL',
+    'SUZUKI SWIFT GL CVT M2 1197 CC'          => 'SWIFT GL CVT',
+    'SUZUKI SWIFT GLX CVT M2 1197 CC'         => 'SWIFT GLX',
+    'SUZUKI CULTUS AVK310 VXR M2 998 CC'      => 'CULTUS VXR',
+    'SUZUKI CULTUS AVK310 VXL M2 998 CC'      => 'CULTUS VXL',
+    'SUZUKI EVERY VXR 658 CC'                 => 'EVERY',
+];
+
+$SHORT_NAME_PRIORITY = [
+    'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS',
+    'FRONX MT', 'FRONX GL AT', 'FRONX GLX',
+    'SWIFT GL', 'SWIFT GL CVT', 'SWIFT GLX',
+    'CULTUS VXR', 'CULTUS VXL',
+    'EVERY',
+];
+
+function getShortName($raw, $map) {
+    return $map[trim($raw)] ?? trim($raw);
+}
+
+// Get distinct product names from DB rows
+$rawProductNames = [];
 foreach ($rows as $r) {
-    $code = ProductCodeMapper::getProductCode($r['product_name']);
-    if ($code !== null && $code !== '') {
-        $extractedCodesMap[$code] = true;
+    $pname = trim($r['product_name']);
+    if ($pname !== '' && !in_array($pname, $rawProductNames, true)) {
+        $rawProductNames[] = $pname;
     }
 }
 
-// Sort by priority using ProductCodeMapper
-$sortedCodes = ProductCodeMapper::getSortedProductCodes(array_keys($extractedCodesMap));
-$masterColumns = array_map(fn($code) => ['code' => $code], $sortedCodes);
+// Sort product names by short name priority order
+usort($rawProductNames, function($a, $b) use ($SHORT_NAME_MAP, $SHORT_NAME_PRIORITY) {
+    $sa = $SHORT_NAME_MAP[trim($a)] ?? trim($a);
+    $sb = $SHORT_NAME_MAP[trim($b)] ?? trim($b);
+    $ia = array_search($sa, $SHORT_NAME_PRIORITY);
+    $ib = array_search($sb, $SHORT_NAME_PRIORITY);
+    if ($ia === false) $ia = 999;
+    if ($ib === false) $ib = 999;
+    return $ia <=> $ib;
+});
 
-// Group by dealership and product code — ensuring ALL tracked dealerships appear in the table
+$masterColumns = array_map(fn($p) => ['code' => $p, 'label' => ($SHORT_NAME_MAP[trim($p)] ?? trim($p))], $rawProductNames);
+
+// Group by dealership using raw product_name as key
 $pivot = [];
 foreach ($allDealerships as $d) {
     $dealershipName = $d['name'];
     $pivot[$dealershipName] = ['__security' => $d['security_amount']];
-    foreach ($sortedCodes as $code) {
-        $pivot[$dealershipName][$code] = 0;
+    foreach ($rawProductNames as $pname) {
+        $pivot[$dealershipName][$pname] = 0;
     }
 }
 
 foreach ($rows as $r) {
     $dealershipName = $r['dealership_name'];
-    if (!isset($pivot[$dealershipName])) {
-        continue;
-    }
-    $productCode = ProductCodeMapper::getProductCode($r['product_name']);
-    if ($productCode !== null && $productCode !== '') {
-        $pivot[$dealershipName][$productCode] = ($pivot[$dealershipName][$productCode] ?? 0) + (int)$r['quantity'];
+    if (!isset($pivot[$dealershipName])) continue;
+    $pname = trim($r['product_name']);
+    if (isset($pivot[$dealershipName][$pname])) {
+        $pivot[$dealershipName][$pname] += (int)$r['quantity'];
     }
 }
 
-// Order by total stock descending if data exists, keeping all dealerships
+// Order by total stock descending
 $computeRowTotal = fn(array $products) => array_sum(array_diff_key($products, ['__security' => true]));
 uasort($pivot, fn($a, $b) => $computeRowTotal($b) <=> $computeRowTotal($a));
 ?>
@@ -450,7 +485,7 @@ uasort($pivot, fn($a, $b) => $computeRowTotal($b) <=> $computeRowTotal($a));
           <th>SR#</th>
           <th>DEALER</th>
           <?php foreach ($masterColumns as $c): ?>
-            <th><?= htmlspecialchars($c['code']) ?></th>
+            <th title="<?= htmlspecialchars($c['code']) ?>"><?= htmlspecialchars($c['label']) ?></th>
           <?php endforeach; ?>
           <th>TOTAL</th>
           <th>AVAILABLE SECURITY AMOUNT</th>

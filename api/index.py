@@ -2051,8 +2051,27 @@ def stock_report_view():
         'SUZUKI EVERY VXR 658 CC':                   'EVERY',
     }
 
+    # Desired display order of columns
+    SHORT_NAME_PRIORITY = [
+        'ALTO VXR', 'ALTO VXR AGS', 'ALTO AGS',
+        'FRONX MT', 'FRONX GL AT', 'FRONX GLX',
+        'SWIFT GL', 'SWIFT GL CVT', 'SWIFT GLX',
+        'CULTUS VXR', 'CULTUS VXL',
+        'EVERY',
+    ]
+
     def short_name(p):
         return SHORT_NAME_MAP.get(str(p).strip(), str(p).strip())
+
+    # Sort product_names by desired column order
+    def col_sort_key(p):
+        sn = short_name(p)
+        try:
+            return SHORT_NAME_PRIORITY.index(sn)
+        except ValueError:
+            return len(SHORT_NAME_PRIORITY)  # unknown products go to end
+
+    product_names = sorted(product_names, key=col_sort_key)
 
     column_sequence = [{'type': 'product', 'name': p} for p in product_names]
 
