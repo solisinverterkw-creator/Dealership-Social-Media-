@@ -16,9 +16,12 @@ $importErrors = [];
 $isSuperAdmin = Auth::isSuperAdmin();
 $scopedIds = Auth::dealershipIds();
 
-// Importing overwrites data for every dealership found in the file, not
-// just the uploader's own — stays super-admin-only even though viewing this
-// report can now be granted to scoped users.
+if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'clear_ageing') {
+    $db->exec("DELETE FROM ageing_records");
+    $db->exec("DELETE FROM stock_chassis_records");
+    $message = "Ageing report data & stock chassis snapshot cleared successfully.";
+}
+
 if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'import_csv') {
     if (empty($_FILES['ageing_csv']['name']) || $_FILES['ageing_csv']['error'] !== UPLOAD_ERR_OK) {
         $error = 'A CSV Or Excel File Is Required.';

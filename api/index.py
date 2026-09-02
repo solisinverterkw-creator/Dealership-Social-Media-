@@ -2000,6 +2000,7 @@ def stock_report_view():
         if action == 'clear_stock':
             try:
                 num_del = db_session.query(StockRecord).delete(synchronize_session=False)
+                db_session.query(StockChassisRecord).delete(synchronize_session=False)
                 db_session.commit()
                 message = f"Current stock snapshot data has been completely cleared ({num_del} records deleted)."
             except Exception as e:
@@ -2148,24 +2149,35 @@ def ageing_report_view():
 
     if request.method == 'POST' and can_perform('edit'):
         action = request.form.get('action')
-        file_upload = request.files.get('file_upload') or request.files.get('ageing_csv') or request.files.get('stock_chassis_csv')
-        if not file_upload:
-            error = "Excel File is required."
-        else:
+        if action == 'clear_ageing':
             try:
-                helper = SpreadsheetImportHelper()
-                rows = read_excel_rows(file_upload)
-                if action == 'import_stock_csv':
-                    res = helper.import_stock_chassis_sheet(db_session, rows)
-                else:
-                    res = helper.import_ageing_sheet(db_session, rows)
-                if res['success']:
-                    message = f"Ageing report imported successfully. {res['imported_count']} record(s) loaded."
-                    import_errors = res.get('import_errors', [])
-                else:
-                    error = res['message']
+                n1 = db_session.query(AgeingRecord).delete(synchronize_session=False)
+                n2 = db_session.query(StockChassisRecord).delete(synchronize_session=False)
+                db_session.commit()
+                message = f"Ageing report data & stock chassis snapshot cleared successfully ({n1} ageing records & {n2} chassis records deleted)."
             except Exception as e:
-                error = f"Error reading sheet: {str(e)}"
+                db_session.rollback()
+                error = f"Error clearing ageing data: {str(e)}"
+        else:
+            file_upload = request.files.get('file_upload') or request.files.get('ageing_csv') or request.files.get('stock_chassis_csv')
+            if not file_upload:
+                error = "Excel File is required."
+            else:
+                try:
+                    helper = SpreadsheetImportHelper()
+                    rows = read_excel_rows(file_upload)
+                    if action == 'import_stock_csv':
+                        res = helper.import_stock_chassis_sheet(db_session, rows)
+                    else:
+                        res = helper.import_ageing_sheet(db_session, rows)
+                    if res['success']:
+                        message = f"Data imported successfully. {res['imported_count']} record(s) loaded."
+                        import_errors = res.get('import_errors', [])
+                    else:
+                        error = res['message']
+                except Exception as e:
+                    db_session.rollback()
+                    error = f"Error reading sheet: {str(e)}"
 
     pk_today = current_time_pk()
     if pk_today.month == 12:

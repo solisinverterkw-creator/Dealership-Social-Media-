@@ -61,6 +61,13 @@
     </div>
     <button type="submit" class="submit" style="margin-top:auto;">Import Stock Snapshot</button>
   </form>
+
+  <form method="POST" style="width:100%; display:flex; justify-content:flex-end; margin-top:8px;" onsubmit="return confirm('Are you sure you want to clear all Ageing and Stock Chassis data?');">
+    <input type="hidden" name="action" value="clear_ageing">
+    <button type="submit" style="background:#dc2626; color:#ffffff; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">
+      🗑️ Clear Ageing & Chassis Data
+    </button>
+  </form>
 </div>
 {% endif %}
 
