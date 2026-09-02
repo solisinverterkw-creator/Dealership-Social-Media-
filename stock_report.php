@@ -95,6 +95,7 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 // ("Region": ROSP, ROCP...) — the meaningful one for filtering
                 // tends to be the later of the two.
                 $regionCol = SpreadsheetImportHelper::findColumn($headerRow, ['region'], true);
+                $qtyCol = SpreadsheetImportHelper::findColumn($headerRow, ['sum of quantity', 'sum of qty', 'quantity', 'qty', 'units', 'stock qty']);
                 $productDescCol = SpreadsheetImportHelper::findColumn($headerRow, ['product desc', 'product description']);
                 if ($productDescCol === null) {
                     $genericProductCol = SpreadsheetImportHelper::findColumn($headerRow, ['product']);
@@ -129,9 +130,14 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($dealershipName === '') {
                             continue;
                         }
-                        $productName = trim($row[$productDescCol] ?? '');
-                        if ($productName === '') {
+                        $rawProductName = trim($row[$productDescCol] ?? '');
+                        if ($rawProductName === '') {
                             continue;
+                        }
+                        // Normalize raw product description to canonical variant name
+                        $productName = ProductCodeMapper::getVariantName($rawProductName);
+                        if (!$productName) {
+                            continue; // skip unknown products
                         }
 
                         $dealershipId = SpreadsheetImportHelper::findDealershipMatch($dealershipsByName, $dealershipName);
@@ -143,10 +149,14 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST') {
                             continue; // intentionally excluded from this report
                         }
 
+                        // Use Sum of QUANTITY column value, not row count
+                        $qtyValue = ($qtyCol !== null) ? (int)($row[$qtyCol] ?? 1) : 1;
+                        if ($qtyValue <= 0) $qtyValue = 1;
+
                         if (!isset($productOrder[$productName])) {
                             $productOrder[$productName] = $orderCounter++;
                         }
-                        $counts[$dealershipId][$productName] = ($counts[$dealershipId][$productName] ?? 0) + 1;
+                        $counts[$dealershipId][$productName] = ($counts[$dealershipId][$productName] ?? 0) + $qtyValue;
                         if ($regionCol !== null) {
                             $regionVal = trim((string)($row[$regionCol] ?? ''));
                             if ($regionVal !== '') {

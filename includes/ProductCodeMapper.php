@@ -184,4 +184,52 @@ class ProductCodeMapper {
     public static function setProductMapping($fullDescription, $code) {
         self::$productMapping[trim($fullDescription)] = strtoupper(trim($code));
     }
+
+    /**
+     * Maps a raw product description to one of the 12 canonical stock report
+     * column names. Returns null if the product is not tracked.
+     *
+     * Canonical names: ALTO VXR, ALTO VXR AGS, ALTO AGS,
+     *   FRONX MT, FRONX GL AT, FRONX GLX,
+     *   SWIFT GL, SWIFT GL CVT, SWIFT GLX,
+     *   CULTUS VXR, CULTUS VXL, EVERY
+     */
+    public static function getVariantName($fullProductName) {
+        $d = strtoupper(trim((string)$fullProductName));
+        if ($d === '') return null;
+
+        // ALTO
+        if (str_contains($d, 'ALTO') || str_contains($d, 'AET')) {
+            if (str_contains($d, 'VXL')) return 'ALTO VXR'; // VXL treated as VXR for this report
+            if (str_contains($d, 'VXR') && str_contains($d, 'AGS')) return 'ALTO VXR AGS';
+            if (str_contains($d, 'VXR')) return 'ALTO VXR';
+            return 'ALTO AGS'; // AET306 AGS and all other AET = ALTO AGS
+        }
+
+        // FRONX
+        if (str_contains($d, 'FRONX')) {
+            if (str_contains($d, 'GLX') || str_contains($d, 'HYBD')) return 'FRONX GLX';
+            if (str_contains($d, 'MT') || (str_contains($d, 'GL') && !str_contains($d, 'AT'))) return 'FRONX MT';
+            return 'FRONX GL AT';
+        }
+
+        // SWIFT
+        if (str_contains($d, 'SWIFT')) {
+            if (str_contains($d, 'GLX')) return 'SWIFT GLX';
+            if (str_contains($d, 'CVT')) return 'SWIFT GL CVT';
+            return 'SWIFT GL';
+        }
+
+        // CULTUS
+        if (str_contains($d, 'CULTUS') || str_contains($d, 'AVK')) {
+            if (str_contains($d, 'VXL')) return 'CULTUS VXL';
+            return 'CULTUS VXR';
+        }
+
+        // EVERY
+        if (str_contains($d, 'EVERY')) return 'EVERY';
+
+        // Not a tracked product
+        return null;
+    }
 }
