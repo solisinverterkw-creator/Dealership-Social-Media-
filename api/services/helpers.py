@@ -561,6 +561,10 @@ class SpreadsheetImportHelper:
             if self.normalize_dealership_name(d.name) in excludedStockNames:
                 excludedStockIds.add(d.id)
 
+        # Always wipe all previous StockRecords so fresh upload completely replaces stock snapshot
+        db_session.query(StockRecord).delete()
+        db_session.commit()
+
         if excludedStockIds:
             db_session.query(StockRecord).filter(StockRecord.dealership_id.in_(list(excludedStockIds))).delete()
 
@@ -666,7 +670,6 @@ class SpreadsheetImportHelper:
 
             importedCount = 0
             for d_id, prod_dict in counts.items():
-                db_session.query(StockRecord).filter(StockRecord.dealership_id == d_id).delete()
                 for prod_name, qty in prod_dict.items():
                     rec = StockRecord(
                         dealership_id=d_id,
