@@ -32,13 +32,16 @@ if (!empty($excludedStockIds)) {
     $db->exec("DELETE FROM stock_records WHERE dealership_id IN ($placeholders)");
 }
 
-// Importing overwrites data for every dealership found in the file, not
-// just the uploader's own — stays super-admin-only even though viewing this
-// report can now be granted to scoped users.
-if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'import_csv') {
-    if (empty($_FILES['stock_csv']['name']) || $_FILES['stock_csv']['error'] !== UPLOAD_ERR_OK) {
-        $error = 'A CSV Or Excel File Is Required.';
-    } else {
+if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    if ($action === 'clear_stock') {
+        $db->exec("DELETE FROM stock_records");
+        $message = "Current stock snapshot data has been completely cleared.";
+    } elseif ($action === 'import_csv') {
+        $db->exec("DELETE FROM stock_records");
+        if (empty($_FILES['stock_csv']['name']) || $_FILES['stock_csv']['error'] !== UPLOAD_ERR_OK) {
+            $error = 'A CSV Or Excel File Is Required.';
+        } else {
         $ext = strtolower(pathinfo($_FILES['stock_csv']['name'], PATHINFO_EXTENSION));
         $allRows = null;
 
@@ -160,7 +163,6 @@ if ($isSuperAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] 
                         $updateRegion = $db->prepare("UPDATE dealerships SET region = :region WHERE id = :id");
                         $importedCount = 0;
                         foreach ($counts as $dealershipId => $products) {
-                            $db->prepare("DELETE FROM stock_records WHERE dealership_id = :id")->execute(['id' => $dealershipId]);
                             foreach ($products as $productName => $qty) {
                                 $insert->execute(['did' => $dealershipId, 'product' => $productName, 'qty' => $qty, 'order' => $productOrder[$productName]]);
                                 $importedCount++;

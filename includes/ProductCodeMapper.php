@@ -82,12 +82,12 @@ class ProductCodeMapper {
 
         // 3. Intelligent Pattern & Keyword Matching for Suzuki Vehicles
         // ALTO
-        if (str_contains($upperFull, 'ALTO')) {
+        if (str_contains($upperFull, 'ALTO') || str_contains($upperFull, 'AET')) {
+            if (str_contains($upperFull, 'VXL')) return 'ALTO VXL';
             if (str_contains($upperFull, 'VXR') && str_contains($upperFull, 'AGS')) return 'ALTO VXR AGS';
-            if (str_contains($upperFull, 'VXL')) return 'ALTO VXL AGS';
             if (str_contains($upperFull, 'VXR')) return 'ALTO VXR';
-            if (str_contains($upperFull, 'AGS')) return 'ALTO AGS';
-            return 'ALTO VXR';
+            if (str_contains($upperFull, 'AGS') || str_contains($upperFull, 'AET')) return 'ALTO AGS';
+            return 'ALTO AGS';
         }
 
         // CULTUS
