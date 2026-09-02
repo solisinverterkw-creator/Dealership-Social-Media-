@@ -65,8 +65,9 @@ function targetBadge(int $value, int $target): ?string
         return null;
     }
     $percent = (int)round(($value / $target) * 100);
-    $class = $percent >= 100 ? 'status-done' : ($percent > 0 ? 'status-partial' : 'status-pending');
-    return sprintf('<span class="status-badge %s" title="Target: %s">%d%%</span>', $class, number_format($target), $percent);
+    $bg = $percent >= 100 ? 'rgba(34, 197, 94, 0.18)' : ($percent >= 50 ? 'rgba(245, 158, 11, 0.18)' : 'rgba(239, 68, 68, 0.18)');
+    $color = $percent >= 100 ? '#16a34a' : ($percent >= 50 ? '#d97706' : '#dc2626');
+    return sprintf('<span style="font-size:11px; padding:2px 7px; border-radius:4px; background:%s; color:%s; font-weight:700; margin-left:6px; display:inline-block;" title="Target: %s">%d%%</span>', $bg, $color, number_format($target), $percent);
 }
 
 /**
@@ -110,24 +111,28 @@ function columnTargetLabel(array $dealerships, string $field): string
   </header>
 
   <?php if ($detail): ?>
-  <div class="detail-card">
-    <h2><?= htmlspecialchars($detail['name']) ?></h2>
-    <div class="detail-grid">
-      <div><div class="stat-label">FB Followers</div><div class="stat-value" style="color:var(--fb)"><?= number_format($detail['fb_followers']) ?> <?= targetBadge((int)$detail['fb_followers'], (int)($detail['fb_target'] ?? 0)) ?></div></div>
-      <div><div class="stat-label">IG Followers</div><div class="stat-value" style="color:var(--ig)"><?= number_format($detail['ig_followers']) ?> <?= targetBadge((int)$detail['ig_followers'], (int)($detail['ig_target'] ?? 0)) ?></div></div>
-      <div><div class="stat-label">YT Subscribers</div><div class="stat-value" style="color:var(--yt)"><?= number_format($detail['yt_subscribers']) ?> <?= targetBadge((int)$detail['yt_subscribers'], (int)($detail['yt_target'] ?? 0)) ?></div></div>
-      <div><div class="stat-label">YT Videos</div><div class="stat-value"><?= number_format($detail['yt_videos']) ?></div></div>
-      <div><div class="stat-label">YT Total Views</div><div class="stat-value"><?= number_format($detail['yt_views']) ?></div></div>
-      <div><div class="stat-label">Google Reviews</div><div class="stat-value" style="color:var(--gr)"><?= number_format($detail['google_review_count']) ?> <?= targetBadge((int)$detail['google_review_count'], (int)($detail['google_review_target'] ?? 0)) ?></div></div>
-      <div><div class="stat-label">Google Rating</div><div class="stat-value"><?= $detail['google_rating'] ?>★</div></div>
-      <div><div class="stat-label">FB Posts (last check)</div><div class="stat-value"><?= number_format($detail['fb_posts_week']) ?>/week</div></div>
-      <div><div class="stat-label">IG Posts (last check)</div><div class="stat-value"><?= number_format($detail['ig_posts_week']) ?>/week</div></div>
-      <div><div class="stat-label">YT Videos (last check)</div><div class="stat-value"><?= number_format($detail['yt_videos_month']) ?>/month</div></div>
-      <div><div class="stat-label">Last Refreshed</div><div class="stat-value" style="font-size:13px;"><?= $detail['last_refreshed'] ? date('d M, H:i', strtotime($detail['last_refreshed'])) : 'never' ?></div></div>
+  <div class="detail-card" style="padding:24px; margin-bottom:20px; background:var(--panel); border:1px solid var(--border); border-radius:16px;">
+    <h2 style="font-size:18px; font-weight:700; margin-top:0; margin-bottom:20px; text-transform:uppercase; color:var(--text);"><?= htmlspecialchars($detail['name']) ?></h2>
+    
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:16px; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--border);">
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">FB FOLLOWERS</div><div class="stat-value" style="font-size:18px; font-weight:700; color:var(--fb)"><?= number_format($detail['fb_followers']) ?> <?= targetBadge((int)$detail['fb_followers'], (int)($detail['fb_target'] ?? 0)) ?></div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">IG FOLLOWERS</div><div class="stat-value" style="font-size:18px; font-weight:700; color:var(--ig)"><?= number_format($detail['ig_followers']) ?> <?= targetBadge((int)$detail['ig_followers'], (int)($detail['ig_target'] ?? 0)) ?></div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT SUBSCRIBERS</div><div class="stat-value" style="font-size:18px; font-weight:700; color:var(--yt)"><?= number_format($detail['yt_subscribers']) ?> <?= targetBadge((int)$detail['yt_subscribers'], (int)($detail['yt_target'] ?? 0)) ?></div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT VIDEOS</div><div class="stat-value" style="font-size:18px; font-weight:700;"><?= number_format($detail['yt_videos']) ?></div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT TOTAL VIEWS</div><div class="stat-value" style="font-size:18px; font-weight:700;"><?= number_format($detail['yt_views']) ?></div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">GOOGLE REVIEWS</div><div class="stat-value" style="font-size:18px; font-weight:700; color:var(--gr)"><?= number_format($detail['google_review_count']) ?> <?= targetBadge((int)$detail['google_review_count'], (int)($detail['google_review_target'] ?? 0)) ?></div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">GOOGLE RATING</div><div class="stat-value" style="font-size:18px; font-weight:700;"><?= $detail['google_rating'] ?>★</div></div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:16px;">
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">FB POSTS (LAST CHECK)</div><div class="stat-value" style="font-size:15px; font-weight:700;"><?= number_format($detail['fb_posts_week']) ?>/week</div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">IG POSTS (LAST CHECK)</div><div class="stat-value" style="font-size:15px; font-weight:700;"><?= number_format($detail['ig_posts_week']) ?>/week</div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT VIDEOS (LAST CHECK)</div><div class="stat-value" style="font-size:15px; font-weight:700;"><?= number_format($detail['yt_videos_month']) ?>/month</div></div>
+      <div><div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">LAST REFRESHED</div><div class="stat-value" style="font-size:14px; font-weight:600;"><?= $detail['last_refreshed'] ? date('d M, H:i', strtotime($detail['last_refreshed'])) : 'never' ?></div></div>
     </div>
   </div>
-  <div class="subtitle" style="margin-bottom:16px;"><a href="report.php" style="color:var(--accent)">← Back To Full Report</a></div>
-  <?php endif; ?>
+  <div class="subtitle" style="margin-bottom:24px;"><a href="report.php" style="color:var(--accent); font-weight:600; text-decoration:none;">← Back To Full Report</a></div>
+  <?php else: ?>
 
   <div class="stat-cards">
     <div class="stat-card"><div class="stat-label">Total FB Followers</div><div class="stat-value" style="color:var(--fb)"><?= number_format($totals['fb_total'] ?? 0) ?> <?= targetBadge((int)($totals['fb_total'] ?? 0), (int)($totals['fb_target_total'] ?? 0)) ?></div></div>
@@ -170,6 +175,7 @@ function columnTargetLabel(array $dealerships, string $field): string
     </table>
     <?php endif; ?>
   </div>
+  <?php endif; ?>
 
 </div>
 </main>

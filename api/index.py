@@ -752,12 +752,13 @@ def social_report():
     }
 
     def target_badge(val, target):
-        if not target:
+        if not target or target <= 0:
             return ''
         val = val or 0
-        pct = int(round(val * 100 / target)) if target else 0
-        color = '#22c55e' if pct >= 100 else ('#f59e0b' if pct >= 75 else '#ef4444')
-        return f'<span style="font-size:11px;color:{color};font-weight:600">({pct}%)</span>'
+        pct = int(round((val / target) * 100))
+        bg = 'rgba(34, 197, 94, 0.18)' if pct >= 100 else ('rgba(245, 158, 11, 0.18)' if pct >= 50 else 'rgba(239, 68, 68, 0.18)')
+        color = '#16a34a' if pct >= 100 else ('#d97706' if pct >= 50 else '#dc2626')
+        return f'<span style="font-size:11px; padding:2px 7px; border-radius:4px; background:{bg}; color:{color}; font-weight:700; margin-left:6px; display:inline-block;">{pct}%</span>'
 
     def column_target_label(dships, field):
         has_target = any(getattr(d, field, 0) for d in dships)

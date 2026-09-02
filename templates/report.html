@@ -66,52 +66,56 @@ function refreshAllData() {
 
 
 {% if detail %}
-<div class="detail-card">
-  <h2>{{ detail.name }}</h2>
-  <div class="detail-grid">
+<div class="detail-card" style="padding:24px; margin-bottom:20px; background:var(--panel); border:1px solid var(--border); border-radius:16px;">
+  <h2 style="font-size:18px; font-weight:700; margin-top:0; margin-bottom:20px; text-transform:uppercase; color:var(--text);">{{ detail.name }}</h2>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:16px; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--border);">
     <div>
-      <div class="stat-label">FB Followers</div>
-      <div class="stat-value" style="color:var(--fb)">{{ detail.fb_followers|number_format }} {{ target_badge(detail.fb_followers, detail.fb_target)|safe }}</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">FB FOLLOWERS</div>
+      <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--fb);">{{ detail.fb_followers|number_format }} {{ target_badge(detail.fb_followers, detail.fb_target)|safe }}</div>
     </div>
     <div>
-      <div class="stat-label">IG Followers</div>
-      <div class="stat-value" style="color:var(--ig)">{{ detail.ig_followers|number_format }} {{ target_badge(detail.ig_followers, detail.ig_target)|safe }}</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">IG FOLLOWERS</div>
+      <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--ig);">{{ detail.ig_followers|number_format }} {{ target_badge(detail.ig_followers, detail.ig_target)|safe }}</div>
     </div>
     <div>
-      <div class="stat-label">YT Subscribers</div>
-      <div class="stat-value" style="color:var(--yt)">{{ detail.yt_subscribers|number_format }} {{ target_badge(detail.yt_subscribers, detail.yt_target)|safe }}</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT SUBSCRIBERS</div>
+      <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--yt);">{{ detail.yt_subscribers|number_format }} {{ target_badge(detail.yt_subscribers, detail.yt_target)|safe }}</div>
     </div>
     <div>
-      <div class="stat-label">YT Videos</div>
-      <div class="stat-value">{{ detail.yt_videos|number_format }}</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT VIDEOS</div>
+      <div class="stat-value" style="font-size:18px; font-weight:700;">{{ detail.yt_videos|number_format }}</div>
     </div>
     <div>
-      <div class="stat-label">YT Total Views</div>
-      <div class="stat-value">{{ detail.yt_views|number_format }}</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT TOTAL VIEWS</div>
+      <div class="stat-value" style="font-size:18px; font-weight:700;">{{ detail.yt_views|number_format }}</div>
     </div>
     <div>
-      <div class="stat-label">Google Reviews</div>
-      <div class="stat-value" style="color:var(--gr)">{{ detail.google_review_count|number_format }} {{ target_badge(detail.google_review_count, detail.google_review_target)|safe }}</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">GOOGLE REVIEWS</div>
+      <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--gr);">{{ detail.google_review_count|number_format }} {{ target_badge(detail.google_review_count, detail.google_review_target)|safe }}</div>
     </div>
     <div>
-      <div class="stat-label">Google Rating</div>
-      <div class="stat-value">{{ detail.google_rating }}★</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">GOOGLE RATING</div>
+      <div class="stat-value" style="font-size:18px; font-weight:700;">{{ detail.google_rating }}★</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:16px;">
+    <div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">FB POSTS (LAST CHECK)</div>
+      <div class="stat-value" style="font-size:15px; font-weight:700;">{{ detail.fb_posts_week|number_format }}/week</div>
     </div>
     <div>
-      <div class="stat-label">FB Posts (last check)</div>
-      <div class="stat-value">{{ detail.fb_posts_week|number_format }}/week</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">IG POSTS (LAST CHECK)</div>
+      <div class="stat-value" style="font-size:15px; font-weight:700;">{{ detail.ig_posts_week|number_format }}/week</div>
     </div>
     <div>
-      <div class="stat-label">IG Posts (last check)</div>
-      <div class="stat-value">{{ detail.ig_posts_week|number_format }}/week</div>
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT VIDEOS (LAST CHECK)</div>
+      <div class="stat-value" style="font-size:15px; font-weight:700;">{{ detail.yt_videos_month|number_format }}/month</div>
     </div>
     <div>
-      <div class="stat-label">YT Videos (last check)</div>
-      <div class="stat-value">{{ detail.yt_videos_month|number_format }}/month</div>
-    </div>
-    <div>
-      <div class="stat-label">Last Refreshed</div>
-      <div class="stat-value" style="font-size:13px;">
+      <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">LAST REFRESHED</div>
+      <div class="stat-value" style="font-size:14px; font-weight:600;">
         {% if detail.last_refreshed %}
           {{ detail.last_refreshed.strftime('%d %b, %H:%M') }}
         {% else %}
@@ -121,10 +125,10 @@ function refreshAllData() {
     </div>
   </div>
 </div>
-<div class="subtitle" style="margin-bottom:16px;">
-  <a href="{{ url_for('social_report') }}" style="color:var(--accent)">← Back To Full Report</a>
+<div class="subtitle" style="margin-bottom:24px;">
+  <a href="{{ url_for('social_report') }}" style="color:var(--accent); font-weight:600; text-decoration:none;">← Back To Full Report</a>
 </div>
-{% endif %}
+{% else %}
 
 <div class="stat-cards">
   <div class="stat-card">
@@ -187,4 +191,5 @@ function refreshAllData() {
   </table>
   {% endif %}
 </div>
+{% endif %}
 {% endblock %}
