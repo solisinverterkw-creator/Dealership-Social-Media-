@@ -573,6 +573,7 @@ class SpreadsheetImportHelper:
             ('muzaffargarh',         'SUZUKI MUZAFFARGARH MOTORS'),
             ('pioneer motors',       'SUZUKI PIONEER MOTORS'),
             ('derawar motors',       'SUZUKI DERAWAR MOTORS'),
+            ('mian channu',          'SUZUKI MIANCHANNU MOTORS'),
             ('mianchannu',           'SUZUKI MIANCHANNU MOTORS'),
             ('khanewal motors',      'SUZUKI KHANEWAL MOTORS'),
             ('bahawalpur motors',    'SUZUKI BAHAWALPUR MOTORS'),
