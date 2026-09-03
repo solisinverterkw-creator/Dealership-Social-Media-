@@ -50,6 +50,7 @@ InstagramPostsLookup = InstagramLookup
 YouTubePostsLookup = YouTubeLookup
 from api.services.facebook_poster import FacebookPoster
 from api.services.bright_data import BrightDataClient
+from api.services.apify_client import ApifyClient
 from api.services.email_validator import EmailValidator as EmailValidatorService
 
 # Absolute path resolution for serverless function execution
@@ -1050,35 +1051,22 @@ def refresh_fb():
         if not d.fb_input:
             return jsonify({'success': True, 'skipped': True, 'fb_followers': d.fb_followers or 0})
 
-        client = BrightDataClient()
+        # --- Apify scraper (unseenuser/fb-followers) ---
         lookup = FacebookLookup()
         page_url = lookup.extract_page_url(d.fb_input)
 
-        if snapshot_id:
-            res = client.check_snapshot(snapshot_id)
-            if res['success']:
-                if res.get('status') == 'done' and res.get('data'):
-                    row = res['data'][0] if isinstance(res['data'], list) and len(res['data']) > 0 else {}
-                    if isinstance(row, dict):
-                        raw_f = row.get('followers') or row.get('followers_count') or row.get('likes') or row.get('fan_count') or row.get('likes_count') or 0
-                        followers = parse_scraped_number(raw_f)
-                        if followers > 0:
-                            d.fb_followers = followers
-                        if row.get('id') or row.get('page_id'):
-                            d.fb_page_id = str(row.get('id') or row.get('page_id'))
-                        d.last_refreshed = current_time_pk()
-                        db_session.commit()
-                        return jsonify({'success': True, 'status': 'done', 'fb_followers': d.fb_followers or followers})
-                elif res.get('status') == 'building':
-                    return jsonify({'success': True, 'status': 'building', 'snapshot_id': snapshot_id})
-            return jsonify({'success': False, 'message': res.get('message', 'Check failed'), 'fb_followers': d.fb_followers or 0})
+        apify = ApifyClient()
+        res = apify.get_fb_followers(page_url)
+        if not res['success']:
+            return jsonify({'success': False, 'message': res['message'], 'fb_followers': d.fb_followers or 0})
 
-        # Trigger job
-        trig = client.trigger_dataset(Config.BRIGHTDATA_DATASET_PAGE_INFO, [{'url': page_url}])
-        if trig['success']:
-            return jsonify({'success': True, 'status': 'building', 'snapshot_id': trig['snapshot_id']})
-        else:
-            return jsonify({'success': False, 'message': trig['message'], 'fb_followers': d.fb_followers or 0})
+        if res['followers'] > 0:
+            d.fb_followers = res['followers']
+        if res.get('page_id'):
+            d.fb_page_id = res['page_id']
+        d.last_refreshed = current_time_pk()
+        db_session.commit()
+        return jsonify({'success': True, 'status': 'done', 'fb_followers': d.fb_followers or res['followers']})
     except Exception as e:
         db_session.rollback()
         return jsonify({'success': False, 'message': f'FB Refresh Error: {str(e)}', 'fb_followers': 0})
@@ -1114,34 +1102,21 @@ def refresh_ig():
         if not d.ig_search:
             return jsonify({'success': True, 'skipped': True, 'ig_followers': d.ig_followers or 0})
 
-        client = BrightDataClient()
+        # --- Apify scraper (apify/instagram-scraper) ---
         lookup = InstagramLookup()
         username = lookup.extract_username(d.ig_search)
         profile_url = f"https://www.instagram.com/{username}/"
 
-        if snapshot_id:
-            res = client.check_snapshot(snapshot_id)
-            if res['success']:
-                if res.get('status') == 'done' and res.get('data'):
-                    row = res['data'][0] if isinstance(res['data'], list) and len(res['data']) > 0 else {}
-                    if isinstance(row, dict):
-                        raw_f = row.get('followers') or row.get('followers_count') or row.get('follower_count') or 0
-                        followers = parse_scraped_number(raw_f)
-                        if followers > 0:
-                            d.ig_followers = followers
-                        d.last_refreshed = current_time_pk()
-                        db_session.commit()
-                        return jsonify({'success': True, 'status': 'done', 'ig_followers': d.ig_followers or followers})
-                elif res.get('status') == 'building':
-                    return jsonify({'success': True, 'status': 'building', 'snapshot_id': snapshot_id})
-            return jsonify({'success': False, 'message': res.get('message', 'Check failed'), 'ig_followers': d.ig_followers or 0})
+        apify = ApifyClient()
+        res = apify.get_ig_followers(profile_url)
+        if not res['success']:
+            return jsonify({'success': False, 'message': res['message'], 'ig_followers': d.ig_followers or 0})
 
-        # Trigger job
-        trig = client.trigger_dataset(Config.BRIGHTDATA_DATASET_INSTAGRAM_PROFILE, [{'url': profile_url}])
-        if trig['success']:
-            return jsonify({'success': True, 'status': 'building', 'snapshot_id': trig['snapshot_id']})
-        else:
-            return jsonify({'success': False, 'message': trig['message'], 'ig_followers': d.ig_followers or 0})
+        if res['followers'] > 0:
+            d.ig_followers = res['followers']
+        d.last_refreshed = current_time_pk()
+        db_session.commit()
+        return jsonify({'success': True, 'status': 'done', 'ig_followers': d.ig_followers or res['followers']})
     except Exception as e:
         db_session.rollback()
         return jsonify({'success': False, 'message': f'IG Refresh Error: {str(e)}', 'ig_followers': 0})
