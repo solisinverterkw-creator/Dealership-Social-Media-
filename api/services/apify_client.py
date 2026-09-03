@@ -19,8 +19,8 @@ from api.services.lookups import parse_scraped_number
 
 APIFY_BASE = "https://api.apify.com/v2"
 
-FB_ACTOR_ID  = "unseenuser/fb-followers"
-IG_ACTOR_ID  = "apify/instagram-scraper"
+FB_ACTOR_ID  = "unseenuser~fb-followers"
+IG_ACTOR_ID  = "apify~instagram-scraper"
 
 # Max seconds to wait for an actor run before giving up
 MAX_WAIT = 120
