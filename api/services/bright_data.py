@@ -40,11 +40,11 @@ class BrightDataClient:
                         pass
             return records
 
-    def scrape(self, dataset_id: str, inputs: list, max_wait_seconds: int = 45) -> dict:
+    def scrape(self, dataset_id: str, inputs: list, max_wait_seconds: int = 180) -> dict:
         """
         Scrapes a Bright Data dataset using the /scrape endpoint.
         Tries synchronous first, then falls back to polling if HTTP 202 is returned.
-        Uses up to 45-second max wait to allow Facebook/Instagram scraping to complete.
+        Uses up to 180-second max wait to allow Facebook/Instagram scraping to complete.
         """
         headers = self._headers()
         if not headers:
@@ -56,7 +56,7 @@ class BrightDataClient:
                 url,
                 headers=headers,
                 json={'input': inputs},
-                timeout=45
+                timeout=180
             )
         except requests.exceptions.RequestException as e:
             return {'success': False, 'message': f"Request Exception: {str(e)}"}
@@ -81,7 +81,7 @@ class BrightDataClient:
         detail = response.text[:300]
         return {'success': False, 'message': f"Bright Data HTTP {response.status_code}: {detail}"}
 
-    def poll_and_download(self, snapshot_id: str, max_wait_seconds: int = 45) -> dict:
+    def poll_and_download(self, snapshot_id: str, max_wait_seconds: int = 180) -> dict:
         """Polls for progress and downloads snapshot when ready."""
         waited = 0
         interval = 3
