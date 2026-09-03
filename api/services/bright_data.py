@@ -40,11 +40,11 @@ class BrightDataClient:
                         pass
             return records
 
-    def scrape(self, dataset_id: str, inputs: list, max_wait_seconds: int = 30) -> dict:
+    def scrape(self, dataset_id: str, inputs: list, max_wait_seconds: int = 4) -> dict:
         """
         Scrapes a Bright Data dataset using the /scrape endpoint.
-        Tries synchronous first, then falls back to polling if HTTP 202 is returned.
-        Uses up to 30-second max wait to ensure response completes within Vercel execution limits.
+        Tries synchronous first, then falls back to fast 4-second polling if HTTP 202 is returned.
+        Returns queued status if job requires longer processing.
         """
         headers = self._headers()
         if not headers:
@@ -56,7 +56,7 @@ class BrightDataClient:
                 url,
                 headers=headers,
                 json={'input': inputs},
-                timeout=30
+                timeout=4
             )
         except requests.exceptions.RequestException as e:
             return {'success': False, 'message': f"Request Exception: {str(e)}"}
@@ -81,22 +81,22 @@ class BrightDataClient:
         detail = response.text[:300]
         return {'success': False, 'message': f"Bright Data HTTP {response.status_code}: {detail}"}
 
-    def poll_and_download(self, snapshot_id: str, max_wait_seconds: int = 30) -> dict:
-        """Polls for progress and downloads snapshot when ready."""
+    def poll_and_download(self, snapshot_id: str, max_wait_seconds: int = 4) -> dict:
+        """Polls for progress and downloads snapshot when ready, or returns queued state on timeout."""
         waited = 0
-        interval = 3
+        interval = 2
         while waited < max_wait_seconds:
             time.sleep(interval)
             waited += interval
 
             try:
                 progress_url = f"{self.base_url}/progress/{snapshot_id}"
-                progress_res = requests.get(progress_url, headers=self._headers(), timeout=15)
+                progress_res = requests.get(progress_url, headers=self._headers(), timeout=5)
                 if progress_res.status_code == 200:
                     status = progress_res.json().get('status')
                     if status == 'ready':
                         snapshot_url = f"{self.base_url}/snapshot/{snapshot_id}?format=json"
-                        snapshot_res = requests.get(snapshot_url, headers=self._headers(), timeout=30)
+                        snapshot_res = requests.get(snapshot_url, headers=self._headers(), timeout=10)
                         if snapshot_res.status_code == 200:
                             data = self._parse_json_response(snapshot_res.text)
                             return {'success': True, 'data': self._normalize_records(data)}
@@ -104,8 +104,7 @@ class BrightDataClient:
                     elif status == 'failed':
                         return {'success': False, 'message': 'Bright Data Job Failed.'}
             except Exception:
-                # ignore transient errors during polling and continue
                 pass
 
-        return {'success': False, 'message': f"Timed Out Waiting For Bright Data After {max_wait_seconds}s."}
+        return {'success': True, 'queued': True, 'snapshot_id': snapshot_id, 'data': [], 'message': 'Scrape queued on Bright Data'}
 

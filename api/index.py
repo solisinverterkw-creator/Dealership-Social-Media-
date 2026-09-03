@@ -954,13 +954,14 @@ def bg_refresh_dealership_task(metric, d_id):
                 lookup = FacebookLookup()
                 res = lookup.get_follower_count(d.fb_input)
                 if res['success']:
-                    d.fb_followers = res['followers']
+                    if res.get('followers', 0) > 0:
+                        d.fb_followers = res['followers']
                     if res.get('page_id'):
                         d.fb_page_id = res['page_id']
                     d.last_refreshed = current_time_pk()
                     db_session.commit()
                     success = True
-                    result_data = {'fb_followers': res['followers']}
+                    result_data = {'fb_followers': d.fb_followers or 0}
                 else:
                     message = res['message']
                     
@@ -982,11 +983,12 @@ def bg_refresh_dealership_task(metric, d_id):
                 lookup = InstagramLookup()
                 res = lookup.get_follower_count(d.ig_search)
                 if res['success']:
-                    d.ig_followers = res['followers']
+                    if res.get('followers', 0) > 0:
+                        d.ig_followers = res['followers']
                     d.last_refreshed = current_time_pk()
                     db_session.commit()
                     success = True
-                    result_data = {'ig_followers': res['followers']}
+                    result_data = {'ig_followers': d.ig_followers or 0}
                 else:
                     message = res['message']
                     

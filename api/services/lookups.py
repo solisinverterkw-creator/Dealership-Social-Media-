@@ -30,6 +30,9 @@ class FacebookLookup:
         if not result['success']:
             return {'success': False, 'message': result['message']}
 
+        if result.get('queued'):
+            return {'success': True, 'queued': True, 'followers': 0, 'message': 'Scraping job queued on Bright Data.'}
+
         row = result['data'][0] if result['data'] else None
         if not row:
             return {'success': False, 'message': 'Bright Data Returned No Data For This Page.'}
@@ -393,6 +396,9 @@ class InstagramLookup:
 
         if not result['success']:
             return {'success': False, 'message': result['message']}
+
+        if result.get('queued'):
+            return {'success': True, 'queued': True, 'followers': 0, 'message': 'Scraping job queued on Bright Data.'}
 
         row = result['data'][0] if result['data'] else None
         if not row:
