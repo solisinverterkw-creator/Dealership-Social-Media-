@@ -48,7 +48,7 @@ class BrightDataClient:
 
         url = f"{self.base_url}/trigger?dataset_id={dataset_id}&include_errors=true"
         try:
-            res = requests.post(url, headers=headers, json=inputs, timeout=10)
+            res = requests.post(url, headers=headers, json={'input': inputs}, timeout=10)
             if res.status_code in (200, 202):
                 data = res.json()
                 snapshot_id = data.get('snapshot_id')

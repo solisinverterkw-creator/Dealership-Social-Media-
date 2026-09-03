@@ -637,7 +637,8 @@ async function safeFetchJson(url) {
     try {
       return JSON.parse(text);
     } catch (e) {
-      return { success: false, message: 'Server request timed out' };
+      const cleanSnippet = text.replace(/<[^>]*>/g, '').trim().substring(0, 100);
+      return { success: false, message: cleanSnippet || `HTTP ${res.status} Error` };
     }
   } catch (err) {
     return { success: false, message: err.message };
