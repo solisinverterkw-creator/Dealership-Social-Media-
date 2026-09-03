@@ -28,7 +28,6 @@ async function refreshAllData() {
   const btn = document.getElementById('btn-refresh-all');
   const bar = document.getElementById('refresh-status-bar');
   btn.disabled = true;
-  btn.innerHTML = '⏳ Refreshing...';
   bar.style.display = 'block';
   bar.style.background = 'rgba(99,102,241,0.1)';
   bar.style.color = '#4f46e5';
@@ -40,9 +39,23 @@ async function refreshAllData() {
   ];
 
   let count = 0;
+  const overallStart = Date.now();
+  let dNameCurrent = '';
+  let dStartCurrent = Date.now();
+
+  const mainTimer = setInterval(() => {
+    const totalSec = Math.floor((Date.now() - overallStart) / 1000);
+    const itemSec = Math.floor((Date.now() - dStartCurrent) / 1000);
+    btn.innerHTML = `⏳ Refreshing (${totalSec}s)...`;
+    if (dNameCurrent) {
+      bar.innerHTML = `⏳ Refreshing <strong>${count} of ${dships.length}</strong>: <strong>${dNameCurrent}</strong> (${itemSec}s) — Total Time Elapsed: <strong>${totalSec}s</strong>`;
+    }
+  }, 1000);
+
   for (const d of dships) {
     count++;
-    bar.innerHTML = `⏳ Refreshing ${count} of ${dships.length}: <strong>${d.name}</strong>...`;
+    dStartCurrent = Date.now();
+    dNameCurrent = d.name;
     const promises = [];
     if (d.fb) promises.push(fetch(`/refresh_fb.php?id=${d.id}`).catch(() => {}));
     if (d.ig) promises.push(fetch(`/refresh_ig.php?id=${d.id}`).catch(() => {}));
@@ -51,13 +64,16 @@ async function refreshAllData() {
     await Promise.allSettled(promises);
   }
 
+  clearInterval(mainTimer);
+  const finalSec = Math.floor((Date.now() - overallStart) / 1000);
+
   bar.style.background = 'rgba(34,197,94,0.12)';
   bar.style.color = '#16a34a';
   bar.style.borderColor = 'rgba(34,197,94,0.3)';
-  bar.innerHTML = `✅ All ${dships.length} Dealerships Refreshed Successfully! Reloading page...`;
+  bar.innerHTML = `✅ All ${dships.length} Dealerships Refreshed Successfully in <strong>${finalSec} seconds</strong>! Reloading page...`;
   btn.innerHTML = '🔄 Refresh All Data';
   btn.disabled = false;
-  setTimeout(() => window.location.reload(), 1500);
+  setTimeout(() => window.location.reload(), 1800);
 }
 </script>
 
