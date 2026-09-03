@@ -43,7 +43,7 @@ from api.services.helpers import (
 )
 from api.services.lookups import (
     FacebookLookup, InstagramLookup, YouTubeLookup, GoogleReviewLookup,
-    FacebookPostsLookup
+    FacebookPostsLookup, parse_scraped_number
 )
 # Aliases for classes that were renamed
 InstagramPostsLookup = InstagramLookup
