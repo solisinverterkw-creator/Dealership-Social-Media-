@@ -24,7 +24,7 @@
 </div>
 
 <script>
-function refreshAllData() {
+async function refreshAllData() {
   const btn = document.getElementById('btn-refresh-all');
   const bar = document.getElementById('refresh-status-bar');
   btn.disabled = true;
@@ -32,35 +32,32 @@ function refreshAllData() {
   bar.style.display = 'block';
   bar.style.background = 'rgba(99,102,241,0.1)';
   bar.style.color = '#4f46e5';
-  bar.innerHTML = '⏳ Sending refresh request for all {{ totals.cnt }} dealerships...';
 
-  fetch('/api/refresh_all')
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        bar.style.background = 'rgba(34,197,94,0.12)';
-        bar.style.color = '#16a34a';
-        bar.style.borderColor = 'rgba(34,197,94,0.3)';
-        bar.innerHTML = '✅ ' + data.message + ' — <strong>Reloading page to show updated numbers...</strong>';
-        btn.innerHTML = '🔄 Refresh All Data';
-        btn.disabled = false;
-        // Auto reload after 1.5 seconds
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        bar.style.background = 'rgba(239,68,68,0.1)';
-        bar.style.color = '#dc2626';
-        bar.innerHTML = '❌ Error: ' + (data.message || 'Unknown error');
-        btn.innerHTML = '🔄 Refresh All Data';
-        btn.disabled = false;
-      }
-    })
-    .catch(err => {
-      bar.style.background = 'rgba(239,68,68,0.1)';
-      bar.style.color = '#dc2626';
-      bar.innerHTML = '❌ Request failed: ' + err.message;
-      btn.innerHTML = '🔄 Refresh All Data';
-      btn.disabled = false;
-    });
+  const dships = [
+    {% for d in dealerships %}
+      { id: {{ d.id }}, name: "{{ d.name|escapejs }}", fb: {% if d.fb_input %}1{% else %}0{% endif %}, ig: {% if d.ig_search %}1{% else %}0{% endif %}, yt: {% if d.yt_search %}1{% else %}0{% endif %}, gr: {% if d.google_search %}1{% else %}0{% endif %} },
+    {% endfor %}
+  ];
+
+  let count = 0;
+  for (const d of dships) {
+    count++;
+    bar.innerHTML = `⏳ Refreshing ${count} of ${dships.length}: <strong>${d.name}</strong>...`;
+    const promises = [];
+    if (d.fb) promises.push(fetch(`/refresh_fb.php?id=${d.id}`).catch(() => {}));
+    if (d.ig) promises.push(fetch(`/refresh_ig.php?id=${d.id}`).catch(() => {}));
+    if (d.yt) promises.push(fetch(`/refresh_yt.php?id=${d.id}`).catch(() => {}));
+    if (d.gr) promises.push(fetch(`/refresh_gr.php?id=${d.id}`).catch(() => {}));
+    await Promise.allSettled(promises);
+  }
+
+  bar.style.background = 'rgba(34,197,94,0.12)';
+  bar.style.color = '#16a34a';
+  bar.style.borderColor = 'rgba(34,197,94,0.3)';
+  bar.innerHTML = `✅ All ${dships.length} Dealerships Refreshed Successfully! Reloading page...`;
+  btn.innerHTML = '🔄 Refresh All Data';
+  btn.disabled = false;
+  setTimeout(() => window.location.reload(), 1500);
 }
 </script>
 

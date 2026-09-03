@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(checkLiveQuotas, 
 {% endif %}
 
 <script>
-function dashRefreshAll() {
+async function dashRefreshAll() {
   const btn = document.getElementById('btn-refresh-all-dash');
   const bar = document.getElementById('dash-refresh-bar');
   if (!btn) return;
@@ -386,35 +386,30 @@ function dashRefreshAll() {
   bar.style.display = 'block';
   bar.style.background = 'rgba(99,102,241,0.08)';
   bar.style.color = '#4f46e5';
-  bar.innerHTML = '⏳ Refreshing all dealerships data (FB, IG, YT, Google)... this may take 20-40 seconds.';
 
-  fetch('/api/refresh_all')
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        bar.style.background = 'rgba(34,197,94,0.1)';
-        bar.style.color = '#16a34a';
-        bar.style.borderColor = 'rgba(34,197,94,0.3)';
-        bar.innerHTML = '✅ ' + data.message + '<br><small style="opacity:.8">Reloading page to show updated numbers...</small>';
-        btn.innerHTML = '🔄 Refresh All Data';
-        btn.disabled = false;
-        // Reload after 1.5s as refresh is completed synchronously
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        bar.style.background = 'rgba(239,68,68,0.1)';
-        bar.style.color = '#dc2626';
-        bar.innerHTML = '❌ ' + (data.message || 'Refresh failed');
-        btn.innerHTML = '🔄 Refresh All Data';
-        btn.disabled = false;
-      }
-    })
-    .catch(err => {
-      bar.style.background = 'rgba(239,68,68,0.1)';
-      bar.style.color = '#dc2626';
-      bar.innerHTML = '❌ Request failed: ' + err.message;
-      btn.innerHTML = '🔄 Refresh All Data';
-      btn.disabled = false;
-    });
+  const refreshBtns = Array.from(document.querySelectorAll('.refresh-btn'));
+  const total = refreshBtns.length;
+  let count = 0;
+
+  for (const btnEl of refreshBtns) {
+    count++;
+    const row = btnEl.closest('tr');
+    const dName = row ? (row.querySelector('td.name')?.textContent || `Dealership #${count}`) : `Dealership #${count}`;
+    bar.innerHTML = `⏳ Refreshing ${count} of ${total}: <strong>${dName}</strong>...`;
+    const onclickStr = btnEl.getAttribute('onclick') || '';
+    const match = onclickStr.match(/refreshOne\((\d+)/);
+    if (match && match[1]) {
+      await refreshOne(parseInt(match[1], 10), btnEl);
+    }
+  }
+
+  bar.style.background = 'rgba(34,197,94,0.1)';
+  bar.style.color = '#16a34a';
+  bar.style.borderColor = 'rgba(34,197,94,0.3)';
+  bar.innerHTML = `✅ All ${total} Dealerships Refreshed Successfully! Reloading page...`;
+  btn.innerHTML = '🔄 Refresh All Data';
+  btn.disabled = false;
+  setTimeout(() => window.location.reload(), 1500);
 }
 </script>
 
@@ -578,46 +573,77 @@ async function refreshOne(id, btnEl) {
   if (btnEl) { btnEl.classList.add('loading'); btnEl.textContent = '...'; }
 
   try {
+    const promises = [];
+
     if (hasFb) {
-      const timer = btnEl ? startElapsedTimer(btnEl, 'FB') : null;
-      const r = await fetch(`/refresh_fb.php?id=${id}`);
-      let d = await r.json();
-      if (d.status === 'started') d = await pollRefreshStatus(id, 'fb');
-      if (timer) stopElapsedTimer(timer);
-      if (btnEl) btnEl.textContent = '...';
-      if (d.success) document.getElementById(`fb-${id}`).textContent = d.fb_followers.toLocaleString();
-      else errors.push('FB: ' + d.message);
-      done++; setRowPercent(id, done, applicable); updateOverallProgress();
+      promises.push(
+        fetch(`/refresh_fb.php?id=${id}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.success && d.fb_followers !== undefined) {
+              document.getElementById(`fb-${id}`).textContent = Number(d.fb_followers).toLocaleString();
+            } else if (!d.skipped && d.message) {
+              errors.push('FB: ' + d.message);
+            }
+            done++; setRowPercent(id, done, applicable); updateOverallProgress();
+          })
+          .catch(e => errors.push('FB: ' + e.message))
+      );
     }
+
     if (hasIg) {
-      const timer = btnEl ? startElapsedTimer(btnEl, 'IG') : null;
-      const r = await fetch(`/refresh_ig.php?id=${id}`);
-      let d = await r.json();
-      if (d.status === 'started') d = await pollRefreshStatus(id, 'ig');
-      if (timer) stopElapsedTimer(timer);
-      if (btnEl) btnEl.textContent = '...';
-      if (d.success) document.getElementById(`ig-${id}`).textContent = d.ig_followers.toLocaleString();
-      else errors.push('IG: ' + d.message);
-      done++; setRowPercent(id, done, applicable); updateOverallProgress();
+      promises.push(
+        fetch(`/refresh_ig.php?id=${id}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.success && d.ig_followers !== undefined) {
+              document.getElementById(`ig-${id}`).textContent = Number(d.ig_followers).toLocaleString();
+            } else if (!d.skipped && d.message) {
+              errors.push('IG: ' + d.message);
+            }
+            done++; setRowPercent(id, done, applicable); updateOverallProgress();
+          })
+          .catch(e => errors.push('IG: ' + e.message))
+      );
     }
+
     if (hasYt) {
-      const r = await fetch(`/refresh_yt.php?id=${id}`);
-      const d = await r.json();
-      if (d.success) document.getElementById(`yt-${id}`).textContent = d.yt_subscribers.toLocaleString();
-      else errors.push('YT: ' + d.message);
-      done++; setRowPercent(id, done, applicable); updateOverallProgress();
+      promises.push(
+        fetch(`/refresh_yt.php?id=${id}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.success && d.yt_subscribers !== undefined) {
+              document.getElementById(`yt-${id}`).textContent = Number(d.yt_subscribers).toLocaleString();
+            } else if (!d.skipped && d.message) {
+              errors.push('YT: ' + d.message);
+            }
+            done++; setRowPercent(id, done, applicable); updateOverallProgress();
+          })
+          .catch(e => errors.push('YT: ' + e.message))
+      );
     }
+
     if (hasGr) {
-      const r = await fetch(`/refresh_gr.php?id=${id}`);
-      const d = await r.json();
-      if (d.success) document.getElementById(`gr-${id}`).innerHTML = `${d.google_review_count.toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
-      else errors.push('Google: ' + d.message);
-      done++; setRowPercent(id, done, applicable); updateOverallProgress();
+      promises.push(
+        fetch(`/refresh_gr.php?id=${id}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.success && d.google_review_count !== undefined) {
+              document.getElementById(`gr-${id}`).innerHTML = `${Number(d.google_review_count).toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
+            } else if (!d.skipped && d.message) {
+              errors.push('Google: ' + d.message);
+            }
+            done++; setRowPercent(id, done, applicable); updateOverallProgress();
+          })
+          .catch(e => errors.push('Google: ' + e.message))
+      );
     }
+
+    await Promise.allSettled(promises);
 
     const tsEl = document.getElementById(`ts-${id}`);
     if (errors.length) {
-      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}">⚠ error</span>`;
+      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}">⚠</span>`;
     } else {
       tsEl.textContent = 'just now';
     }
