@@ -302,17 +302,82 @@
       </div>
     </div>
 
-    <div class="print-atomic">
-      <h2 style="font-size:16px; margin-bottom:14px;">Social Media &amp; Reviews</h2>
-      <div class="detail-card" style="margin-bottom:24px;">
-        <div class="detail-grid">
-          <div><div class="stat-label">FB Followers</div><div class="stat-value" style="color:var(--fb)">{{ (dealership.fb_followers or 0)|number_format }}</div></div>
-          <div><div class="stat-label">IG Followers</div><div class="stat-value" style="color:var(--ig)">{{ (dealership.ig_followers or 0)|number_format }}</div></div>
-          <div><div class="stat-label">YT Subscribers</div><div class="stat-value" style="color:var(--yt)">{{ (dealership.yt_subscribers or 0)|number_format }}</div></div>
-          <div><div class="stat-label">FB Posts/Week</div><div class="stat-value">{{ (dealership.fb_posts_week or 0)|number_format }}</div></div>
-          <div><div class="stat-label">IG Posts/Week</div><div class="stat-value">{{ (dealership.ig_posts_week or 0)|number_format }}</div></div>
-          <div><div class="stat-label">Google Reviews</div><div class="stat-value" style="color:var(--gr)">{{ (dealership.google_review_count or 0)|number_format }} ({{ dealership.google_rating or 0 }}★)</div></div>
+    <div class="print-atomic" style="margin-bottom:24px;">
+      <h2 style="font-size:16px; margin-bottom:14px; font-weight:700;">Social Media &amp; Reviews</h2>
+      <div class="detail-card" style="padding:24px; background:var(--panel); border:1px solid var(--border); border-radius:16px;">
+        
+        <!-- Row 1: 7 Metrics -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:16px; margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid var(--border);">
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">FB FOLLOWERS</div>
+            <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--fb);">
+              {{ (dealership.fb_followers or 0)|number_format }} {{ target_badge(dealership.fb_followers, dealership.fb_target)|safe }}
+            </div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">IG FOLLOWERS</div>
+            <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--ig);">
+              {{ (dealership.ig_followers or 0)|number_format }} {{ target_badge(dealership.ig_followers, dealership.ig_target)|safe }}
+            </div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT SUBSCRIBERS</div>
+            <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--yt);">
+              {{ (dealership.yt_subscribers or 0)|number_format }} {{ target_badge(dealership.yt_subscribers, dealership.yt_target)|safe }}
+            </div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT VIDEOS</div>
+            <div class="stat-value" style="font-size:18px; font-weight:700;">
+              {{ (dealership.yt_videos or 0)|number_format }}
+            </div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT TOTAL VIEWS</div>
+            <div class="stat-value" style="font-size:18px; font-weight:700;">
+              {{ (dealership.yt_views or 0)|number_format }}
+            </div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">GOOGLE REVIEWS</div>
+            <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--gr);">
+              {{ (dealership.google_review_count or 0)|number_format }} {{ target_badge(dealership.google_review_count, dealership.google_review_target)|safe }}
+            </div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">GOOGLE RATING</div>
+            <div class="stat-value" style="font-size:18px; font-weight:700;">
+              {{ dealership.google_rating or 0 }}★
+            </div>
+          </div>
         </div>
+
+        <!-- Row 2: 4 Metrics -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:16px;">
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">FB POSTS (LAST CHECK)</div>
+            <div class="stat-value" style="font-size:15px; font-weight:700;">{{ (dealership.fb_posts_week or 0)|number_format }}/week</div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">IG POSTS (LAST CHECK)</div>
+            <div class="stat-value" style="font-size:15px; font-weight:700;">{{ (dealership.ig_posts_week or 0)|number_format }}/week</div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT VIDEOS (LAST CHECK)</div>
+            <div class="stat-value" style="font-size:15px; font-weight:700;">{{ (dealership.yt_videos_month or 0)|number_format }}/month</div>
+          </div>
+          <div>
+            <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">LAST REFRESHED</div>
+            <div class="stat-value" style="font-size:14px; font-weight:600;">
+              {% if dealership.last_refreshed %}
+                {{ dealership.last_refreshed.strftime('%d %b, %H:%M') }}
+              {% else %}
+                never
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 

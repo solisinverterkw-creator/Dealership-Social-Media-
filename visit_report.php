@@ -492,17 +492,78 @@ if ($dealershipId && Auth::canAccessDealership($dealershipId)) {
   </div>
   </div>
 
-  <div class="print-atomic">
-  <h2 style="font-size:16px; margin-bottom:14px;">Social Media &amp; Reviews</h2>
-  <div class="detail-card" style="margin-bottom:24px;">
-    <div class="detail-grid">
-      <div><div class="stat-label">FB Followers</div><div class="stat-value" style="color:var(--fb)"><?= number_format($dealership['fb_followers']) ?></div></div>
-      <div><div class="stat-label">IG Followers</div><div class="stat-value" style="color:var(--ig)"><?= number_format($dealership['ig_followers']) ?></div></div>
-      <div><div class="stat-label">YT Subscribers</div><div class="stat-value" style="color:var(--yt)"><?= number_format($dealership['yt_subscribers']) ?></div></div>
-      <div><div class="stat-label">FB Posts/Week</div><div class="stat-value"><?= number_format($dealership['fb_posts_week']) ?></div></div>
-      <div><div class="stat-label">IG Posts/Week</div><div class="stat-value"><?= number_format($dealership['ig_posts_week']) ?></div></div>
-      <div><div class="stat-label">Google Reviews</div><div class="stat-value" style="color:var(--gr)"><?= number_format($dealership['google_review_count']) ?> (<?= $dealership['google_rating'] ?>★)</div></div>
+  <div class="print-atomic" style="margin-bottom:24px;">
+  <h2 style="font-size:16px; margin-bottom:14px; font-weight:700;">Social Media &amp; Reviews</h2>
+  <div class="detail-card" style="padding:24px; background:var(--panel); border:1px solid var(--border); border-radius:16px;">
+    
+    <!-- Row 1: 7 Metrics -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:16px; margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid var(--border);">
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">FB FOLLOWERS</div>
+        <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--fb);">
+          <?= number_format($dealership['fb_followers']) ?> <?= targetBadge((int)$dealership['fb_followers'], (int)($dealership['fb_target'] ?? 0)) ?>
+        </div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">IG FOLLOWERS</div>
+        <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--ig);">
+          <?= number_format($dealership['ig_followers']) ?> <?= targetBadge((int)$dealership['ig_followers'], (int)($dealership['ig_target'] ?? 0)) ?>
+        </div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT SUBSCRIBERS</div>
+        <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--yt);">
+          <?= number_format($dealership['yt_subscribers']) ?> <?= targetBadge((int)$dealership['yt_subscribers'], (int)($dealership['yt_target'] ?? 0)) ?>
+        </div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT VIDEOS</div>
+        <div class="stat-value" style="font-size:18px; font-weight:700;">
+          <?= number_format($dealership['yt_videos']) ?>
+        </div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT TOTAL VIEWS</div>
+        <div class="stat-value" style="font-size:18px; font-weight:700;">
+          <?= number_format($dealership['yt_views']) ?>
+        </div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">GOOGLE REVIEWS</div>
+        <div class="stat-value" style="font-size:18px; font-weight:700; color:var(--gr);">
+          <?= number_format($dealership['google_review_count']) ?> <?= targetBadge((int)$dealership['google_review_count'], (int)($dealership['google_review_target'] ?? 0)) ?>
+        </div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">GOOGLE RATING</div>
+        <div class="stat-value" style="font-size:18px; font-weight:700;">
+          <?= $dealership['google_rating'] ?>★
+        </div>
+      </div>
     </div>
+
+    <!-- Row 2: 4 Metrics -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:16px;">
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">FB POSTS (LAST CHECK)</div>
+        <div class="stat-value" style="font-size:15px; font-weight:700;"><?= number_format($dealership['fb_posts_week']) ?>/week</div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">IG POSTS (LAST CHECK)</div>
+        <div class="stat-value" style="font-size:15px; font-weight:700;"><?= number_format($dealership['ig_posts_week']) ?>/week</div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">YT VIDEOS (LAST CHECK)</div>
+        <div class="stat-value" style="font-size:15px; font-weight:700;"><?= number_format($dealership['yt_videos_month']) ?>/month</div>
+      </div>
+      <div>
+        <div class="stat-label" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:6px;">LAST REFRESHED</div>
+        <div class="stat-value" style="font-size:14px; font-weight:600;">
+          <?= $dealership['last_refreshed'] ? date('d M, H:i', strtotime($dealership['last_refreshed'])) : 'never' ?>
+        </div>
+      </div>
+    </div>
+
   </div>
   </div>
 

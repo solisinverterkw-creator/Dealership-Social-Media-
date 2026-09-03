@@ -4821,7 +4821,8 @@ def visit_report_view():
         dealer_target_field_by_calc_key=dealer_target_field_by_calc_key,
         date_str=current_time_pk().strftime('%d %b, %Y'),
         friendly_product_label=SpreadsheetImportHelper.friendly_product_label,
-        shorten_product_label=lambda p: SpreadsheetImportHelper.shorten_product_label(p, variant_priority)
+        shorten_product_label=lambda p: SpreadsheetImportHelper.shorten_product_label(p, variant_priority),
+        target_badge=target_badge,
     )
 
 @app.route('/get_weak_areas.php')
