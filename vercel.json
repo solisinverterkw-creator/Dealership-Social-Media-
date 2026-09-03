@@ -5,7 +5,7 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "maxDuration": 230,
+        "maxDuration": 60,
         "includeFiles": ["templates/**", "assets/**", "api/**"]
       }
     }

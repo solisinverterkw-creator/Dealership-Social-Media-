@@ -586,6 +586,20 @@ async function pollRefreshStatus(id, metric, maxWaitMs = 300000, intervalMs = 30
   return { success: false, message: 'Timed Out Waiting For Background Refresh.' };
 }
 
+async function safeFetchJson(url) {
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return { success: false, message: 'Server request timed out' };
+    }
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
 async function refreshOne(id, btnEl) {
   const hasFb = btnEl?.dataset.hasFb === '1';
   const hasIg = btnEl?.dataset.hasIg === '1';
@@ -610,8 +624,7 @@ async function refreshOne(id, btnEl) {
 
     if (hasFb) {
       promises.push(
-        fetch(`/refresh_fb.php?id=${id}`)
-          .then(r => r.json())
+        safeFetchJson(`/refresh_fb.php?id=${id}`)
           .then(d => {
             if (d.success && d.fb_followers !== undefined) {
               document.getElementById(`fb-${id}`).textContent = Number(d.fb_followers).toLocaleString();
@@ -620,14 +633,12 @@ async function refreshOne(id, btnEl) {
             }
             done++; setRowPercent(id, done, applicable); updateOverallProgress();
           })
-          .catch(e => errors.push('FB: ' + e.message))
       );
     }
 
     if (hasIg) {
       promises.push(
-        fetch(`/refresh_ig.php?id=${id}`)
-          .then(r => r.json())
+        safeFetchJson(`/refresh_ig.php?id=${id}`)
           .then(d => {
             if (d.success && d.ig_followers !== undefined) {
               document.getElementById(`ig-${id}`).textContent = Number(d.ig_followers).toLocaleString();
@@ -636,14 +647,12 @@ async function refreshOne(id, btnEl) {
             }
             done++; setRowPercent(id, done, applicable); updateOverallProgress();
           })
-          .catch(e => errors.push('IG: ' + e.message))
       );
     }
 
     if (hasYt) {
       promises.push(
-        fetch(`/refresh_yt.php?id=${id}`)
-          .then(r => r.json())
+        safeFetchJson(`/refresh_yt.php?id=${id}`)
           .then(d => {
             if (d.success && d.yt_subscribers !== undefined) {
               document.getElementById(`yt-${id}`).textContent = Number(d.yt_subscribers).toLocaleString();
@@ -652,14 +661,12 @@ async function refreshOne(id, btnEl) {
             }
             done++; setRowPercent(id, done, applicable); updateOverallProgress();
           })
-          .catch(e => errors.push('YT: ' + e.message))
       );
     }
 
     if (hasGr) {
       promises.push(
-        fetch(`/refresh_gr.php?id=${id}`)
-          .then(r => r.json())
+        safeFetchJson(`/refresh_gr.php?id=${id}`)
           .then(d => {
             if (d.success && d.google_review_count !== undefined) {
               document.getElementById(`gr-${id}`).innerHTML = `${Number(d.google_review_count).toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
@@ -668,7 +675,6 @@ async function refreshOne(id, btnEl) {
             }
             done++; setRowPercent(id, done, applicable); updateOverallProgress();
           })
-          .catch(e => errors.push('Google: ' + e.message))
       );
     }
 
