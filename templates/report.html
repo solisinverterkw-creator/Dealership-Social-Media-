@@ -41,11 +41,11 @@ function refreshAllData() {
         bar.style.background = 'rgba(34,197,94,0.12)';
         bar.style.color = '#16a34a';
         bar.style.borderColor = 'rgba(34,197,94,0.3)';
-        bar.innerHTML = '✅ ' + data.message + ' — <strong>Reload this page in ~30 seconds to see updated numbers.</strong>';
+        bar.innerHTML = '✅ ' + data.message + ' — <strong>Reloading page to show updated numbers...</strong>';
         btn.innerHTML = '🔄 Refresh All Data';
         btn.disabled = false;
-        // Auto reload after 30 seconds
-        setTimeout(() => window.location.reload(), 30000);
+        // Auto reload after 1.5 seconds
+        setTimeout(() => window.location.reload(), 1500);
       } else {
         bar.style.background = 'rgba(239,68,68,0.1)';
         bar.style.color = '#dc2626';

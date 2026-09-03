@@ -1003,21 +1003,18 @@ def bg_refresh_dealership_task(metric, d_id):
             json.dump({'status': 'error', 'message': str(e)}, f)
 
 def trigger_bg_refresh(metric, d_id):
-    if os.environ.get('SYNC_RUN') == '1':
-        bg_refresh_dealership_task(metric, d_id)
-        # Read from file
-        safe_id = re.sub(r'[^a-zA-Z0-9_-]', '_', str(d_id))
-        status_path = os.path.join(UPLOAD_DIR, 'refresh_status', f"{metric}_{safe_id}.json")
-        try:
-            with open(status_path, 'r') as f:
-                return json.load(f)
-        except Exception:
-            return {'status': 'error', 'message': 'Execution failed'}
-    else:
-        t = threading.Thread(target=bg_refresh_dealership_task, args=(metric, d_id))
-        t.daemon = True
-        t.start()
-        return {'status': 'started'}
+    bg_refresh_dealership_task(metric, d_id)
+    safe_id = re.sub(r'[^a-zA-Z0-9_-]', '_', str(d_id))
+    status_path = os.path.join(UPLOAD_DIR, 'refresh_status', f"{metric}_{safe_id}.json")
+    try:
+        with open(status_path, 'r') as f:
+            data = json.load(f)
+            if data.get('status') == 'done':
+                return {'success': True, **data}
+            else:
+                return {'success': False, 'message': data.get('message', 'Refresh failed')}
+    except Exception as e:
+        return {'success': False, 'message': str(e)}
 
 # --- AJAX REFRESH ENDPOINTS ---
 
@@ -1145,7 +1142,7 @@ def refresh_gr():
 @app.route('/api/refresh_all')
 @require_login
 def refresh_all_dealerships():
-    """Bulk refresh all dealerships for all metrics — triggers background threads"""
+    """Bulk refresh all dealerships for all metrics — synchronous execution for Vercel serverless compatibility"""
     if not can_perform('refresh'):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
 
@@ -1153,34 +1150,30 @@ def refresh_all_dealerships():
     if not dealerships:
         return jsonify({'success': False, 'message': 'No dealerships found'})
 
-    started = []
-    skipped = []
+    fb_updated = 0
+    ig_updated = 0
+    yt_updated = 0
+    gr_updated = 0
 
     for d in dealerships:
         d_id = d.id
         # FB
         if d.fb_input or (d.fb_page_access_token and d.fb_page_id):
-            t = threading.Thread(target=bg_refresh_dealership_task, args=('fb', d_id))
-            t.daemon = True
-            t.start()
-            started.append(f'{d.name}:fb')
-        else:
-            skipped.append(f'{d.name}:fb')
+            try:
+                bg_refresh_dealership_task('fb', d_id)
+                fb_updated += 1
+            except Exception:
+                pass
 
         # IG
         if d.ig_search or (d.fb_page_access_token and d.fb_page_id):
-            t = threading.Thread(target=bg_refresh_dealership_task, args=('ig', d_id))
-            t.daemon = True
-            t.start()
-            started.append(f'{d.name}:ig')
-        else:
-            skipped.append(f'{d.name}:ig')
+            try:
+                bg_refresh_dealership_task('ig', d_id)
+                ig_updated += 1
+            except Exception:
+                pass
 
-    # YT & Google refresh inline (fast API calls)
-    yt_updated = 0
-    gr_updated = 0
-    for d in dealerships:
-        # YT via YouTube API
+        # YT
         if d.yt_channel_id or d.yt_search:
             try:
                 lookup = YouTubeLookup()
@@ -1216,10 +1209,8 @@ def refresh_all_dealerships():
 
     return jsonify({
         'success': True,
-        'message': f'Refresh started for {len(dealerships)} dealerships. FB/IG updating in background. YT: {yt_updated} updated, Google: {gr_updated} updated.',
-        'total': len(dealerships),
-        'bg_started': len(started),
-        'skipped': len(skipped),
+        'message': f'Refresh completed for all {len(dealerships)} dealerships. Updated — FB: {fb_updated}, IG: {ig_updated}, YT: {yt_updated}, Google: {gr_updated}.',
+        'total': len(dealerships)
     })
 
 

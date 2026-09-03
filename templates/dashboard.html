@@ -395,11 +395,11 @@ function dashRefreshAll() {
         bar.style.background = 'rgba(34,197,94,0.1)';
         bar.style.color = '#16a34a';
         bar.style.borderColor = 'rgba(34,197,94,0.3)';
-        bar.innerHTML = '✅ ' + data.message + '<br><small style="opacity:.8">Page reloading in 30s to show updated numbers on dashboard &amp; <a href="/report.php" style="color:#16a34a;font-weight:700;">Social Media Report →</a></small>';
+        bar.innerHTML = '✅ ' + data.message + '<br><small style="opacity:.8">Reloading page to show updated numbers...</small>';
         btn.innerHTML = '🔄 Refresh All Data';
         btn.disabled = false;
-        // Reload after 30s so DB has time to update
-        setTimeout(() => window.location.reload(), 30000);
+        // Reload after 1.5s as refresh is completed synchronously
+        setTimeout(() => window.location.reload(), 1500);
       } else {
         bar.style.background = 'rgba(239,68,68,0.1)';
         bar.style.color = '#dc2626';
