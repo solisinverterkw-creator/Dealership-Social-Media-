@@ -29,8 +29,43 @@
   <div class="progress-text" id="progress-text">{{ overall_percent }}% Complete — {{ dealerships|length }} Dealerships</div>
 </div>
 
-<div id="dash-refresh-bar" style="display:none;margin:8px 0 16px 0;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.08);color:#4f46e5;">
-  ⏳ Sending refresh request...
+<div id="dash-refresh-bar" style="display:none; margin:14px 0 20px 0; padding:18px 24px; border-radius:14px; background:linear-gradient(135deg, rgba(20, 26, 38, 0.95), rgba(15, 20, 30, 0.95)); border:1px solid rgba(99,102,241,0.35); box-shadow:0 12px 32px rgba(0,0,0,0.3);">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
+    <div style="font-size:14px; font-weight:700; color:#818cf8; display:flex; align-items:center; gap:10px;">
+      <span class="refresh-spinner" style="display:inline-block; font-size:16px;">🔄</span>
+      <span id="refresh-bar-title">LIVE REFRESH &amp; SCRAPING ACTIVITY</span>
+    </div>
+    <div id="refresh-overall-timer" style="font-size:13px; font-weight:700; background:rgba(99,102,241,0.2); color:#a5b4fc; padding:4px 14px; border-radius:20px; border:1px solid rgba(99,102,241,0.4);">
+      ⏱️ Total: 0s
+    </div>
+  </div>
+
+  <div id="refresh-current-dealership" style="font-size:15px; font-weight:700; color:#fff; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+    <span>Preparing to scrape dealerships...</span>
+  </div>
+
+  <div id="refresh-platform-steps" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:14px;">
+    <div id="step-fb" style="padding:10px 14px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all 0.3s;">
+      <div style="font-size:10px; font-weight:700; color:var(--fb); text-transform:uppercase; margin-bottom:4px;">📘 FACEBOOK SCRAPER</div>
+      <div class="step-status" style="font-size:12px; font-weight:600; color:var(--text-muted);">Waiting...</div>
+    </div>
+    <div id="step-ig" style="padding:10px 14px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all 0.3s;">
+      <div style="font-size:10px; font-weight:700; color:var(--ig); text-transform:uppercase; margin-bottom:4px;">📷 INSTAGRAM SCRAPER</div>
+      <div class="step-status" style="font-size:12px; font-weight:600; color:var(--text-muted);">Waiting...</div>
+    </div>
+    <div id="step-yt" style="padding:10px 14px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all 0.3s;">
+      <div style="font-size:10px; font-weight:700; color:var(--yt); text-transform:uppercase; margin-bottom:4px;">▶️ YOUTUBE API</div>
+      <div class="step-status" style="font-size:12px; font-weight:600; color:var(--text-muted);">Waiting...</div>
+    </div>
+    <div id="step-gr" style="padding:10px 14px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all 0.3s;">
+      <div style="font-size:10px; font-weight:700; color:var(--gr); text-transform:uppercase; margin-bottom:4px;">⭐ GOOGLE REVIEWS</div>
+      <div class="step-status" style="font-size:12px; font-weight:600; color:var(--text-muted);">Waiting...</div>
+    </div>
+  </div>
+
+  <div style="background:rgba(0,0,0,0.4); border-radius:6px; height:6px; overflow:hidden;">
+    <div id="refresh-inner-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #6366f1, #22c55e); transition:width 0.3s ease;"></div>
+  </div>
 </div>
 
 <div class="feature-cards">
@@ -383,8 +418,6 @@ async function dashRefreshAll() {
   if (!btn) return;
   btn.disabled = true;
   bar.style.display = 'block';
-  bar.style.background = 'rgba(99,102,241,0.08)';
-  bar.style.color = '#4f46e5';
 
   const refreshBtns = Array.from(document.querySelectorAll('.refresh-btn'));
   const total = refreshBtns.length;
@@ -397,8 +430,18 @@ async function dashRefreshAll() {
     const totalSec = Math.floor((Date.now() - overallStart) / 1000);
     const itemSec = Math.floor((Date.now() - dStartCurrent) / 1000);
     btn.innerHTML = `⏳ Refreshing (${totalSec}s)...`;
-    if (dNameCurrent) {
-      bar.innerHTML = `⏳ Refreshing <strong>${count} of ${total}</strong>: <strong>${dNameCurrent}</strong> (${itemSec}s) — Total Time Elapsed: <strong>${totalSec}s</strong>`;
+    const timerEl = document.getElementById('refresh-overall-timer');
+    if (timerEl) timerEl.textContent = `⏱️ Total: ${totalSec}s`;
+
+    const dEl = document.getElementById('refresh-current-dealership');
+    if (dEl && dNameCurrent) {
+      dEl.innerHTML = `<span>Scraping Dealership <strong>${count} of ${total}</strong>: <span style="color:#6366f1">${dNameCurrent}</span> (${itemSec}s)</span>`;
+    }
+
+    const trackEl = document.getElementById('refresh-inner-bar');
+    if (trackEl) {
+      const pct = Math.round((count / total) * 100);
+      trackEl.style.width = `${pct}%`;
     }
   }, 1000);
 
@@ -428,10 +471,11 @@ async function dashRefreshAll() {
   clearInterval(mainTimer);
   const finalSec = Math.floor((Date.now() - overallStart) / 1000);
 
-  bar.style.background = 'rgba(34,197,94,0.1)';
-  bar.style.color = '#16a34a';
-  bar.style.borderColor = 'rgba(34,197,94,0.3)';
-  bar.innerHTML = `✅ All ${total} Dealerships Refreshed Successfully in <strong>${finalSec} seconds</strong>! Reloading page...`;
+  const titleEl = document.getElementById('refresh-bar-title');
+  if (titleEl) titleEl.textContent = 'REFRESH COMPLETED';
+  const dEl = document.getElementById('refresh-current-dealership');
+  if (dEl) dEl.innerHTML = `<span style="color:#22c55e">✅ All ${total} Dealerships Refreshed Successfully in ${finalSec} seconds! Reloading page...</span>`;
+
   btn.innerHTML = '🔄 Refresh All Data';
   btn.disabled = false;
   setTimeout(() => window.location.reload(), 1800);
@@ -600,6 +644,26 @@ async function safeFetchJson(url) {
   }
 }
 
+function updatePlatformStep(stepId, text, statusClass = 'normal') {
+  const el = document.getElementById(stepId);
+  if (!el) return;
+  const statusEl = el.querySelector('.step-status');
+  if (statusEl) statusEl.textContent = text;
+  if (statusClass === 'active') {
+    el.style.background = 'rgba(99,102,241,0.18)';
+    el.style.borderColor = '#6366f1';
+  } else if (statusClass === 'done') {
+    el.style.background = 'rgba(34,197,94,0.15)';
+    el.style.borderColor = '#22c55e';
+  } else if (statusClass === 'error') {
+    el.style.background = 'rgba(239,68,68,0.15)';
+    el.style.borderColor = '#ef4444';
+  } else {
+    el.style.background = 'rgba(255,255,255,0.04)';
+    el.style.borderColor = 'rgba(255,255,255,0.08)';
+  }
+}
+
 async function refreshOne(id, btnEl) {
   const hasFb = btnEl?.dataset.hasFb === '1';
   const hasIg = btnEl?.dataset.hasIg === '1';
@@ -619,6 +683,12 @@ async function refreshOne(id, btnEl) {
     }
   }, 1000);
 
+  // Update steps UI
+  updatePlatformStep('step-fb', hasFb ? '⏳ Scraping Page...' : 'N/A', hasFb ? 'active' : 'normal');
+  updatePlatformStep('step-ig', hasIg ? '⏳ Scraping Profile...' : 'N/A', hasIg ? 'active' : 'normal');
+  updatePlatformStep('step-yt', hasYt ? '⏳ Fetching Stats...' : 'N/A', hasYt ? 'active' : 'normal');
+  updatePlatformStep('step-gr', hasGr ? '⏳ Fetching Reviews...' : 'N/A', hasGr ? 'active' : 'normal');
+
   try {
     const promises = [];
 
@@ -628,8 +698,12 @@ async function refreshOne(id, btnEl) {
           .then(d => {
             if (d.success && d.fb_followers !== undefined) {
               document.getElementById(`fb-${id}`).textContent = Number(d.fb_followers).toLocaleString();
+              updatePlatformStep('step-fb', `✅ ${Number(d.fb_followers).toLocaleString()} followers`, 'done');
             } else if (!d.skipped && d.message) {
               errors.push('FB: ' + d.message);
+              updatePlatformStep('step-fb', '⚠ ' + d.message, 'error');
+            } else {
+              updatePlatformStep('step-fb', 'Skipped', 'normal');
             }
             done++; setRowPercent(id, done, applicable); updateOverallProgress();
           })
@@ -642,8 +716,12 @@ async function refreshOne(id, btnEl) {
           .then(d => {
             if (d.success && d.ig_followers !== undefined) {
               document.getElementById(`ig-${id}`).textContent = Number(d.ig_followers).toLocaleString();
+              updatePlatformStep('step-ig', `✅ ${Number(d.ig_followers).toLocaleString()} followers`, 'done');
             } else if (!d.skipped && d.message) {
               errors.push('IG: ' + d.message);
+              updatePlatformStep('step-ig', '⚠ ' + d.message, 'error');
+            } else {
+              updatePlatformStep('step-ig', 'Skipped', 'normal');
             }
             done++; setRowPercent(id, done, applicable); updateOverallProgress();
           })
@@ -656,8 +734,12 @@ async function refreshOne(id, btnEl) {
           .then(d => {
             if (d.success && d.yt_subscribers !== undefined) {
               document.getElementById(`yt-${id}`).textContent = Number(d.yt_subscribers).toLocaleString();
+              updatePlatformStep('step-yt', `✅ ${Number(d.yt_subscribers).toLocaleString()} subs`, 'done');
             } else if (!d.skipped && d.message) {
               errors.push('YT: ' + d.message);
+              updatePlatformStep('step-yt', '⚠ ' + d.message, 'error');
+            } else {
+              updatePlatformStep('step-yt', 'Skipped', 'normal');
             }
             done++; setRowPercent(id, done, applicable); updateOverallProgress();
           })
@@ -670,8 +752,12 @@ async function refreshOne(id, btnEl) {
           .then(d => {
             if (d.success && d.google_review_count !== undefined) {
               document.getElementById(`gr-${id}`).innerHTML = `${Number(d.google_review_count).toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
+              updatePlatformStep('step-gr', `✅ ${Number(d.google_review_count).toLocaleString()} (${d.google_rating}★)`, 'done');
             } else if (!d.skipped && d.message) {
               errors.push('Google: ' + d.message);
+              updatePlatformStep('step-gr', '⚠ ' + d.message, 'error');
+            } else {
+              updatePlatformStep('step-gr', 'Skipped', 'normal');
             }
             done++; setRowPercent(id, done, applicable); updateOverallProgress();
           })
