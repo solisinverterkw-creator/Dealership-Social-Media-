@@ -131,7 +131,7 @@ class ApifyClient:
               | {'success': False, 'message': str}
         """
         run_input = {
-            "startUrls": [{"url": page_url}],
+            "startUrls": [page_url],   # plain string — not {"url": ...}
             "maxItems": 1,
         }
 
