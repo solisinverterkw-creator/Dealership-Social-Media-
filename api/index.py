@@ -49,6 +49,7 @@ from api.services.lookups import (
 InstagramPostsLookup = InstagramLookup
 YouTubePostsLookup = YouTubeLookup
 from api.services.facebook_poster import FacebookPoster
+from api.services.bright_data import BrightDataClient
 from api.services.email_validator import EmailValidator as EmailValidatorService
 
 # Absolute path resolution for serverless function execution
