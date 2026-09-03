@@ -5,19 +5,34 @@ import requests
 from api.config import Config
 from api.services.bright_data import BrightDataClient
 
+def parse_scraped_number(val):
+    if val is None:
+        return 0
+    if isinstance(val, (int, float)):
+        return int(val)
+    s = str(val).strip().replace(',', '').upper()
+    if not s:
+        return 0
+    try:
+        if 'K' in s:
+            return int(float(s.replace('K', '')) * 1000)
+        if 'M' in s:
+            return int(float(s.replace('M', '')) * 1000000)
+        return int(float(s))
+    except Exception:
+        return 0
+
 class FacebookLookup:
     def extract_page_url(self, input_str: str) -> str:
         input_str = input_str.strip()
-        if 'facebook.com' in input_str:
-            if 'profile.php' in input_str:
-                return input_str
-            parsed = urllib.parse.urlparse(input_str)
-            path = parsed.path.strip('/')
-            parts = [p for p in path.split('/') if p]
-            if parts:
-                return f"https://www.facebook.com/{parts[0]}"
-            return input_str
-        return f"https://www.facebook.com/{input_str.lstrip('@')}"
+        if not input_str:
+            return ""
+        if 'facebook.com' in input_str.lower():
+            if not input_str.startswith('http://') and not input_str.startswith('https://'):
+                input_str = 'https://' + input_str
+            return input_str.rstrip('/') + '/'
+        clean = input_str.lstrip('@').strip('/')
+        return f"https://www.facebook.com/{clean}/"
 
     def get_follower_count(self, page_input: str) -> dict:
         if not page_input or not page_input.strip():
@@ -33,15 +48,18 @@ class FacebookLookup:
         if result.get('queued'):
             return {'success': True, 'queued': True, 'followers': 0, 'message': 'Scraping job queued on Bright Data.'}
 
-        row = result['data'][0] if result['data'] else None
-        if not row:
+        row = result['data'][0] if (result.get('data') and isinstance(result['data'], list) and len(result['data']) > 0) else None
+        if not row or not isinstance(row, dict):
             return {'success': False, 'message': 'Bright Data Returned No Data For This Page.'}
+
+        followers_raw = row.get('followers') or row.get('followers_count') or row.get('likes') or row.get('fan_count') or row.get('likes_count') or 0
+        followers = parse_scraped_number(followers_raw)
 
         return {
             'success': True,
-            'followers': int(row.get('followers') or 0),
-            'page_id': row.get('id'),
-            'name': row.get('page_name')
+            'followers': followers,
+            'page_id': row.get('id') or row.get('page_id'),
+            'name': row.get('page_name') or row.get('name')
         }
 
 class FacebookPostsLookup:

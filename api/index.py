@@ -1060,11 +1060,12 @@ def refresh_fb():
                 if res.get('status') == 'done' and res.get('data'):
                     row = res['data'][0] if isinstance(res['data'], list) and len(res['data']) > 0 else {}
                     if isinstance(row, dict):
-                        followers = int(row.get('followers') or 0)
+                        raw_f = row.get('followers') or row.get('followers_count') or row.get('likes') or row.get('fan_count') or row.get('likes_count') or 0
+                        followers = parse_scraped_number(raw_f)
                         if followers > 0:
                             d.fb_followers = followers
-                        if row.get('id'):
-                            d.fb_page_id = str(row['id'])
+                        if row.get('id') or row.get('page_id'):
+                            d.fb_page_id = str(row.get('id') or row.get('page_id'))
                         d.last_refreshed = current_time_pk()
                         db_session.commit()
                         return jsonify({'success': True, 'status': 'done', 'fb_followers': d.fb_followers or followers})
@@ -1124,7 +1125,8 @@ def refresh_ig():
                 if res.get('status') == 'done' and res.get('data'):
                     row = res['data'][0] if isinstance(res['data'], list) and len(res['data']) > 0 else {}
                     if isinstance(row, dict):
-                        followers = int(row.get('followers') or 0)
+                        raw_f = row.get('followers') or row.get('followers_count') or row.get('follower_count') or 0
+                        followers = parse_scraped_number(raw_f)
                         if followers > 0:
                             d.ig_followers = followers
                         d.last_refreshed = current_time_pk()
