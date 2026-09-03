@@ -664,6 +664,30 @@ function updatePlatformStep(stepId, text, statusClass = 'normal') {
   }
 }
 
+async function pollBrightDataScraper(endpoint, id, initialData, stepId, label) {
+  if (!initialData || !initialData.snapshot_id || initialData.status !== 'building') {
+    return initialData;
+  }
+  const snapshotId = initialData.snapshot_id;
+  const start = Date.now();
+  const maxWaitMs = 50000;
+  
+  while (Date.now() - start < maxWaitMs) {
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    const sec = Math.floor((Date.now() - start) / 1000);
+    updatePlatformStep(stepId, `⏳ Scraping ${label} (${sec}s)...`, 'active');
+    
+    const d = await safeFetchJson(`${endpoint}?id=${id}&snapshot_id=${encodeURIComponent(snapshotId)}`);
+    if (d.status === 'done' || (d.success && d.status !== 'building')) {
+      return d;
+    }
+    if (d.success === false && !d.status) {
+      return d;
+    }
+  }
+  return { success: false, message: 'Scraper polling timed out' };
+}
+
 async function refreshOne(id, btnEl) {
   const hasFb = btnEl?.dataset.hasFb === '1';
   const hasIg = btnEl?.dataset.hasIg === '1';
@@ -683,88 +707,83 @@ async function refreshOne(id, btnEl) {
     }
   }, 1000);
 
-  // Update steps UI
-  updatePlatformStep('step-fb', hasFb ? '⏳ Scraping Page...' : 'N/A', hasFb ? 'active' : 'normal');
-  updatePlatformStep('step-ig', hasIg ? '⏳ Scraping Profile...' : 'N/A', hasIg ? 'active' : 'normal');
+  updatePlatformStep('step-fb', hasFb ? '⏳ Starting Scraper...' : 'N/A', hasFb ? 'active' : 'normal');
+  updatePlatformStep('step-ig', hasIg ? '⏳ Starting Scraper...' : 'N/A', hasIg ? 'active' : 'normal');
   updatePlatformStep('step-yt', hasYt ? '⏳ Fetching Stats...' : 'N/A', hasYt ? 'active' : 'normal');
   updatePlatformStep('step-gr', hasGr ? '⏳ Fetching Reviews...' : 'N/A', hasGr ? 'active' : 'normal');
 
   try {
-    const promises = [];
-
+    // 1. Facebook Scraper
     if (hasFb) {
-      promises.push(
-        safeFetchJson(`/refresh_fb.php?id=${id}`)
-          .then(d => {
-            if (d.success && d.fb_followers !== undefined) {
-              document.getElementById(`fb-${id}`).textContent = Number(d.fb_followers).toLocaleString();
-              updatePlatformStep('step-fb', `✅ ${Number(d.fb_followers).toLocaleString()} followers`, 'done');
-            } else if (!d.skipped && d.message) {
-              errors.push('FB: ' + d.message);
-              updatePlatformStep('step-fb', '⚠ ' + d.message, 'error');
-            } else {
-              updatePlatformStep('step-fb', 'Skipped', 'normal');
-            }
-            done++; setRowPercent(id, done, applicable); updateOverallProgress();
-          })
-      );
+      updatePlatformStep('step-fb', '⏳ Triggering Scraper...', 'active');
+      let d = await safeFetchJson(`/refresh_fb.php?id=${id}`);
+      if (d.status === 'building') {
+        d = await pollBrightDataScraper('/refresh_fb.php', id, d, 'step-fb', 'Facebook');
+      }
+
+      if (d.success && d.fb_followers !== undefined) {
+        document.getElementById(`fb-${id}`).textContent = Number(d.fb_followers).toLocaleString();
+        updatePlatformStep('step-fb', `✅ ${Number(d.fb_followers).toLocaleString()} followers`, 'done');
+      } else if (!d.skipped && d.message) {
+        errors.push('FB: ' + d.message);
+        updatePlatformStep('step-fb', '⚠ ' + d.message, 'error');
+      } else {
+        updatePlatformStep('step-fb', 'Skipped', 'normal');
+      }
+      done++; setRowPercent(id, done, applicable); updateOverallProgress();
     }
 
+    // 2. Instagram Scraper
     if (hasIg) {
-      promises.push(
-        safeFetchJson(`/refresh_ig.php?id=${id}`)
-          .then(d => {
-            if (d.success && d.ig_followers !== undefined) {
-              document.getElementById(`ig-${id}`).textContent = Number(d.ig_followers).toLocaleString();
-              updatePlatformStep('step-ig', `✅ ${Number(d.ig_followers).toLocaleString()} followers`, 'done');
-            } else if (!d.skipped && d.message) {
-              errors.push('IG: ' + d.message);
-              updatePlatformStep('step-ig', '⚠ ' + d.message, 'error');
-            } else {
-              updatePlatformStep('step-ig', 'Skipped', 'normal');
-            }
-            done++; setRowPercent(id, done, applicable); updateOverallProgress();
-          })
-      );
+      updatePlatformStep('step-ig', '⏳ Triggering Scraper...', 'active');
+      let d = await safeFetchJson(`/refresh_ig.php?id=${id}`);
+      if (d.status === 'building') {
+        d = await pollBrightDataScraper('/refresh_ig.php', id, d, 'step-ig', 'Instagram');
+      }
+
+      if (d.success && d.ig_followers !== undefined) {
+        document.getElementById(`ig-${id}`).textContent = Number(d.ig_followers).toLocaleString();
+        updatePlatformStep('step-ig', `✅ ${Number(d.ig_followers).toLocaleString()} followers`, 'done');
+      } else if (!d.skipped && d.message) {
+        errors.push('IG: ' + d.message);
+        updatePlatformStep('step-ig', '⚠ ' + d.message, 'error');
+      } else {
+        updatePlatformStep('step-ig', 'Skipped', 'normal');
+      }
+      done++; setRowPercent(id, done, applicable); updateOverallProgress();
     }
 
+    // 3. YouTube API
     if (hasYt) {
-      promises.push(
-        safeFetchJson(`/refresh_yt.php?id=${id}`)
-          .then(d => {
-            if (d.success && d.yt_subscribers !== undefined) {
-              document.getElementById(`yt-${id}`).textContent = Number(d.yt_subscribers).toLocaleString();
-              updatePlatformStep('step-yt', `✅ ${Number(d.yt_subscribers).toLocaleString()} subs`, 'done');
-            } else if (!d.skipped && d.message) {
-              errors.push('YT: ' + d.message);
-              updatePlatformStep('step-yt', '⚠ ' + d.message, 'error');
-            } else {
-              updatePlatformStep('step-yt', 'Skipped', 'normal');
-            }
-            done++; setRowPercent(id, done, applicable); updateOverallProgress();
-          })
-      );
+      updatePlatformStep('step-yt', '⏳ Fetching Stats...', 'active');
+      const d = await safeFetchJson(`/refresh_yt.php?id=${id}`);
+      if (d.success && d.yt_subscribers !== undefined) {
+        document.getElementById(`yt-${id}`).textContent = Number(d.yt_subscribers).toLocaleString();
+        updatePlatformStep('step-yt', `✅ ${Number(d.yt_subscribers).toLocaleString()} subs`, 'done');
+      } else if (!d.skipped && d.message) {
+        errors.push('YT: ' + d.message);
+        updatePlatformStep('step-yt', '⚠ ' + d.message, 'error');
+      } else {
+        updatePlatformStep('step-yt', 'Skipped', 'normal');
+      }
+      done++; setRowPercent(id, done, applicable); updateOverallProgress();
     }
 
+    // 4. Google Reviews API
     if (hasGr) {
-      promises.push(
-        safeFetchJson(`/refresh_gr.php?id=${id}`)
-          .then(d => {
-            if (d.success && d.google_review_count !== undefined) {
-              document.getElementById(`gr-${id}`).innerHTML = `${Number(d.google_review_count).toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
-              updatePlatformStep('step-gr', `✅ ${Number(d.google_review_count).toLocaleString()} (${d.google_rating}★)`, 'done');
-            } else if (!d.skipped && d.message) {
-              errors.push('Google: ' + d.message);
-              updatePlatformStep('step-gr', '⚠ ' + d.message, 'error');
-            } else {
-              updatePlatformStep('step-gr', 'Skipped', 'normal');
-            }
-            done++; setRowPercent(id, done, applicable); updateOverallProgress();
-          })
-      );
+      updatePlatformStep('step-gr', '⏳ Fetching Reviews...', 'active');
+      const d = await safeFetchJson(`/refresh_gr.php?id=${id}`);
+      if (d.success && d.google_review_count !== undefined) {
+        document.getElementById(`gr-${id}`).innerHTML = `${Number(d.google_review_count).toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
+        updatePlatformStep('step-gr', `✅ ${Number(d.google_review_count).toLocaleString()} (${d.google_rating}★)`, 'done');
+      } else if (!d.skipped && d.message) {
+        errors.push('Google: ' + d.message);
+        updatePlatformStep('step-gr', '⚠ ' + d.message, 'error');
+      } else {
+        updatePlatformStep('step-gr', 'Skipped', 'normal');
+      }
+      done++; setRowPercent(id, done, applicable); updateOverallProgress();
     }
-
-    await Promise.allSettled(promises);
 
     const tsEl = document.getElementById(`ts-${id}`);
     if (errors.length) {

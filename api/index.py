@@ -1026,6 +1026,7 @@ def refresh_fb():
     if not can_perform('refresh'):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     d_id = request.args.get('id', type=int)
+    snapshot_id = request.args.get('snapshot_id')
     if not d_id or not can_access_dealership(d_id):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
         
@@ -1040,15 +1041,40 @@ def refresh_fb():
             d.fb_followers = res['followers']
             d.last_refreshed = current_time_pk()
             db_session.commit()
-            return jsonify({'success': True, 'fb_followers': res['followers']})
+            return jsonify({'success': True, 'status': 'done', 'fb_followers': res['followers']})
         else:
             return jsonify({'success': False, 'message': res['message'], 'fb_followers': d.fb_followers or 0})
             
     if not d.fb_input:
         return jsonify({'success': True, 'skipped': True, 'fb_followers': d.fb_followers or 0})
-        
-    res = trigger_bg_refresh('fb', d_id)
-    return jsonify(res)
+
+    client = BrightDataClient()
+    lookup = FacebookLookup()
+    page_url = lookup.extract_page_url(d.fb_input)
+
+    if snapshot_id:
+        res = client.check_snapshot(snapshot_id)
+        if res['success']:
+            if res.get('status') == 'done' and res.get('data'):
+                row = res['data'][0]
+                followers = int(row.get('followers') or 0)
+                if followers > 0:
+                    d.fb_followers = followers
+                if row.get('id'):
+                    d.fb_page_id = row['id']
+                d.last_refreshed = current_time_pk()
+                db_session.commit()
+                return jsonify({'success': True, 'status': 'done', 'fb_followers': d.fb_followers or followers})
+            elif res.get('status') == 'building':
+                return jsonify({'success': True, 'status': 'building', 'snapshot_id': snapshot_id})
+        return jsonify({'success': False, 'message': res.get('message', 'Check failed'), 'fb_followers': d.fb_followers or 0})
+
+    # Trigger job
+    trig = client.trigger_dataset(Config.BRIGHTDATA_DATASET_PAGE_INFO, [{'url': page_url}])
+    if trig['success']:
+        return jsonify({'success': True, 'status': 'building', 'snapshot_id': trig['snapshot_id']})
+    else:
+        return jsonify({'success': False, 'message': trig['message'], 'fb_followers': d.fb_followers or 0})
 
 @app.route('/refresh_ig.php')
 @require_login
@@ -1056,6 +1082,7 @@ def refresh_ig():
     if not can_perform('refresh'):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     d_id = request.args.get('id', type=int)
+    snapshot_id = request.args.get('snapshot_id')
     if not d_id or not can_access_dealership(d_id):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
         
@@ -1072,15 +1099,39 @@ def refresh_ig():
                 d.ig_business_account_id = res['ig_business_account_id']
             d.last_refreshed = current_time_pk()
             db_session.commit()
-            return jsonify({'success': True, 'ig_followers': res['followers']})
+            return jsonify({'success': True, 'status': 'done', 'ig_followers': res['followers']})
         else:
             return jsonify({'success': False, 'message': res['message'], 'ig_followers': d.ig_followers or 0})
             
     if not d.ig_search:
         return jsonify({'success': True, 'skipped': True, 'ig_followers': d.ig_followers or 0})
-        
-    res = trigger_bg_refresh('ig', d_id)
-    return jsonify(res)
+
+    client = BrightDataClient()
+    lookup = InstagramLookup()
+    username = lookup.extract_username(d.ig_search)
+    profile_url = f"https://www.instagram.com/{username}/"
+
+    if snapshot_id:
+        res = client.check_snapshot(snapshot_id)
+        if res['success']:
+            if res.get('status') == 'done' and res.get('data'):
+                row = res['data'][0]
+                followers = int(row.get('followers') or 0)
+                if followers > 0:
+                    d.ig_followers = followers
+                d.last_refreshed = current_time_pk()
+                db_session.commit()
+                return jsonify({'success': True, 'status': 'done', 'ig_followers': d.ig_followers or followers})
+            elif res.get('status') == 'building':
+                return jsonify({'success': True, 'status': 'building', 'snapshot_id': snapshot_id})
+        return jsonify({'success': False, 'message': res.get('message', 'Check failed'), 'ig_followers': d.ig_followers or 0})
+
+    # Trigger job
+    trig = client.trigger_dataset(Config.BRIGHTDATA_DATASET_INSTAGRAM_PROFILE, [{'url': profile_url}])
+    if trig['success']:
+        return jsonify({'success': True, 'status': 'building', 'snapshot_id': trig['snapshot_id']})
+    else:
+        return jsonify({'success': False, 'message': trig['message'], 'ig_followers': d.ig_followers or 0})
 
 @app.route('/refresh_yt.php')
 @require_login
