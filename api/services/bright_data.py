@@ -51,10 +51,15 @@ class BrightDataClient:
             res = requests.post(url, headers=headers, json={'input': inputs}, timeout=10)
             if res.status_code in (200, 202):
                 data = res.json()
-                snapshot_id = data.get('snapshot_id')
+                snapshot_id = None
+                if isinstance(data, dict):
+                    snapshot_id = data.get('snapshot_id')
+                elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+                    snapshot_id = data[0].get('snapshot_id')
+                
                 if snapshot_id:
                     return {'success': True, 'snapshot_id': snapshot_id}
-                return {'success': False, 'message': 'No snapshot_id returned by Bright Data.'}
+                return {'success': False, 'message': f'No snapshot_id returned by Bright Data: {res.text[:150]}'}
             return {'success': False, 'message': f"Bright Data HTTP {res.status_code}: {res.text[:200]}"}
         except Exception as e:
             return {'success': False, 'message': str(e)}
@@ -69,7 +74,13 @@ class BrightDataClient:
             progress_url = f"{self.base_url}/progress/{snapshot_id}"
             res = requests.get(progress_url, headers=headers, timeout=10)
             if res.status_code == 200:
-                status = res.json().get('status')
+                data = res.json()
+                status = None
+                if isinstance(data, dict):
+                    status = data.get('status')
+                elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+                    status = data[0].get('status')
+
                 if status == 'ready':
                     snapshot_url = f"{self.base_url}/snapshot/{snapshot_id}?format=json"
                     snap_res = requests.get(snapshot_url, headers=headers, timeout=15)
