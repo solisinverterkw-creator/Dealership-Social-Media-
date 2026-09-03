@@ -81,17 +81,27 @@ class BrightDataClient:
                 elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
                     status = data[0].get('status')
 
-                if status == 'ready':
+                status_str = str(status).lower() if status else ''
+
+                if status_str in ('ready', 'completed', 'done', 'finished'):
                     snapshot_url = f"{self.base_url}/snapshot/{snapshot_id}?format=json"
                     snap_res = requests.get(snapshot_url, headers=headers, timeout=15)
                     if snap_res.status_code == 200:
                         records = self._parse_json_response(snap_res.text)
                         return {'success': True, 'status': 'done', 'data': self._normalize_records(records)}
                     return {'success': False, 'status': 'error', 'message': f"Snapshot download failed (HTTP {snap_res.status_code})"}
-                elif status == 'failed':
+                elif status_str in ('failed', 'error', 'cancelled'):
                     return {'success': False, 'status': 'failed', 'message': 'Bright Data Scraping Job Failed.'}
                 else:
-                    return {'success': True, 'status': 'building', 'message': 'Scraping in progress...'}
+                    # Fallback check: attempt direct snapshot download in case status was reported differently
+                    snapshot_url = f"{self.base_url}/snapshot/{snapshot_id}?format=json"
+                    snap_res = requests.get(snapshot_url, headers=headers, timeout=10)
+                    if snap_res.status_code == 200 and snap_res.text.strip():
+                        records = self._parse_json_response(snap_res.text)
+                        normalized = self._normalize_records(records)
+                        if normalized and len(normalized) > 0:
+                            return {'success': True, 'status': 'done', 'data': normalized}
+                    return {'success': True, 'status': 'building', 'message': f'Scraping in progress ({status_str})...'}
             return {'success': False, 'status': 'error', 'message': f"Progress check HTTP {res.status_code}"}
         except Exception as e:
             return {'success': False, 'status': 'error', 'message': str(e)}
