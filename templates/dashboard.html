@@ -671,7 +671,7 @@ async function pollBrightDataScraper(endpoint, id, initialData, stepId, label) {
   }
   const snapshotId = initialData.snapshot_id;
   const start = Date.now();
-  const maxWaitMs = 120000; // 2 minutes max polling for Facebook & Instagram scrapers
+  const maxWaitMs = 300000; // 5 minutes max polling for Facebook & Instagram scrapers
   
   while (Date.now() - start < maxWaitMs) {
     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -686,7 +686,7 @@ async function pollBrightDataScraper(endpoint, id, initialData, stepId, label) {
       return d;
     }
   }
-  return { success: false, message: 'Bright Data scraper took > 2 mins' };
+  return { success: false, message: 'Bright Data scraper took > 5 mins' };
 }
 
 async function refreshOne(id, btnEl) {
