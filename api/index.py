@@ -4563,19 +4563,39 @@ def export_reshare_compliance():
 # --- EXPORT REPORT UTILS ---
 
 @app.route('/export_csv.php')
+@app.route('/export_social_report.php')
 @require_login
 def export_csv():
-    # Overall summary export to CSV
+    # Overall summary export to CSV with targets and percentage achievements
     dealerships = get_allowed_dealerships()
+    for d in dealerships:
+        d.total_reach = (d.fb_followers or 0) + (d.ig_followers or 0) + (d.yt_subscribers or 0)
+    ranked = sorted(dealerships, key=lambda d: d.total_reach, reverse=True)
+
+    def pct(val, tgt):
+        if tgt and tgt > 0:
+            return f"{round(((val or 0) / tgt) * 100)}%"
+        return ""
+
     def generate():
-        yield "Dealership,FB Followers,IG Followers,YT Subscribers,Google Reviews,Rating\n"
-        for d in dealerships:
-            yield f'"{d.name}",{d.fb_followers or 0},{d.ig_followers or 0},{d.yt_subscribers or 0},{d.google_review_count or 0},{d.google_rating or 0.0}\n'
+        yield "\ufeffRank,Dealership,Total Reach (FB+IG+YT),FB Followers,FB Target,FB %,IG Followers,IG Target,IG %,YT Subscribers,YT Target,YT %,Google Reviews,Google Rating,Google Target,Google %\n"
+        for i, d in enumerate(ranked):
+            fb_val = d.fb_followers or 0
+            fb_tgt = d.fb_target or 0
+            ig_val = d.ig_followers or 0
+            ig_tgt = d.ig_target or 0
+            yt_val = d.yt_subscribers or 0
+            yt_tgt = d.yt_target or 0
+            gr_val = d.google_review_count or 0
+            gr_tgt = d.google_review_target or 0
+            rating = d.google_rating or 0.0
+            name = (d.name or "").replace('"', '""')
+            yield f'{i+1},"{name}",{d.total_reach},{fb_val},{fb_tgt},{pct(fb_val, fb_tgt)},{ig_val},{ig_tgt},{pct(ig_val, ig_tgt)},{yt_val},{yt_tgt},{pct(yt_val, yt_tgt)},{gr_val},{rating},{gr_tgt},{pct(gr_val, gr_tgt)}\n'
             
     return Response(
         generate(),
-        mimetype="text/csv",
-        headers={"Content-disposition": "attachment; filename=dealership_summary_report.csv"}
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-disposition": "attachment; filename=dealership_social_report.csv"}
     )
 
 @app.route('/export_sales_report.php')
