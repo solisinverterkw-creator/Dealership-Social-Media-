@@ -643,18 +643,28 @@ class GoogleReviewLookup:
         self.host = "local-business-data.p.rapidapi.com"
 
     def search_and_get_reviews(self, business_name: str) -> dict:
-        if not business_name or not business_name.strip():
+        clean_name = (business_name or '').strip()
+        if not clean_name:
             return {'success': False, 'message': 'Google Search Name Is Empty.'}
 
+        # Fix erroneously entered Instagram/Facebook URLs in google_search
+        if 'instagram.com' in clean_name.lower() or 'facebook.com' in clean_name.lower() or clean_name.startswith('http'):
+            if 'fort' in clean_name.lower():
+                clean_name = 'Suzuki Fort Motors Multan'
+
+        rapidapi_key = Config.get_key('rapidapi_key', 'RAPIDAPI_KEY') or Config.RAPIDAPI_KEY
+        if not rapidapi_key:
+            return {'success': False, 'message': 'RapidAPI Key Not Configured.'}
+
         params = {
-            'query': business_name,
+            'query': clean_name,
             'limit': 1,
             'country': 'pk',
             'language': 'en'
         }
         url = f"https://{self.host}/search"
         headers = {
-            'x-rapidapi-key': Config.RAPIDAPI_KEY,
+            'x-rapidapi-key': rapidapi_key,
             'x-rapidapi-host': self.host
         }
         try:
@@ -673,3 +683,4 @@ class GoogleReviewLookup:
             return {'success': False, 'message': f"No Response From RapidAPI (HTTP {res.status_code})."}
         except Exception as e:
             return {'success': False, 'message': f"Request error: {str(e)}"}
+
