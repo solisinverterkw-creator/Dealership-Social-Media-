@@ -4222,37 +4222,14 @@ def bg_refresh_reshare_source_task(job_key, from_date, to_date):
                 tracked_count += 1
             db_session.commit()
             
-        # Ensure we have source posts in DB for date range
+        # Count real source posts in DB for date range
         from_dt = datetime.strptime(from_date, '%Y-%m-%d')
         to_dt = datetime.strptime(to_date, '%Y-%m-%d') + timedelta(days=1)
         db_count = db_session.query(ReshareSourcePost).filter(
             ReshareSourcePost.processed_at >= from_dt,
-            ReshareSourcePost.processed_at < to_dt
+            ReshareSourcePost.processed_at < to_dt,
+            ~ReshareSourcePost.source_post_id.like('suzuki_pk_official_%')
         ).count()
-        
-        if db_count == 0:
-            # Seed fallback official campaign posts so tracking is never empty
-            seed_snippets = [
-                "Suzuki Pakistan official update: Special offers available across all authorized dealerships.",
-                "Experience the new Suzuki Cultus with unmatched fuel efficiency and comfort.",
-                "Drive home your favorite Suzuki car with exclusive financing plans.",
-                "Suzuki Swift: Built for speed, precision, and modern urban driving.",
-                "Visit your nearest ROSP Suzuki Dealership for genuine parts and professional service."
-            ]
-            for i, snip in enumerate(seed_snippets, 1):
-                post_id = f"suzuki_pk_official_{from_date}_{i}"
-                if not db_session.query(ReshareSourcePost).filter(ReshareSourcePost.source_post_id == post_id).first():
-                    dt = from_dt + timedelta(days=i*2)
-                    sp = ReshareSourcePost(
-                        source_post_id=post_id,
-                        message_snippet=snip,
-                        published_at=dt,
-                        processed_at=dt
-                    )
-                    db_session.add(sp)
-                    new_count += 1
-                    db_count += 1
-            db_session.commit()
 
         tracked_count = max(tracked_count, db_count)
         return {'status': 'done', 'success': True, 'tracked': tracked_count, 'new_posts': new_count}
@@ -4271,18 +4248,23 @@ def bg_reshare_dealership_task(job_key, d_id, from_date, to_date):
         from_dt = datetime.strptime(from_date, '%Y-%m-%d')
         to_dt = datetime.strptime(to_date, '%Y-%m-%d') + timedelta(days=1)
         
-        # Ensure source posts exist for date range
+        # Ensure source posts exist for date range (strictly real posts, ignoring legacy dummy seeds)
         source_posts = db_session.query(ReshareSourcePost).filter(
             ReshareSourcePost.processed_at >= from_dt,
-            ReshareSourcePost.processed_at < to_dt
+            ReshareSourcePost.processed_at < to_dt,
+            ~ReshareSourcePost.source_post_id.like('suzuki_pk_official_%')
         ).all()
         
         if not source_posts:
             bg_refresh_reshare_source_task(f"{from_date}_{to_date}", from_date, to_date)
             source_posts = db_session.query(ReshareSourcePost).filter(
                 ReshareSourcePost.processed_at >= from_dt,
-                ReshareSourcePost.processed_at < to_dt
+                ReshareSourcePost.processed_at < to_dt,
+                ~ReshareSourcePost.source_post_id.like('suzuki_pk_official_%')
             ).all()
+
+        if not source_posts:
+            return {'status': 'done', 'success': True, 'own_posts': 0, 'reshared': 0, 'missed': 0, 'tracked': 0}
 
         source_list = [{'id': sp.source_post_id, 'snippet': sp.message_snippet, 'published_at': sp.processed_at.isoformat()} for sp in source_posts]
         
@@ -4439,22 +4421,42 @@ def reshare_compliance_view():
         return int(round(delta.total_seconds() / 3600))
         
     if has_range:
+        # Purge legacy dummy/mock source posts and checks so they never show up
+        try:
+            db_session.query(ReshareSourcePost).filter(
+                or_(
+                    ReshareSourcePost.source_post_id.like('suzuki_pk_official_%'),
+                    ReshareSourcePost.message_snippet.like('%Special offers available across all authorized%')
+                )
+            ).delete(synchronize_session=False)
+            db_session.query(ReshareCheck).filter(
+                or_(
+                    ReshareCheck.source_post_id.like('suzuki_pk_official_%'),
+                    ReshareCheck.message_snippet.like('%Special offers available across all authorized%')
+                )
+            ).delete(synchronize_session=False)
+            db_session.commit()
+        except Exception:
+            db_session.rollback()
+
         from_dt = datetime.strptime(from_val, '%Y-%m-%d')
         to_dt = datetime.strptime(to_val, '%Y-%m-%d') + timedelta(days=1)
         from_date_obj = from_dt.date()
         to_date_obj = datetime.strptime(to_val, '%Y-%m-%d').date()
         
-        # Total source posts in range
+        # Total real source posts in range
         source_posts_count = db_session.query(ReshareSourcePost).filter(
             ReshareSourcePost.processed_at >= from_dt,
-            ReshareSourcePost.processed_at < to_dt
+            ReshareSourcePost.processed_at < to_dt,
+            ~ReshareSourcePost.source_post_id.like('suzuki_pk_official_%')
         ).count()
 
         if source_posts_count == 0:
             bg_refresh_reshare_source_task(f"{from_val}_{to_val}", from_val, to_val)
             source_posts_count = db_session.query(ReshareSourcePost).filter(
                 ReshareSourcePost.processed_at >= from_dt,
-                ReshareSourcePost.processed_at < to_dt
+                ReshareSourcePost.processed_at < to_dt,
+                ~ReshareSourcePost.source_post_id.like('suzuki_pk_official_%')
             ).count()
 
         # Load stats for each dealership
@@ -4462,7 +4464,8 @@ def reshare_compliance_view():
             tracked = db_session.query(ReshareCheck).filter(
                 ReshareCheck.dealership_id == d.id,
                 ReshareCheck.published_at >= from_dt,
-                ReshareCheck.published_at < to_dt
+                ReshareCheck.published_at < to_dt,
+                ~ReshareCheck.source_post_id.like('suzuki_pk_official_%')
             ).count()
             if tracked == 0 and source_posts_count > 0:
                 tracked = source_posts_count
@@ -4471,14 +4474,16 @@ def reshare_compliance_view():
                 ReshareCheck.dealership_id == d.id,
                 ReshareCheck.published_at >= from_dt,
                 ReshareCheck.published_at < to_dt,
-                ReshareCheck.reshared == 1
+                ReshareCheck.reshared == 1,
+                ~ReshareCheck.source_post_id.like('suzuki_pk_official_%')
             ).count()
             
             missed = db_session.query(ReshareCheck).filter(
                 ReshareCheck.dealership_id == d.id,
                 ReshareCheck.published_at >= from_dt,
                 ReshareCheck.published_at < to_dt,
-                ReshareCheck.reshared == 0
+                ReshareCheck.reshared == 0,
+                ~ReshareCheck.source_post_id.like('suzuki_pk_official_%')
             ).count()
             if tracked > 0 and missed == 0 and reshared < tracked:
                 missed = tracked - reshared
@@ -4509,13 +4514,14 @@ def reshare_compliance_view():
                 'last_checked_at': last_checked
             })
             
-        # Missed posts details query
+        # Missed posts details query (strictly real posts)
         d_ids = [d.id for d in dealerships]
         missing_checks = db_session.query(ReshareCheck).filter(
             ReshareCheck.reshared == 0,
             ReshareCheck.published_at >= from_dt,
             ReshareCheck.published_at < to_dt,
-            ReshareCheck.dealership_id.in_(d_ids)
+            ReshareCheck.dealership_id.in_(d_ids),
+            ~ReshareCheck.source_post_id.like('suzuki_pk_official_%')
         ).order_by(ReshareCheck.published_at.asc()).all()
         
         for m in missing_checks:
@@ -4566,15 +4572,17 @@ def export_reshare_compliance():
                 tracked = db_session.query(ReshareCheck).filter(
                     ReshareCheck.dealership_id == d.id,
                     ReshareCheck.published_at >= from_dt,
-                    ReshareCheck.published_at < to_dt
+                    ReshareCheck.published_at < to_dt,
+                    ~ReshareCheck.source_post_id.like('suzuki_pk_official_%')
                 ).count()
                 reshared = db_session.query(ReshareCheck).filter(
                     ReshareCheck.dealership_id == d.id,
                     ReshareCheck.published_at >= from_dt,
                     ReshareCheck.published_at < to_dt,
-                    ReshareCheck.reshared == 1
+                    ReshareCheck.reshared == 1,
+                    ~ReshareCheck.source_post_id.like('suzuki_pk_official_%')
                 ).count()
-                missed = tracked - reshared
+                missed = max(0, tracked - reshared)
                 own_stat = db_session.query(ReshareOwnPostStat).filter(
                     ReshareOwnPostStat.dealership_id == d.id
                 ).first()
@@ -4589,7 +4597,8 @@ def export_reshare_compliance():
                 ReshareCheck.reshared == 0,
                 ReshareCheck.published_at >= from_dt,
                 ReshareCheck.published_at < to_dt,
-                ReshareCheck.dealership_id.in_(d_ids)
+                ReshareCheck.dealership_id.in_(d_ids),
+                ~ReshareCheck.source_post_id.like('suzuki_pk_official_%')
             ).all()
             for m in missing_checks:
                 d = next((x for x in dealerships if x.id == m.dealership_id), None)
