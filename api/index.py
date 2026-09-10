@@ -4752,38 +4752,225 @@ def export_ageing_report():
 def export_crm_report():
     if not can_view('crm_report'):
         abort(403)
-        
+
+    from api.services.crm_calculator import CrmScoreCalculator as _Calc
+
     crm_parameters = db_session.query(CrmParameter).order_by(CrmParameter.display_order, CrmParameter.id).all()
+    param_map = {p.id: p for p in crm_parameters}
+
+    # Allow selecting a period via ?period=YYYY-MM, otherwise use latest
+    selected_period = request.args.get('period', '').strip()
     latest_period = db_session.query(func.max(CrmScore.period_month)).scalar()
-    if not latest_period:
+    if not selected_period or selected_period not in [
+        r[0] for r in db_session.query(CrmScore.period_month).distinct().all()
+    ]:
+        selected_period = latest_period
+    if not selected_period:
         return redirect(url_for('crm_report'))
-        
+
     dealerships = get_allowed_dealerships()
+    allowed_ids = {d.id for d in dealerships}
+
+    # Build score pivot: {dealership_id: {param_id: points_obtained}}
     pivot = {}
-    scores = db_session.query(CrmScore).filter(CrmScore.period_month == latest_period).all()
-    for s in scores:
-        if s.dealership_id not in pivot:
-            pivot[s.dealership_id] = {}
-        pivot[s.dealership_id][s.crm_parameter_id] = s.points_obtained
-        
+    for s in db_session.query(CrmScore).filter(CrmScore.period_month == selected_period).all():
+        pivot.setdefault(s.dealership_id, {})[s.crm_parameter_id] = float(s.points_obtained)
+
+    # Build raw data map: {(dealership_id, param_id): raw_json_string}
+    raw_map = {}
+    for r in db_session.query(CrmRawData).filter(
+        CrmRawData.period_month == selected_period,
+        CrmRawData.dealership_id.in_(allowed_ids)
+    ).all():
+        raw_map[(r.dealership_id, r.crm_parameter_id)] = r.raw_json
+
+    def _achievement_text(rdict, pobj, dealership_obj):
+        """Compute actual achievement display text from raw_json dict, mirroring portal logic."""
+        try:
+            ckey = str(pobj.calc_key or '').strip().lower() if pobj else ''
+
+            if ckey in ('timely_followup', 'timely_follow_up', 'first_response_time', 'salesperson_first_response', 'manager_assigning_time', 'sales_manager_assigning'):
+                row_c = float(rdict.get('Row Count') or 1.0)
+                avg_m = None
+                for k, v in rdict.items():
+                    kl = str(k).lower().strip()
+                    if 'average of min' in kl or 'avg of min' in kl or 'assigning time' in kl or 'response time (min)' in kl:
+                        try:
+                            val = float(v)
+                            avg_m = val / row_c if val > 120.0 else val
+                            break
+                        except Exception:
+                            pass
+                if avg_m is None:
+                    t_sum = _Calc.extract_numeric_value(rdict, ['sales person response time (min)', 'sales person response time', 'average of min', 'response time', 'min'])
+                    if t_sum is not None and row_c > 0:
+                        avg_m = t_sum / row_c if t_sum > 120.0 else t_sum
+                if avg_m is not None:
+                    return f"{avg_m:.1f} min"
+
+            elif ckey in ('detailing_of_enquiry', 'detailing'):
+                filled = _Calc.extract_numeric_value(rdict, ['total fields filled', 'fields filled', 'filled'])
+                in_view = _Calc.extract_numeric_value(rdict, ['total fields in view', 'fields in view', 'view'])
+                if filled is not None and in_view is not None and in_view > 0:
+                    return f"{(filled / in_view) * 100:.1f}%"
+                v = _Calc.extract_numeric_value(rdict, ['fill', 'detail', 'complete', 'field'])
+                if v is not None:
+                    return f"{v:.1f}%"
+
+            elif ckey in ('number_of_followups', 'number_of_follow_ups'):
+                f_ups = _Calc.extract_numeric_value(rdict, ['follow'])
+                enq = _Calc.extract_numeric_value(rdict, ['enquir', 'total', 'row count'])
+                if f_ups is not None and enq and enq > 0:
+                    return f"{(f_ups / enq) * 100:.0f}%"
+
+            elif ckey in ('voip_calling', 'voip'):
+                ratio_val = None
+                for k, v in rdict.items():
+                    kl = str(k).lower().strip()
+                    if 'ratio of voip' in kl or 'voip calls against follow up' in kl or 'voip ratio' in kl:
+                        try:
+                            vs = str(v).replace('%', '').strip()
+                            vf = float(vs)
+                            ratio_val = vf * 100.0 if (0.0 < vf <= 1.0) else vf
+                            break
+                        except Exception:
+                            pass
+                if ratio_val is None:
+                    v_calls = _Calc.extract_numeric_value(rdict, ['total number of voip calls', 'voip calls', 'voip'])
+                    f_ups = _Calc.extract_numeric_value(rdict, ['total follow-up', 'total follow up', 'follow-up', 'follow up'])
+                    if v_calls is not None and f_ups and f_ups > 0:
+                        ratio_val = (v_calls / f_ups) * 100.0
+                if ratio_val is not None:
+                    return f"{ratio_val:.0f}%"
+
+            elif ckey in ('digital_enquiry_targets', 'digital_targets'):
+                target = float(getattr(dealership_obj, 'digital_enquiry_target', 0) or 0)
+                achieved = None
+                for k, v in rdict.items():
+                    kl = str(k).lower().strip()
+                    if 'digital' in kl or 'facebook' in kl or 'instagram' in kl or 'youtube' in kl:
+                        try:
+                            achieved = float(v); break
+                        except Exception:
+                            pass
+                if achieved is None:
+                    achieved = _Calc.extract_numeric_value(rdict, ['digital', 'facebook', 'instagram', 'youtube', 'achiev']) or 0.0
+                if target > 0:
+                    return f"{(achieved / target) * 100:.0f}%"
+                elif achieved > 0:
+                    return f"{achieved:.0f}"
+
+            elif ckey in ('stage_won_conversion', 'digital_conversion'):
+                target = float(getattr(dealership_obj, 'digital_enquiry_conversion_target', 0) or 0)
+                achieved = None
+                for k, v in rdict.items():
+                    kl = str(k).lower().strip()
+                    if 'won' in kl or 'stage' in kl or 'conversion' in kl:
+                        try:
+                            achieved = float(v); break
+                        except Exception:
+                            pass
+                if achieved is None:
+                    achieved = _Calc.extract_numeric_value(rdict, ['won', 'stage', 'conversion', 'achiev', 'actual']) or 0.0
+                if target > 0:
+                    pct = (achieved / target) * 100.0
+                    return f"{achieved:.0f}/{target:.0f} ({pct:.0f}%)"
+                elif achieved > 0:
+                    return f"{achieved:.0f}"
+
+            elif ckey in ('fronx_test_drive_monthly', 'fronx_test_drive'):
+                completed = None
+                for k, v in rdict.items():
+                    kl = str(k).lower().strip()
+                    if 'complete' in kl or 'test drive' in kl or 'fronx' in kl:
+                        try:
+                            completed = float(v); break
+                        except Exception:
+                            pass
+                if completed is None:
+                    completed = _Calc.extract_numeric_value(rdict, ['complete', 'test drive', 'fronx', 'actual', 'row count']) or 0.0
+                pct = (completed / 104.0) * 100.0
+                return f"{completed:.0f}/104 ({pct:.0f}%)"
+
+            elif ckey in ('pipeline_tracking', 'pipeline'):
+                cnt = None
+                for k, v in rdict.items():
+                    kl = str(k).lower().strip()
+                    if '2+ business' in kl or 'enquiries (2+' in kl or '2+ days' in kl:
+                        try:
+                            cnt = int(float(v)); break
+                        except Exception:
+                            pass
+                if cnt is None:
+                    d_val = _Calc.extract_numeric_value(rdict, ['business days difference', 'business days', 'days difference'])
+                    cnt = int(d_val) if d_val is not None else None
+                if cnt is not None:
+                    return f"{cnt} enquiries"
+
+            elif ckey in ('evaluation_feedback_accuracy', 'evaluation_accuracy'):
+                pct = _Calc.extract_numeric_value(rdict, ['evaluat', 'feedback', 'accurac'])
+                if pct is None:
+                    pct = _Calc.extract_any_numeric(rdict)
+                if pct is not None:
+                    return f"{pct:.0f}%"
+
+            elif ckey in ('sales_crm_registration', 'crm_registration'):
+                val = _Calc.extract_numeric_value(rdict, ['register', 'active', 'unregister', 'row count'])
+                if val is not None:
+                    return f"{val:.0f}"
+
+        except Exception:
+            pass
+        return None
+
+    # Build a dealership lookup by id for target fields
+    d_lookup = {d.id: d for d in dealerships}
+
     def generate():
-        headers = ["Dealership"] + [p.parameter_name for p in crm_parameters] + ["Total Obtained Score"]
-        yield ",".join(f'"{h}"' for h in headers) + "\n"
+        # UTF-8 BOM so Excel opens without encoding issues
+        yield '\ufeff'
+        # Headers: for each param, two columns — "Param Name" and "Param Name (Actual)"
+        header_parts = ["Dealership"]
+        for p in crm_parameters:
+            header_parts.append(p.parameter_name)
+            header_parts.append(f"{p.parameter_name} (Actual)")
+        header_parts.append("Total Obtained Score")
+        yield ",".join(f'"{h}"' for h in header_parts) + "\n"
+
         for d in dealerships:
             row = [d.name]
             tot = 0.0
+            d_scores = pivot.get(d.id, {})
+            d_obj = d_lookup.get(d.id)
             for p in crm_parameters:
-                val = pivot.get(d.id, {}).get(p.id)
-                if val is not None:
-                    row.append(f"{val:.1f}" + ("%" if p.max_points == 0.0 else ""))
-                    if p.max_points != 0.0:
-                        tot += float(val)
+                pts = d_scores.get(p.id)
+                if pts is not None:
+                    pts_str = f"{pts:.1f}" + ("%" if float(p.max_points or 0) == 0.0 else "")
+                    if float(p.max_points or 0) != 0.0:
+                        tot += pts
                 else:
-                    row.append("—")
+                    pts_str = "-"
+
+                # Actual achievement
+                rjson = raw_map.get((d.id, p.id))
+                ach_str = ""
+                if rjson:
+                    try:
+                        rdict = json.loads(rjson)
+                        ach_str = _achievement_text(rdict, p, d_obj) or ""
+                    except Exception:
+                        pass
+
+                row.append(pts_str)
+                row.append(ach_str)
             row.append(f"{tot:.1f}")
-            yield ",".join(f'"{val}"' for val in row) + "\n"
-            
-    return Response(generate(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=crm_scorecard_report.csv"})
+            yield ",".join(f'"{v}"' for v in row) + "\n"
+
+    return Response(
+        generate(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=crm_scorecard_report.csv"}
+    )
 
 # --- PRINT VISIT REPORT & WEAK AREAS AI GENERATION ---
 
