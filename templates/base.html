@@ -21,7 +21,11 @@
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <script>
     if('serviceWorker' in navigator){
-      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js?v=5').then(reg => {
+          reg.update();
+        });
+      });
     }
   </script>
   <script src="/assets/progress-timer.js"></script>

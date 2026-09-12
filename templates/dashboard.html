@@ -632,7 +632,7 @@ async function pollRefreshStatus(id, metric, maxWaitMs = 300000, intervalMs = 30
 
 async function safeFetchJson(url) {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { credentials: 'same-origin' });
     const text = await res.text();
     try {
       return JSON.parse(text);
@@ -788,7 +788,8 @@ async function refreshOne(id, btnEl) {
 
     const tsEl = document.getElementById(`ts-${id}`);
     if (errors.length) {
-      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}">⚠</span>`;
+      const errJoined = errors.join('\n');
+      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}" onclick="alert(${JSON.stringify(errJoined)})" style="cursor:pointer;">⚠</span>`;
     } else {
       tsEl.textContent = 'just now';
     }

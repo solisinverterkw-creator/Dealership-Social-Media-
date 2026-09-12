@@ -158,7 +158,15 @@ function renderComparisonBarChart(array $series): string
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a19">
 <link rel="apple-touch-icon" href="assets/icon-192.png">
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));}</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js?v=4').then(reg => {
+      reg.update(); // Force check server for new sw.js
+    });
+  });
+}
+</script>
 <script src="assets/progress-timer.js"></script>
 </head>
 <body>
@@ -352,12 +360,32 @@ async function pollRefreshStatus(id, metric, maxWaitMs = 300000, intervalMs = 30
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
     await new Promise(resolve => setTimeout(resolve, intervalMs));
-    const r = await fetch(`refresh_status.php?id=${id}&metric=${metric}`);
-    const d = await r.json();
-    if (d.status === 'done') return { success: true, ...d };
-    if (d.status === 'error') return { success: false, ...d };
+    try {
+      const r = await fetch(`refresh_status.php?id=${id}&metric=${metric}`, { credentials: 'same-origin' });
+      if (!r.ok) continue; // retry on transient HTTP errors
+      const d = await r.json();
+      if (d.status === 'done') return { success: true, ...d };
+      if (d.status === 'error') return { success: false, ...d };
+    } catch (e) {
+      console.warn(`Poll ${metric} retry after error:`, e);
+      // Network blip on mobile — keep trying
+    }
   }
   return { success: false, message: 'Timed Out Waiting For Background Refresh.' };
+}
+
+// Wrapper: fetch with credentials + handle non-OK / network errors uniformly
+async function safeFetch(url) {
+  const r = await fetch(url, { credentials: 'same-origin' });
+  if (!r.ok) {
+    // If session expired (401), redirect to login instead of showing cryptic error
+    if (r.status === 401) {
+      window.location.href = 'login.php';
+      throw new Error('Session expired');
+    }
+    throw new Error(`HTTP ${r.status}`);
+  }
+  return r.json();
 }
 
 async function refreshOne(id, btnEl) {
@@ -374,44 +402,49 @@ async function refreshOne(id, btnEl) {
   try {
     if (hasFb) {
       const timer = btnEl ? startElapsedTimer(btnEl, 'FB') : null;
-      const r = await fetch(`refresh_fb.php?id=${id}`);
-      let d = await r.json();
-      if (d.status === 'started') d = await pollRefreshStatus(id, 'fb');
+      try {
+        let d = await safeFetch(`refresh_fb.php?id=${id}`);
+        if (d.status === 'started') d = await pollRefreshStatus(id, 'fb');
+        if (d.success) document.getElementById(`fb-${id}`).textContent = d.fb_followers.toLocaleString();
+        else errors.push('FB: ' + d.message);
+      } catch (e) { errors.push('FB: Network error — ' + e.message); }
       if (timer) stopElapsedTimer(timer);
       if (btnEl) btnEl.textContent = '...';
-      if (d.success) document.getElementById(`fb-${id}`).textContent = d.fb_followers.toLocaleString();
-      else errors.push('FB: ' + d.message);
       done++; setRowPercent(id, done, applicable); updateOverallProgress();
     }
     if (hasIg) {
       const timer = btnEl ? startElapsedTimer(btnEl, 'IG') : null;
-      const r = await fetch(`refresh_ig.php?id=${id}`);
-      let d = await r.json();
-      if (d.status === 'started') d = await pollRefreshStatus(id, 'ig');
+      try {
+        let d = await safeFetch(`refresh_ig.php?id=${id}`);
+        if (d.status === 'started') d = await pollRefreshStatus(id, 'ig');
+        if (d.success) document.getElementById(`ig-${id}`).textContent = d.ig_followers.toLocaleString();
+        else errors.push('IG: ' + d.message);
+      } catch (e) { errors.push('IG: Network error — ' + e.message); }
       if (timer) stopElapsedTimer(timer);
       if (btnEl) btnEl.textContent = '...';
-      if (d.success) document.getElementById(`ig-${id}`).textContent = d.ig_followers.toLocaleString();
-      else errors.push('IG: ' + d.message);
       done++; setRowPercent(id, done, applicable); updateOverallProgress();
     }
     if (hasYt) {
-      const r = await fetch(`refresh_yt.php?id=${id}`);
-      const d = await r.json();
-      if (d.success) document.getElementById(`yt-${id}`).textContent = d.yt_subscribers.toLocaleString();
-      else errors.push('YT: ' + d.message);
+      try {
+        const d = await safeFetch(`refresh_yt.php?id=${id}`);
+        if (d.success) document.getElementById(`yt-${id}`).textContent = d.yt_subscribers.toLocaleString();
+        else errors.push('YT: ' + d.message);
+      } catch (e) { errors.push('YT: Network error — ' + e.message); }
       done++; setRowPercent(id, done, applicable); updateOverallProgress();
     }
     if (hasGr) {
-      const r = await fetch(`refresh_gr.php?id=${id}`);
-      const d = await r.json();
-      if (d.success) document.getElementById(`gr-${id}`).innerHTML = `${d.google_review_count.toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
-      else errors.push('Google: ' + d.message);
+      try {
+        const d = await safeFetch(`refresh_gr.php?id=${id}`);
+        if (d.success) document.getElementById(`gr-${id}`).innerHTML = `${d.google_review_count.toLocaleString()} <span style="color:var(--muted)">(${d.google_rating}★)</span>`;
+        else errors.push('Google: ' + d.message);
+      } catch (e) { errors.push('Google: Network error — ' + e.message); }
       done++; setRowPercent(id, done, applicable); updateOverallProgress();
     }
 
     const tsEl = document.getElementById(`ts-${id}`);
     if (errors.length) {
-      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}">⚠ error</span>`;
+      const errJoined = errors.join('\n');
+      tsEl.innerHTML = `just now <span class="error-text" title="${errors.join(' | ').replace(/"/g, '&quot;')}" onclick="alert(${JSON.stringify(errJoined)})" style="cursor:pointer;">⚠ error</span>`;
     } else {
       tsEl.textContent = 'just now';
     }
