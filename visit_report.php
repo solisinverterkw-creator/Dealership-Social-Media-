@@ -582,7 +582,7 @@ if ($dealershipId && Auth::canAccessDealership($dealershipId)) {
     <div class="signature-line">DSM Signature</div>
     <div class="signature-line">Manager Signature</div>
     <div class="signature-line">Dealer Owner Signature</div>
-    <div class="signature-line">Sectional Head Signature</div>
+    <div class="signature-line">Sec. Head Signature</div>
     <div class="signature-line">HOD Signature</div>
   </div>
 
