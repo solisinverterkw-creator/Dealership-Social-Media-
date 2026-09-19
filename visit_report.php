@@ -225,8 +225,8 @@ if ($dealershipId && Auth::canAccessDealership($dealershipId)) {
   #report-content { outline: none !important; }
 }
 #report-content[contenteditable="true"] { outline: 2px dashed var(--accent, #4a90d9); outline-offset: 6px; cursor: text; }
-.signature-block { display:flex; gap:32px; margin-top:40px; flex-wrap:wrap; }
-.signature-line { flex:1; min-width:200px; border-top:1px solid var(--border); padding-top:8px; margin-top:60px; }
+.signature-block { display:flex; gap:24px; margin-top:40px; flex-wrap:wrap; }
+.signature-line { flex:1; min-width:160px; border-top:1px solid var(--border); padding-top:8px; margin-top:60px; text-align:center; font-size:13px; }
 .wide-report-table { border-collapse: collapse; width: 100%; font-size: 11px; table-layout: fixed; }
 .wide-report-table th, .wide-report-table td { border: 1px solid var(--border); padding: 3px 4px; text-align: center; }
 .wide-report-table td { white-space: nowrap; }
@@ -582,6 +582,8 @@ if ($dealershipId && Auth::canAccessDealership($dealershipId)) {
     <div class="signature-line">DSM Signature</div>
     <div class="signature-line">Manager Signature</div>
     <div class="signature-line">Dealer Owner Signature</div>
+    <div class="signature-line">Sectional Head Signature</div>
+    <div class="signature-line">HOD Signature</div>
   </div>
 
   </div>
