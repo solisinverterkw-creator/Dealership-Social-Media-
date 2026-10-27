@@ -7,7 +7,14 @@ load_dotenv(os.path.join(root_dir, '.env'))
 
 class Config:
     # Automatically read DATABASE_URL or POSTGRES_URL (injected by Vercel Neon Storage integration)
-    _db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL') or 'mysql+pymysql://root:@localhost/dealership_dashboard'
+    _db_url = (
+        os.environ.get('DATABASE_URL') or
+        os.environ.get('POSTGRES_URL') or
+        os.environ.get('POSTGRES_URL_NON_POOLING') or
+        os.environ.get('POSTGRES_PRISMA_URL') or
+        os.environ.get('NEON_DATABASE_URL') or
+        'mysql+pymysql://root:@localhost/dealership_dashboard'
+    )
     
     # pg8000 does NOT support sslmode or channel_binding as URL query params - must be stripped
     # SSL is handled separately via connect_args in database.py

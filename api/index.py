@@ -206,12 +206,20 @@ def utility_processor():
 def shutdown_session(exception=None):
     db_session.remove()
 
-# --- ERROR HANDLER (temporary - shows traceback) ---
+# --- ERROR HANDLER (shows traceback and sanitized db info) ---
 @app.errorhandler(500)
 def internal_error(e):
     import traceback
     tb = traceback.format_exc()
-    return f'<pre style="color:red;padding:20px">{tb}</pre>', 500
+    db_scheme = Config.DATABASE_URL.split('://')[0] if '://' in Config.DATABASE_URL else 'unknown'
+    has_env_db = bool(os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL'))
+    return f'''<div style="font-family:sans-serif;padding:24px;background:#111;color:#f87171;">
+        <h2 style="color:#ef4444;margin-top:0;">Server Error (500)</h2>
+        <div style="background:#222;padding:12px;border-radius:6px;margin-bottom:16px;color:#aaa;">
+            <strong>DB Scheme:</strong> {db_scheme} | <strong>Env DB Configured:</strong> {has_env_db}
+        </div>
+        <pre style="white-space:pre-wrap;background:#181818;padding:16px;border-radius:6px;color:#fca5a5;">{tb}</pre>
+    </div>''', 500
 
 # --- HELPER FUNCTIONS ---
 def dealership_percent(d):
