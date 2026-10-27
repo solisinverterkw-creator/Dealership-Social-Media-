@@ -349,6 +349,11 @@ def debug_info():
     info.append(f'Template folder: {app.template_folder}')
     info.append(f'UPLOAD_DIR: {UPLOAD_DIR}')
     try:
+        import scramp
+        info.append(f'scramp info: version={getattr(scramp, "__version__", "N/A")}, has_make_cb={hasattr(scramp, "make_channel_binding")}')
+    except Exception as se:
+        info.append(f'scramp import error: {se}')
+    try:
         from sqlalchemy import text
         with engine.connect() as conn:
             conn.execute(text('SELECT 1'))

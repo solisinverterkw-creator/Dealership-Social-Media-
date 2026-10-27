@@ -5,6 +5,17 @@ from dotenv import load_dotenv
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(root_dir, '.env'))
 
+# Fix for pg8000 + scramp incompatibility where scramp lacks make_channel_binding
+try:
+    import scramp
+    if not hasattr(scramp, 'make_channel_binding'):
+        if hasattr(scramp, 'core') and hasattr(scramp.core, 'make_channel_binding'):
+            scramp.make_channel_binding = scramp.core.make_channel_binding
+        else:
+            scramp.make_channel_binding = lambda *args, **kwargs: None
+except Exception:
+    pass
+
 class Config:
     # Automatically read DATABASE_URL or POSTGRES_URL (injected by Vercel Neon Storage integration)
     _db_url = (

@@ -4,6 +4,17 @@ from api.config import Config
 
 import ssl
 
+# Fix for pg8000 + scramp incompatibility where scramp lacks make_channel_binding
+try:
+    import scramp
+    if not hasattr(scramp, 'make_channel_binding'):
+        if hasattr(scramp, 'core') and hasattr(scramp.core, 'make_channel_binding'):
+            scramp.make_channel_binding = scramp.core.make_channel_binding
+        else:
+            scramp.make_channel_binding = lambda *args, **kwargs: None
+except Exception:
+    pass
+
 connect_args = {}
 if "postgresql+pg8000" in Config.DATABASE_URL:
     connect_args["ssl_context"] = ssl.create_default_context()
