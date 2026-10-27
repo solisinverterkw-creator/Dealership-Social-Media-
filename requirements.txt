@@ -2,6 +2,8 @@ Flask==3.0.3
 SQLAlchemy==2.0.31
 PyMySQL==1.1.1
 pg8000==1.31.5
+scramp==1.4.4
+asn1crypto==1.5.1
 requests==2.32.3
 openpyxl==3.1.5
 Pillow==11.0.0
