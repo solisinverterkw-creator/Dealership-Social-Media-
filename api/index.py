@@ -26,10 +26,12 @@ from api.models import (
     VehicleModelImage, BrandIdentity, PostSubmission, CrmParameter,
     CrmRawData, CrmScore, SalesRecord, SalesSummary, StockRecord,
     AgeingRecord, StockChassisRecord, TargetPage, PostLog, AppSetting,
-    ReshareCheck, ReshareOwnPostStat, ProcessedSourcePost
+    ReshareCheck, ReshareOwnPostStat, ProcessedSourcePost,
+    CrmVoipAuditReport, CrmVoipAuditItem, YtTestimonialRecord
 )
 # Alias for backward compatibility with code that uses ReshareSourcePost name
 ReshareSourcePost = ProcessedSourcePost
+from api.services.yt_testimonial_service import YtTestimonialService
 
 from api.auth import (
     hash_password, verify_password, attempt_login, logout_user,
@@ -883,6 +885,134 @@ def yt_monthly_view():
         message=message,
         error=error
     )
+
+# --- YOUTUBE TESTIMONIAL COMPLIANCE (FRONX & EVERY CUSTOMER REMARKS) ---
+
+@app.route('/testimonial_compliance')
+@app.route('/testimonial_compliance.php', endpoint='testimonial_compliance')
+@require_login
+def testimonial_compliance_view():
+    if not can_view('yt_monthly') and not is_super_admin():
+        abort(403)
+
+    dealerships = get_allowed_dealerships()
+    now = current_time_pk()
+    selected_month = request.args.get('month', now.strftime('%Y-%m'))
+
+    # Available months (last 6 months)
+    available_months = []
+    curr = now.replace(day=1)
+    for _ in range(6):
+        m_str = curr.strftime('%Y-%m')
+        m_label = curr.strftime('%B %Y')
+        available_months.append({'key': m_str, 'label': m_label})
+        # step 1 month back
+        if curr.month == 1:
+            curr = curr.replace(year=curr.year - 1, month=12)
+        else:
+            curr = curr.replace(month=curr.month - 1)
+
+    # Fetch stored testimonial records for selected month
+    records_map = {}
+    if dealerships:
+        d_ids = [d.id for d in dealerships]
+        recs = db_session.query(YtTestimonialRecord).filter(
+            YtTestimonialRecord.dealership_id.in_(d_ids),
+            YtTestimonialRecord.month == selected_month
+        ).all()
+        for r in recs:
+            records_map[r.dealership_id] = r
+
+    # Calculate summary counts
+    compliant_count = sum(1 for r in records_map.values() if r.compliance_score == 100)
+    partial_count = sum(1 for r in records_map.values() if r.compliance_score == 50)
+    non_compliant_count = sum(1 for r in records_map.values() if r.compliance_score == 0)
+
+    return render_template(
+        'testimonial_compliance.html',
+        dealerships=dealerships,
+        selected_month=selected_month,
+        available_months=available_months,
+        records_map=records_map,
+        compliant_count=compliant_count,
+        partial_count=partial_count,
+        non_compliant_count=non_compliant_count,
+        total_dealerships=len(dealerships)
+    )
+
+@app.route('/check_yt_testimonial.php')
+@require_login
+def check_yt_testimonial():
+    d_id = request.args.get('id', type=int)
+    month = request.args.get('month')
+
+    if not d_id or not month:
+        return jsonify({'success': False, 'message': 'Dealership ID and Month are required'}), 400
+
+    if not can_access_dealership(d_id):
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+
+    d = db_session.query(Dealership).filter(Dealership.id == d_id).first()
+    if not d:
+        return jsonify({'success': False, 'message': 'Dealership not found'}), 404
+
+    # Resolve channel ID if not set
+    channel_id = d.yt_channel_id
+    service = YtTestimonialService()
+    if not channel_id and d.yt_search:
+        lookup = YouTubeLookup()
+        channel_id = lookup.resolve_channel(d.yt_search)
+        if channel_id:
+            d.yt_channel_id = channel_id
+            db_session.commit()
+
+    if not channel_id:
+        return jsonify({'success': False, 'message': 'YouTube Channel ID not found for this dealership.'})
+
+    try:
+        eval_data = service.evaluate_dealership_for_month(d_id, channel_id, month)
+
+        # Upsert record in DB
+        record = db_session.query(YtTestimonialRecord).filter(
+            YtTestimonialRecord.dealership_id == d_id,
+            YtTestimonialRecord.month == month
+        ).first()
+
+        if not record:
+            record = YtTestimonialRecord(dealership_id=d_id, month=month)
+            db_session.add(record)
+
+        # Fronx
+        record.fronx_video_id = eval_data['fronx']['video_id']
+        record.fronx_video_title = eval_data['fronx']['video_title']
+        record.fronx_video_url = eval_data['fronx']['video_url']
+        record.fronx_status = eval_data['fronx']['status']
+        record.fronx_reason = eval_data['fronx']['reason']
+
+        # Every
+        record.every_video_id = eval_data['every']['video_id']
+        record.every_video_title = eval_data['every']['video_title']
+        record.every_video_url = eval_data['every']['video_url']
+        record.every_status = eval_data['every']['status']
+        record.every_reason = eval_data['every']['reason']
+
+        record.compliance_score = eval_data['compliance_score']
+        record.checked_at = current_time_pk()
+
+        db_session.commit()
+
+        return jsonify({
+            'success': True,
+            'dealership_id': d_id,
+            'month': month,
+            'fronx': eval_data['fronx'],
+            'every': eval_data['every'],
+            'compliance_score': eval_data['compliance_score']
+        })
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({'success': False, 'message': f'Error evaluating testimonials: {str(e)}'}), 500
+
 
 @app.route('/no_activity_report')
 @app.route('/no_activity_report.php', endpoint='follower_activity_report')
@@ -5333,7 +5463,226 @@ def run_cron_job(job_name):
         t = threading.Thread(target=worker)
         t.daemon = True
         t.start()
-        return f"Cron job {job_name} started asynchronously."
+# =====================================================================
+# CRM VOIP CALL AUDIT & GHOST FOLLOW-UP ROUTES
+# =====================================================================
+
+@app.route('/api/crm/audit-sync', methods=['POST'])
+def api_crm_audit_sync():
+    """Receives daily audit results pushed from the local stealth Playwright runner."""
+    expected_secret = os.environ.get('AUDIT_SYNC_SECRET', 'dealership_audit_secret_2026_xyz')
+    received_secret = request.headers.get('X-Audit-Secret', '')
+    if received_secret != expected_secret:
+        return jsonify({'success': False, 'error': 'Unauthorized: invalid secret token'}), 401
+
+    payload = request.get_json(silent=True)
+    if not payload:
+        return jsonify({'success': False, 'error': 'Invalid JSON body'}), 400
+
+    audit_date_str = payload.get('audit_date')
+    if not audit_date_str:
+        return jsonify({'success': False, 'error': 'audit_date is required (YYYY-MM-DD)'}), 400
+
+    try:
+        audit_date = datetime.strptime(audit_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'success': False, 'error': 'Invalid date format, use YYYY-MM-DD'}), 400
+
+    try:
+        # Check if a report for this date already exists; if so, replace/update it
+        report = db_session.query(CrmVoipAuditReport).filter_by(audit_date=audit_date).first()
+        if not report:
+            report = CrmVoipAuditReport(audit_date=audit_date)
+            db_session.add(report)
+            db_session.flush()
+        else:
+            # Clear old items
+            db_session.query(CrmVoipAuditItem).filter_by(report_id=report.id).delete()
+
+        report.total_inquiries = payload.get('total_inquiries', 0)
+        report.no_voip_call_count = payload.get('no_voip_call_count', 0)
+        report.fake_followup_count = payload.get('fake_followup_count', 0)
+        report.genuine_count = payload.get('genuine_count', 0)
+
+        raw_items = payload.get('items', [])
+        for item in raw_items:
+            audit_item = CrmVoipAuditItem(
+                report_id=report.id,
+                sales_team=item.get('sales_team'),
+                sales_consultant=item.get('sales_consultant'),
+                inquiry_no=item.get('inquiry_no', 'N/A'),
+                customer_name=item.get('customer_name'),
+                customer_mobile=item.get('customer_mobile'),
+                vehicle=item.get('vehicle'),
+                stage=item.get('stage'),
+                activity_type=item.get('activity_type'),
+                activity_status=item.get('activity_status'),
+                consultant_remarks=item.get('consultant_remarks'),
+                call_duration=item.get('call_duration', 0),
+                recording_url=item.get('recording_url'),
+                ai_summary=item.get('ai_summary'),
+                remarks_match=item.get('remarks_match'),
+                ai_issues=", ".join(item.get('ai_issues', [])) if isinstance(item.get('ai_issues'), list) else str(item.get('ai_issues') or ''),
+                verdict=item.get('verdict', 'UNKNOWN'),
+                verdict_label=item.get('verdict_label', '')
+            )
+            db_session.add(audit_item)
+
+        db_session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Synced {len(raw_items)} audit records for date {audit_date_str}',
+            'report_id': report.id
+        })
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/crm-voip-audit')
+def crm_voip_audit():
+    """Online web dashboard for viewing daily audit results, fake follow-ups, and audio analysis."""
+    if not is_logged_in():
+        return redirect(url_for('login'))
+
+    # Available audit dates
+    available_dates = db_session.query(CrmVoipAuditReport.audit_date).order_by(CrmVoipAuditReport.audit_date.desc()).all()
+    available_dates = [d[0].strftime('%Y-%m-%d') for d in available_dates]
+
+    selected_date_str = request.args.get('date')
+    if not selected_date_str and available_dates:
+        selected_date_str = available_dates[0]
+
+    report = None
+    items = []
+    if selected_date_str:
+        try:
+            sel_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            report = db_session.query(CrmVoipAuditReport).filter_by(audit_date=sel_date).first()
+            if report:
+                query = db_session.query(CrmVoipAuditItem).filter_by(report_id=report.id)
+                
+                # Filters
+                team_filter = request.args.get('team')
+                if team_filter and team_filter != 'all':
+                    query = query.filter(CrmVoipAuditItem.sales_team == team_filter)
+
+                verdict_filter = request.args.get('verdict')
+                if verdict_filter and verdict_filter != 'all':
+                    query = query.filter(CrmVoipAuditItem.verdict == verdict_filter)
+
+                items = query.order_by(CrmVoipAuditItem.id.asc()).all()
+        except ValueError:
+            pass
+
+    # Extract distinct teams for filter dropdown
+    teams = []
+    if report:
+        teams = db_session.query(distinct(CrmVoipAuditItem.sales_team)).filter_by(report_id=report.id).all()
+        teams = [t[0] for t in teams if t[0]]
+
+    return render_template(
+        'crm_voip_audit.html',
+        available_dates=available_dates,
+        selected_date=selected_date_str,
+        report=report,
+        items=items,
+        teams=teams,
+        selected_team=request.args.get('team', 'all'),
+        selected_verdict=request.args.get('verdict', 'all')
+    )
+
+
+@app.route('/crm-voip-audit/export')
+def crm_voip_audit_export():
+    """Exports the filtered audit report into an Excel (.xlsx) file on the fly."""
+    if not is_logged_in():
+        return redirect(url_for('login'))
+
+    selected_date_str = request.args.get('date')
+    if not selected_date_str:
+        return "Date is required", 400
+
+    try:
+        sel_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return "Invalid date format", 400
+
+    report = db_session.query(CrmVoipAuditReport).filter_by(audit_date=sel_date).first()
+    if not report:
+        return "No report found for this date", 404
+
+    query = db_session.query(CrmVoipAuditItem).filter_by(report_id=report.id)
+    team_filter = request.args.get('team')
+    if team_filter and team_filter != 'all':
+        query = query.filter(CrmVoipAuditItem.sales_team == team_filter)
+    verdict_filter = request.args.get('verdict')
+    if verdict_filter and verdict_filter != 'all':
+        query = query.filter(CrmVoipAuditItem.verdict == verdict_filter)
+    items = query.order_by(CrmVoipAuditItem.id.asc()).all()
+
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "VoIP Audit"
+    ws.views.sheetView[0].showGridLines = True
+
+    header_fill = PatternFill(start_color="1F2937", end_color="1F2937", fill_type="solid")
+    header_font = Font(name="Segoe UI", size=11, bold=True, color="FFFFFF")
+    red_fill = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
+    yellow_fill = PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid")
+    green_fill = PatternFill(start_color="DCFCE7", end_color="DCFCE7", fill_type="solid")
+
+    headers = [
+        "Audit Date", "Sales Team", "Sales Consultant", "Inquiry No", "Customer Name",
+        "Customer Mobile", "Vehicle", "Stage", "Activity Type", "Activity Status",
+        "Consultant Remarks in Odoo", "VoIP Duration (Sec)", "Recording URL",
+        "AI Call Summary", "Remarks Match Status", "AI Detected Issues", "Verdict"
+    ]
+    ws.append(headers)
+    for col_num in range(1, len(headers) + 1):
+        c = ws.cell(row=1, column=col_num)
+        c.fill = header_fill
+        c.font = header_font
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    for row_idx, item in enumerate(items, start=2):
+        row_values = [
+            selected_date_str, item.sales_team, item.sales_consultant, item.inquiry_no,
+            item.customer_name, item.customer_mobile, item.vehicle, item.stage,
+            item.activity_type, item.activity_status, item.consultant_remarks,
+            item.call_duration, item.recording_url, item.ai_summary,
+            item.remarks_match, item.ai_issues, item.verdict_label
+        ]
+        ws.append(row_values)
+        for col_num in range(1, len(headers) + 1):
+            cell = ws.cell(row=row_idx, column=col_num)
+            v = item.verdict or ""
+            if "NO_VOIP_CALL" in v or "FAKE" in v:
+                cell.fill = red_fill
+            elif "MISMATCH" in v or "SHORT" in v:
+                cell.fill = yellow_fill
+            elif "GENUINE" in v:
+                cell.fill = green_fill
+
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = min(max(max_len + 4, 12), 40)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(
+        output,
+        download_name=f"VoIP_Audit_{selected_date_str}.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 # --- BOOTSTRAP INITIALIZE DATABASE ---
 try:

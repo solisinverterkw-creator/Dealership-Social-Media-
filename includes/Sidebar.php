@@ -17,6 +17,7 @@ function navLinkClass(string $page, string $current): string
     <?php if (Auth::canView('report')): ?><a href="report.php" class="<?= navLinkClass('report.php', $__currentPage) ?>">Social Media Report</a><?php endif; ?>
     <?php if (Auth::canView('weekly_posts')): ?><a href="weekly_posts.php" class="<?= navLinkClass('weekly_posts.php', $__currentPage) ?>">Posting Activity</a><?php endif; ?>
     <?php if (Auth::canView('yt_monthly')): ?><a href="yt_monthly.php" class="<?= navLinkClass('yt_monthly.php', $__currentPage) ?>">YT Monthly Videos</a><?php endif; ?>
+    <?php if (Auth::canView('yt_monthly')): ?><a href="testimonial_compliance.php" class="<?= navLinkClass('testimonial_compliance.php', $__currentPage) ?>">Testimonial Compliance</a><?php endif; ?>
     <?php if (Auth::canView('no_activity_report')): ?><a href="no_activity_report.php" class="<?= navLinkClass('no_activity_report.php', $__currentPage) ?>">Follower Activity Report</a><?php endif; ?>
     <div style="margin:16px 0 6px; padding:0 12px; font-size:10px; color:var(--muted); font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.5px;">Facebook Integration</div>
     <?php if (Auth::canView('manual_publish')): ?><a href="manual_publish.php" class="<?= navLinkClass('manual_publish.php', $__currentPage) ?>">Publish Content</a><?php endif; ?>

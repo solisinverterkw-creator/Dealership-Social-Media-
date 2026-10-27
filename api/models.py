@@ -341,5 +341,75 @@ class CrmRawData(Base):
     dealership = relationship('Dealership', back_populates='crm_raw_data')
     parameter = relationship('CrmParameter', back_populates='raw_data')
 
+class CrmVoipAuditReport(Base):
+    __tablename__ = 'crm_voip_audit_reports'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    audit_date = Column(Date, nullable=False, unique=True)
+    total_inquiries = Column(Integer, default=0)
+    no_voip_call_count = Column(Integer, default=0)
+    fake_followup_count = Column(Integer, default=0)
+    genuine_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=func.now())
+
+    items = relationship('CrmVoipAuditItem', back_populates='report', cascade='all, delete-orphan')
+
+class CrmVoipAuditItem(Base):
+    __tablename__ = 'crm_voip_audit_items'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    report_id = Column(Integer, ForeignKey('crm_voip_audit_reports.id', ondelete='CASCADE'), nullable=False)
+    sales_team = Column(String(150), nullable=True)
+    sales_consultant = Column(String(150), nullable=True)
+    inquiry_no = Column(String(50), nullable=False)
+    customer_name = Column(String(150), nullable=True)
+    customer_mobile = Column(String(50), nullable=True)
+    vehicle = Column(String(150), nullable=True)
+    stage = Column(String(50), nullable=True)
+    activity_type = Column(String(100), nullable=True)
+    activity_status = Column(String(50), nullable=True)
+    consultant_remarks = Column(Text, nullable=True)
+    call_duration = Column(Integer, default=0)
+    recording_url = Column(String(500), nullable=True)
+    ai_summary = Column(Text, nullable=True)
+    remarks_match = Column(String(50), nullable=True)
+    ai_issues = Column(Text, nullable=True)
+    verdict = Column(String(50), nullable=False)
+    verdict_label = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=func.now())
+
+    report = relationship('CrmVoipAuditReport', back_populates='items')
+ 
+class YtTestimonialRecord(Base):
+    __tablename__ = 'yt_testimonial_records'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dealership_id = Column(Integer, ForeignKey('dealerships.id', ondelete='CASCADE'), nullable=False)
+    month = Column(String(7), nullable=False)  # Format 'YYYY-MM' e.g. '2026-10'
+
+    # Fronx Video & AI Verification
+    fronx_video_id = Column(String(50), nullable=True)
+    fronx_video_title = Column(String(255), nullable=True)
+    fronx_video_url = Column(String(255), nullable=True)
+    fronx_status = Column(String(30), default='missing')  # 'verified', 'rejected', 'missing'
+    fronx_reason = Column(Text, nullable=True)
+
+    # Every Video & AI Verification
+    every_video_id = Column(String(50), nullable=True)
+    every_video_title = Column(String(255), nullable=True)
+    every_video_url = Column(String(255), nullable=True)
+    every_status = Column(String(30), default='missing')  # 'verified', 'rejected', 'missing'
+    every_reason = Column(Text, nullable=True)
+
+    # Overall Compliance Score: 100% (both), 50% (one), 0% (none)
+    compliance_score = Column(Integer, default=0)
+    checked_at = Column(DateTime, default=func.now())
+
+    dealership = relationship('Dealership')
+
+    __table_args__ = (
+        UniqueConstraint('dealership_id', 'month', name='uq_dealership_month_testimonial'),
+    )
+
 # Alias for backward compatibility
 ReshareSourcePost = ProcessedSourcePost

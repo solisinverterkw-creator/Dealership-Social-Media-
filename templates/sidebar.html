@@ -18,6 +18,7 @@
     {% endif %}
     {% if can_view('yt_monthly') %}
       <a href="{{ url_for('yt_monthly') }}" class="sidebar-link {% if ep == 'yt_monthly' %}active{% endif %}">YT Monthly Videos</a>
+      <a href="{{ url_for('testimonial_compliance') }}" class="sidebar-link {% if ep == 'testimonial_compliance' %}active{% endif %}">Testimonial Compliance</a>
     {% endif %}
     {% if can_view('no_activity_report') %}
       <a href="{{ url_for('follower_activity_report') }}" class="sidebar-link {% if ep == 'follower_activity_report' %}active{% endif %}">Follower Activity Report</a>
@@ -75,6 +76,7 @@
     {% if can_view('crm_data_quality') %}
       <a href="{{ url_for('crm_data_quality') }}" class="sidebar-link {% if ep == 'crm_data_quality' %}active{% endif %}">CRM Data Quality Checker</a>
     {% endif %}
+    <a href="{{ url_for('crm_voip_audit') }}" class="sidebar-link {% if ep == 'crm_voip_audit' %}active{% endif %}">VoIP Call &amp; Follow-up Audit</a>
     {% if can_view('brand_assets') %}
       <a href="{{ url_for('brand_assets') }}" class="sidebar-link {% if ep == 'brand_assets' %}active{% endif %}">Brand Assets</a>
     {% endif %}
