@@ -211,12 +211,18 @@ def shutdown_session(exception=None):
 def internal_error(e):
     import traceback
     tb = traceback.format_exc()
+    lines = tb.strip().split('\n')
+    last_few = "\n".join(lines[-6:]) if len(lines) >= 6 else tb
     db_scheme = Config.DATABASE_URL.split('://')[0] if '://' in Config.DATABASE_URL else 'unknown'
     has_env_db = bool(os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL'))
     return f'''<div style="font-family:sans-serif;padding:24px;background:#111;color:#f87171;">
         <h2 style="color:#ef4444;margin-top:0;">Server Error (500)</h2>
         <div style="background:#222;padding:12px;border-radius:6px;margin-bottom:16px;color:#aaa;">
             <strong>DB Scheme:</strong> {db_scheme} | <strong>Env DB Configured:</strong> {has_env_db}
+        </div>
+        <div style="background:#b91c1c;color:#fff;padding:12px;border-radius:6px;margin-bottom:16px;font-weight:bold;">
+            EXACT ERROR: {str(e)}<br>
+            <span style="font-family:monospace;font-size:13px;font-weight:normal;">{last_few}</span>
         </div>
         <pre style="white-space:pre-wrap;background:#181818;padding:16px;border-radius:6px;color:#fca5a5;">{tb}</pre>
     </div>''', 500
