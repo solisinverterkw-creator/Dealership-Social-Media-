@@ -1062,10 +1062,10 @@ def export_testimonial_compliance():
             yt_ch = (d.yt_search or "").replace('"', '""')
 
             fronx_status = "Uploaded" if (r and r.fronx_status == 'verified') else "Not Uploaded"
-            fronx_url = (r.fronx_video_url or "") if r else ""
+            fronx_url = (r.fronx_video_url or "") if (r and r.fronx_status == 'verified') else ""
 
             every_status = "Uploaded" if (r and r.every_status == 'verified') else "Not Uploaded"
-            every_url = (r.every_video_url or "") if r else ""
+            every_url = (r.every_video_url or "") if (r and r.every_status == 'verified') else ""
 
             rems = []
             if r and r.fronx_reason:

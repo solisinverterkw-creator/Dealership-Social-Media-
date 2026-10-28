@@ -177,13 +177,8 @@ $nonCompliantCount = max(0, count($dealerships) - $compliantCount - $partialCoun
               <?php if (!empty($rec['fronx_video_url'])): ?>
                 <div style="margin-top:4px;"><a href="<?= htmlspecialchars($rec['fronx_video_url']) ?>" target="_blank" style="font-size:11px; color:var(--accent);">▶ Watch Video</a></div>
               <?php endif; ?>
-            <?php elseif ($rec && $rec['fronx_status'] === 'rejected'): ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>
-              <?php if (!empty($rec['fronx_video_url'])): ?>
-                <div style="margin-top:4px;"><a href="<?= htmlspecialchars($rec['fronx_video_url']) ?>" target="_blank" style="font-size:11px; color:var(--muted);">▶ Watch</a></div>
-              <?php endif; ?>
             <?php else: ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Not Uploaded</span>
+              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>
             <?php endif; ?>
           </td>
 
@@ -194,13 +189,8 @@ $nonCompliantCount = max(0, count($dealerships) - $compliantCount - $partialCoun
               <?php if (!empty($rec['every_video_url'])): ?>
                 <div style="margin-top:4px;"><a href="<?= htmlspecialchars($rec['every_video_url']) ?>" target="_blank" style="font-size:11px; color:var(--accent);">▶ Watch Video</a></div>
               <?php endif; ?>
-            <?php elseif ($rec && $rec['every_status'] === 'rejected'): ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>
-              <?php if (!empty($rec['every_video_url'])): ?>
-                <div style="margin-top:4px;"><a href="<?= htmlspecialchars($rec['every_video_url']) ?>" target="_blank" style="font-size:11px; color:var(--muted);">▶ Watch</a></div>
-              <?php endif; ?>
             <?php else: ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Not Uploaded</span>
+              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>
             <?php endif; ?>
           </td>
 
@@ -280,11 +270,8 @@ async function checkOneDealership(id, btnEl) {
       if (data.fronx.status === 'verified') {
         fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Uploaded</span>` +
                           (data.fronx.video_url ? `<div style="margin-top:4px;"><a href="${data.fronx.video_url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ Watch Video</a></div>` : '');
-      } else if (data.fronx.status === 'rejected') {
-        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>` +
-                          (data.fronx.video_url ? `<div style="margin-top:4px;"><a href="${data.fronx.video_url}" target="_blank" style="font-size:11px; color:var(--muted);">▶ Watch</a></div>` : '');
       } else {
-        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Not Uploaded</span>`;
+        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>`;
       }
     }
 
@@ -294,11 +281,8 @@ async function checkOneDealership(id, btnEl) {
       if (data.every.status === 'verified') {
         eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Uploaded</span>` +
                           (data.every.video_url ? `<div style="margin-top:4px;"><a href="${data.every.video_url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ Watch Video</a></div>` : '');
-      } else if (data.every.status === 'rejected') {
-        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>` +
-                          (data.every.video_url ? `<div style="margin-top:4px;"><a href="${data.every.video_url}" target="_blank" style="font-size:11px; color:var(--muted);">▶ Watch</a></div>` : '');
       } else {
-        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Not Uploaded</span>`;
+        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>`;
       }
     }
 

@@ -210,10 +210,41 @@ Reply strictly in JSON format:
                 'reason': f'Rejected: Video appears to be a promotional or walkaround showcase without customer remarks.'
             }
 
+    @staticmethod
+    def is_fronx_video(title: str, description: str) -> bool:
+        """
+        Strictly matches Suzuki Fronx videos.
+        Excludes other car models unless Fronx is explicitly mentioned.
+        """
+        combined = (title + " " + description).lower()
+        return bool(re.search(r'\bfronx\b', combined))
+
+    @staticmethod
+    def is_every_video(title: str, description: str) -> bool:
+        """
+        Strictly matches Suzuki Every vehicle videos.
+        Excludes generic phrases like 'every day', 'every customer', 'every week'
+        and excludes other Suzuki models (Alto, Swift, Cultus, etc.) unless Every is specified.
+        """
+        combined = (title + " " + description).lower()
+        # Direct car model phrases
+        if any(term in combined for term in ['suzuki every', 'every vxr', 'every vx', 'every van', 'every 660', 'every car', 'pak suzuki every', 'every delivery', 'every review', 'every testimonial']):
+            return True
+
+        # Matches standalone 'every' that is NOT an English adverb/quantifier phrase
+        if re.search(r'\b(?<!for\s)(?<!in\s)every\b(?!\s+(day|week|month|year|monday|tuesday|wednesday|thursday|friday|saturday|sunday|customer|person|one|single|time|family|client|moment|step|detail|color))', combined):
+            # If title clearly indicates another model without mentioning Every as a vehicle, exclude it
+            other_models = ['alto', 'swift', 'cultus', 'wagon r', 'wagonr', 'bolan', 'ravi', 'jimny', 'mehran']
+            if any(m in combined for m in other_models) and 'suzuki every' not in combined:
+                return False
+            return True
+        return False
+
     def evaluate_dealership_for_month(self, dealership_id: int, channel_id: str, month: str) -> dict:
         """
         Full evaluation for Fronx and Every videos for the dealership in the target month.
-        Prioritizes candidate videos that contain customer review indicators.
+        Strictly filters for Fronx and Every models only.
+        Only adds verified customer testimonial videos to the report; non-testimonial videos are excluded.
         """
         videos = self.get_channel_videos_for_month(channel_id, month)
 
@@ -221,10 +252,11 @@ Reply strictly in JSON format:
         every_candidates = []
 
         for v in videos:
-            text = (v['title'] + " " + v['description']).lower()
-            if 'fronx' in text:
+            t = v.get('title', '')
+            d = v.get('description', '')
+            if self.is_fronx_video(t, d):
                 fronx_candidates.append(v)
-            if 'every' in text:
+            if self.is_every_video(t, d):
                 every_candidates.append(v)
 
         def score_candidate(v):
@@ -239,40 +271,48 @@ Reply strictly in JSON format:
         fronx_candidates.sort(key=score_candidate, reverse=True)
         every_candidates.sort(key=score_candidate, reverse=True)
 
-        # Evaluate Fronx
-        fronx_res = {'status': 'missing', 'video_id': None, 'video_title': None, 'video_url': None, 'reason': 'No Fronx video uploaded this month.'}
+        # Evaluate Fronx: ONLY verified customer testimonial videos are added to report!
+        fronx_res = {
+            'status': 'missing',
+            'video_id': None,
+            'video_title': None,
+            'video_url': None,
+            'reason': 'No customer testimonial video uploaded for Suzuki Fronx this month.'
+        }
         for v in fronx_candidates:
             v_id = v['video_id']
             transcript = self.fetch_video_transcript(v_id)
             eval_res = self.verify_customer_remarks_with_gemini(v['title'], v['description'], transcript, 'Fronx')
             
-            # Record current candidate
-            fronx_res['video_id'] = v_id
-            fronx_res['video_title'] = v['title']
-            fronx_res['video_url'] = f"https://www.youtube.com/watch?v={v_id}"
-            fronx_res['status'] = 'verified' if eval_res['verified'] else 'rejected'
-            fronx_res['reason'] = eval_res['reason']
-
-            # If verified, stop at best matching verified video
+            # ONLY add to report if verified as a genuine customer testimonial!
             if eval_res['verified']:
+                fronx_res['video_id'] = v_id
+                fronx_res['video_title'] = v['title']
+                fronx_res['video_url'] = f"https://www.youtube.com/watch?v={v_id}"
+                fronx_res['status'] = 'verified'
+                fronx_res['reason'] = eval_res['reason']
                 break
 
-        # Evaluate Every
-        every_res = {'status': 'missing', 'video_id': None, 'video_title': None, 'video_url': None, 'reason': 'No Every video uploaded this month.'}
+        # Evaluate Every: ONLY verified customer testimonial videos are added to report!
+        every_res = {
+            'status': 'missing',
+            'video_id': None,
+            'video_title': None,
+            'video_url': None,
+            'reason': 'No customer testimonial video uploaded for Suzuki Every this month.'
+        }
         for v in every_candidates:
             v_id = v['video_id']
             transcript = self.fetch_video_transcript(v_id)
             eval_res = self.verify_customer_remarks_with_gemini(v['title'], v['description'], transcript, 'Every')
             
-            # Record current candidate
-            every_res['video_id'] = v_id
-            every_res['video_title'] = v['title']
-            every_res['video_url'] = f"https://www.youtube.com/watch?v={v_id}"
-            every_res['status'] = 'verified' if eval_res['verified'] else 'rejected'
-            every_res['reason'] = eval_res['reason']
-
-            # If verified, stop at best matching verified video
+            # ONLY add to report if verified as a genuine customer testimonial!
             if eval_res['verified']:
+                every_res['video_id'] = v_id
+                every_res['video_title'] = v['title']
+                every_res['video_url'] = f"https://www.youtube.com/watch?v={v_id}"
+                every_res['status'] = 'verified'
+                every_res['reason'] = eval_res['reason']
                 break
 
         # Calculate compliance score

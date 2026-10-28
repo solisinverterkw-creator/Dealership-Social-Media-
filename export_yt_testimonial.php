@@ -61,10 +61,10 @@ foreach ($dealerships as $i => $d) {
     $r = $recordsMap[$d['id']] ?? null;
 
     $fronxStatus = ($r && $r['fronx_status'] === 'verified') ? 'Uploaded' : 'Not Uploaded';
-    $fronxUrl = $r['fronx_video_url'] ?? '';
+    $fronxUrl = ($r && $r['fronx_status'] === 'verified') ? ($r['fronx_video_url'] ?? '') : '';
 
     $everyStatus = ($r && $r['every_status'] === 'verified') ? 'Uploaded' : 'Not Uploaded';
-    $everyUrl = $r['every_video_url'] ?? '';
+    $everyUrl = ($r && $r['every_status'] === 'verified') ? ($r['every_video_url'] ?? '') : '';
 
     $rems = [];
     if (!empty($r['fronx_reason'])) {
