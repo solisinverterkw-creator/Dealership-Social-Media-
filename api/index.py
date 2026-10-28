@@ -945,7 +945,7 @@ def testimonial_compliance_view():
     # Calculate summary counts
     compliant_count = sum(1 for r in records_map.values() if r.compliance_score == 100)
     partial_count = sum(1 for r in records_map.values() if r.compliance_score == 50)
-    non_compliant_count = sum(1 for r in records_map.values() if r.compliance_score == 0)
+    non_compliant_count = max(0, len(dealerships) - compliant_count - partial_count)
 
     return render_template(
         'testimonial_compliance.html',
@@ -1031,6 +1031,68 @@ def check_yt_testimonial():
     except Exception as e:
         db_session.rollback()
         return jsonify({'success': False, 'message': f'Error evaluating testimonials: {str(e)}'}), 500
+
+
+@app.route('/export_yt_testimonial.php')
+@app.route('/export_testimonial_compliance.php')
+@require_login
+def export_testimonial_compliance():
+    if not can_view('yt_monthly') and not is_super_admin():
+        abort(403)
+
+    dealerships = get_allowed_dealerships()
+    now = current_time_pk()
+    selected_month = request.args.get('month', now.strftime('%Y-%m'))
+
+    records_map = {}
+    if dealerships:
+        d_ids = [d.id for d in dealerships]
+        recs = db_session.query(YtTestimonialRecord).filter(
+            YtTestimonialRecord.dealership_id.in_(d_ids),
+            YtTestimonialRecord.month == selected_month
+        ).all()
+        for r in recs:
+            records_map[r.dealership_id] = r
+
+    def generate_csv():
+        yield "\ufeffSr #,Dealership Name,YouTube Channel,Fronx Testimonial,Fronx Video Link,Every Testimonial,Every Video Link,AI Remarks Verification,Compliance Score,Status,Audit Month\n"
+        for i, d in enumerate(dealerships):
+            r = records_map.get(d.id)
+            d_name = (d.name or "").replace('"', '""')
+            yt_ch = (d.yt_search or "").replace('"', '""')
+
+            fronx_status = "Uploaded" if (r and r.fronx_status == 'verified') else "Not Uploaded"
+            fronx_url = (r.fronx_video_url or "") if r else ""
+
+            every_status = "Uploaded" if (r and r.every_status == 'verified') else "Not Uploaded"
+            every_url = (r.every_video_url or "") if r else ""
+
+            rems = []
+            if r and r.fronx_reason:
+                rems.append(f"Fronx: {r.fronx_reason}")
+            if r and r.every_reason:
+                rems.append(f"Every: {r.every_reason}")
+            if not rems:
+                remarks_str = "Not Evaluated"
+            else:
+                remarks_str = " | ".join(rems).replace('"', '""')
+
+            score = r.compliance_score if r else 0
+            if score == 100:
+                comp_status = "100% Compliant"
+            elif score == 50:
+                comp_status = "50% Partial"
+            else:
+                comp_status = "Non-Compliant"
+
+            yield f'{i+1},"{d_name}","{yt_ch}","{fronx_status}","{fronx_url}","{every_status}","{every_url}","{remarks_str}",{score}%,"{comp_status}","{selected_month}"\n'
+
+    filename = f"youtube_testimonial_compliance_{selected_month}.csv"
+    return Response(
+        generate_csv(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-disposition": f"attachment; filename={filename}"}
+    )
 
 
 @app.route('/no_activity_report')

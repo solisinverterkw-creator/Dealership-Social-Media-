@@ -71,12 +71,11 @@ if (!empty($dealerships)) {
 
 $compliantCount = 0;
 $partialCount = 0;
-$nonCompliantCount = 0;
 foreach ($recordsMap as $r) {
     if ((int)$r['compliance_score'] === 100) $compliantCount++;
     elseif ((int)$r['compliance_score'] === 50) $partialCount++;
-    else $nonCompliantCount++;
 }
+$nonCompliantCount = max(0, count($dealerships) - $compliantCount - $partialCount);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -106,17 +105,17 @@ foreach ($recordsMap as $r) {
     <div class="stat-card-icon">
       <div class="badge" style="background:rgba(34,197,94,0.15); color:#22c55e;">✅</div>
       <div class="stat-value" style="color:#22c55e;"><?= $compliantCount ?></div>
-      <div class="stat-label">100% Compliant (Both Done)</div>
+      <div class="stat-label">100% Compliant (Both Uploaded)</div>
     </div>
     <div class="stat-card-icon">
-      <div class="badge" style="background:rgba(245,158,11,0.15); color:#f59e0b;"><?= $partialCount ?></div>
+      <div class="badge" style="background:rgba(245,158,11,0.15); color:#f59e0b;">⚠️</div>
       <div class="stat-value" style="color:#f59e0b;"><?= $partialCount ?></div>
-      <div class="stat-label">Partial (1 Model Verified)</div>
+      <div class="stat-label">Partial (1 Model Uploaded)</div>
     </div>
     <div class="stat-card-icon">
       <div class="badge" style="background:rgba(239,68,68,0.15); color:#ef4444;">❌</div>
       <div class="stat-value" style="color:#ef4444;"><?= $nonCompliantCount ?></div>
-      <div class="stat-label">Non-Compliant / Missing</div>
+      <div class="stat-label">Non-Compliant / Not Uploaded</div>
     </div>
     <div class="stat-card-icon">
       <div class="badge" style="background:rgba(99,102,241,0.15); color:#6366f1;">🏢</div>
@@ -135,7 +134,10 @@ foreach ($recordsMap as $r) {
       </select>
     </form>
 
-    <div class="toolbar" style="margin:0;">
+    <div class="toolbar" style="margin:0; display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="export_yt_testimonial.php?month=<?= urlencode($selectedMonth) ?>" class="btn secondary" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; padding:8px 16px; border-radius:6px; background:var(--panel); border:1px solid var(--border); color:var(--text); font-size:13px; font-weight:600; transition:all 0.2s;">
+        📥 Export Report (CSV / Excel)
+      </a>
       <button class="btn primary" id="check-all-btn" onclick="checkAllDealerships()">
         ⚡ Check All Dealerships (AI Verify)
       </button>
@@ -171,34 +173,34 @@ foreach ($recordsMap as $r) {
           <!-- Fronx Status -->
           <td style="text-align:center;" id="cell-fronx-<?= $d['id'] ?>">
             <?php if ($rec && $rec['fronx_status'] === 'verified'): ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Verified</span>
+              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Uploaded</span>
               <?php if (!empty($rec['fronx_video_url'])): ?>
                 <div style="margin-top:4px;"><a href="<?= htmlspecialchars($rec['fronx_video_url']) ?>" target="_blank" style="font-size:11px; color:var(--accent);">▶ Watch Video</a></div>
               <?php endif; ?>
             <?php elseif ($rec && $rec['fronx_status'] === 'rejected'): ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Rejected</span>
+              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>
               <?php if (!empty($rec['fronx_video_url'])): ?>
                 <div style="margin-top:4px;"><a href="<?= htmlspecialchars($rec['fronx_video_url']) ?>" target="_blank" style="font-size:11px; color:var(--muted);">▶ Watch</a></div>
               <?php endif; ?>
             <?php else: ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Missing</span>
+              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Not Uploaded</span>
             <?php endif; ?>
           </td>
 
           <!-- Every Status -->
           <td style="text-align:center;" id="cell-every-<?= $d['id'] ?>">
             <?php if ($rec && $rec['every_status'] === 'verified'): ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Verified</span>
+              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Uploaded</span>
               <?php if (!empty($rec['every_video_url'])): ?>
                 <div style="margin-top:4px;"><a href="<?= htmlspecialchars($rec['every_video_url']) ?>" target="_blank" style="font-size:11px; color:var(--accent);">▶ Watch Video</a></div>
               <?php endif; ?>
             <?php elseif ($rec && $rec['every_status'] === 'rejected'): ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Rejected</span>
+              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>
               <?php if (!empty($rec['every_video_url'])): ?>
                 <div style="margin-top:4px;"><a href="<?= htmlspecialchars($rec['every_video_url']) ?>" target="_blank" style="font-size:11px; color:var(--muted);">▶ Watch</a></div>
               <?php endif; ?>
             <?php else: ?>
-              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Missing</span>
+              <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Not Uploaded</span>
             <?php endif; ?>
           </td>
 
@@ -276,13 +278,13 @@ async function checkOneDealership(id, btnEl) {
     const fCell = document.getElementById(`cell-fronx-${id}`);
     if (fCell) {
       if (data.fronx.status === 'verified') {
-        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Verified</span>` +
+        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Uploaded</span>` +
                           (data.fronx.video_url ? `<div style="margin-top:4px;"><a href="${data.fronx.video_url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ Watch Video</a></div>` : '');
       } else if (data.fronx.status === 'rejected') {
-        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Rejected</span>` +
+        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>` +
                           (data.fronx.video_url ? `<div style="margin-top:4px;"><a href="${data.fronx.video_url}" target="_blank" style="font-size:11px; color:var(--muted);">▶ Watch</a></div>` : '');
       } else {
-        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Missing</span>`;
+        fCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Not Uploaded</span>`;
       }
     }
 
@@ -290,13 +292,13 @@ async function checkOneDealership(id, btnEl) {
     const eCell = document.getElementById(`cell-every-${id}`);
     if (eCell) {
       if (data.every.status === 'verified') {
-        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Verified</span>` +
+        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Uploaded</span>` +
                           (data.every.video_url ? `<div style="margin-top:4px;"><a href="${data.every.video_url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ Watch Video</a></div>` : '');
       } else if (data.every.status === 'rejected') {
-        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Rejected</span>` +
+        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>` +
                           (data.every.video_url ? `<div style="margin-top:4px;"><a href="${data.every.video_url}" target="_blank" style="font-size:11px; color:var(--muted);">▶ Watch</a></div>` : '');
       } else {
-        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Missing</span>`;
+        eCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— Not Uploaded</span>`;
       }
     }
 
