@@ -132,107 +132,148 @@ class YtTestimonialService:
         except Exception:
             return ""
 
+    CUSTOMER_REVIEW_INDICATORS = [
+        'customer review', 'customer feedback', 'owner review', 'customer remarks',
+        'testimonial', 'delivery review', 'customer experience', 'delivery feedback',
+        'customer reaction', 'customer interview', 'client review', 'client feedback',
+        'client remarks', 'customer point of view', 'customer views', 'customer saying',
+        'customer talk', 'customer handover review', 'buyers review', 'buyer review'
+    ]
+
     def verify_customer_remarks_with_gemini(self, title: str, description: str, transcript: str, car_model: str) -> dict:
         """
         Evaluates whether the video contains genuine customer feedback/remarks for the given car model.
         Returns: {'verified': bool, 'reason': str}
         """
-        gemini_key = self.get_gemini_key()
-        if not gemini_key:
-            # Fallback if no gemini key: check keywords in title/transcript
-            combined = (title + " " + description + " " + transcript).lower()
-            if any(k in combined for k in ['customer review', 'customer feedback', 'owner review', 'customer remarks', 'delivery feedback']):
-                return {'verified': True, 'reason': 'Customer review indicators found in video details.'}
-            return {'verified': False, 'reason': 'Gemini API Key missing and no direct customer review keywords found.'}
+        combined_text = (title + " " + description).lower()
+        if transcript:
+            combined_text += " " + transcript.lower()
 
-        # Prompt Gemini Flash
-        prompt = f"""
+        has_direct_indicator = any(ind in combined_text for ind in self.CUSTOMER_REVIEW_INDICATORS)
+
+        gemini_key = self.get_gemini_key()
+        if gemini_key:
+            # Prompt Gemini Flash
+            prompt = f"""
 You are an AI Compliance Auditor for Suzuki Dealerships.
 We are auditing a YouTube video for Suzuki {car_model}.
 
 CRITERIA:
-1. The video must feature a real CUSTOMER giving their own spoken feedback / point of view / review / remarks regarding the car (e.g. driving experience, satisfaction, features, dealership experience).
-2. If the video is purely background music, sales delivery montage without customer speaking, or ONLY the dealership salesman/host talking without genuine customer feedback, it must be REJECTED.
+1. The video must feature a real CUSTOMER giving feedback / review / remarks / testimonial regarding the car (e.g. driving experience, satisfaction, handover remarks, delivery feedback).
+2. Videos whose Title or Description explicitly indicate "Customer Review", "Customer Feedback", "Customer Remarks", "Owner Review", or customer interview remarks must be ACCEPTED (verified: true).
+3. If the video is purely a sales pitch / walkaround by showroom staff, stock display event, or general ceremony with no customer review/feedback, it must be REJECTED (verified: false).
+4. Note: Dealership videos in Pakistan are spoken in Urdu/local languages and YouTube rarely generates automatic subtitles. Do NOT reject solely because auto-subtitles are unavailable if the video title/description indicates a customer review.
 
 VIDEO DATA:
 - Title: {title}
 - Description: {description}
-- Spoken Transcript / Subtitles: {transcript if transcript else '[NO TRANSCRIPT / ONLY MUSIC / SILENT]'}
+- Spoken Subtitles/Transcript: {transcript if transcript else '[Audio spoken in Urdu/local language - YouTube subtitles not available]'}
 
-Analyze this carefully.
+Analyze this video details carefully.
 Reply strictly in JSON format:
 {{
   "verified": true or false,
-  "reason": "Short 1-2 sentence explanation in English or Urdu of why it passed or failed (e.g. 'Customer spoke about car comfort and satisfaction' or 'No customer remarks found, only delivery ceremony with music')."
+  "reason": "1 short sentence in English or Urdu explaining why it passed or failed"
 }}
 """
-        models = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro']
-        for model in models:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 200}
-            }
-            try:
-                res = requests.post(url, json=payload, timeout=20)
-                if res.status_code == 200:
-                    import json
-                    text = res.json()['candidates'][0]['content']['parts'][0]['text']
-                    clean_json = re.search(r'\{.*\}', text, re.DOTALL)
-                    if clean_json:
-                        parsed = json.loads(clean_json.group(0))
-                        return {
-                            'verified': bool(parsed.get('verified', False)),
-                            'reason': str(parsed.get('reason', 'Evaluation complete.'))
-                        }
-            except Exception:
-                continue
+            models = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro']
+            for model in models:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
+                payload = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"temperature": 0.1, "maxOutputTokens": 200}
+                }
+                try:
+                    res = requests.post(url, json=payload, timeout=15)
+                    if res.status_code == 200:
+                        import json
+                        text = res.json()['candidates'][0]['content']['parts'][0]['text']
+                        clean_json = re.search(r'\{.*\}', text, re.DOTALL)
+                        if clean_json:
+                            parsed = json.loads(clean_json.group(0))
+                            return {
+                                'verified': bool(parsed.get('verified', False)),
+                                'reason': str(parsed.get('reason', 'Evaluation complete.'))
+                            }
+                except Exception:
+                    continue
 
-        # If transcript was empty and Gemini could not be contacted
-        if not transcript:
-            return {'verified': False, 'reason': 'No spoken customer remarks or transcript found in video.'}
-        return {'verified': False, 'reason': 'Verification evaluation could not be completed.'}
+        # Rule-based fallback if Gemini API is unreachable or rate-limited
+        if has_direct_indicator:
+            return {
+                'verified': True,
+                'reason': f'Verified: Video titled & presented as genuine customer review/feedback for Suzuki {car_model}.'
+            }
+        else:
+            return {
+                'verified': False,
+                'reason': f'Rejected: Video appears to be a promotional or walkaround showcase without customer remarks.'
+            }
 
     def evaluate_dealership_for_month(self, dealership_id: int, channel_id: str, month: str) -> dict:
         """
         Full evaluation for Fronx and Every videos for the dealership in the target month.
+        Prioritizes candidate videos that contain customer review indicators.
         """
         videos = self.get_channel_videos_for_month(channel_id, month)
 
-        fronx_video = None
-        every_video = None
+        fronx_candidates = []
+        every_candidates = []
 
-        # Categorize videos based on title / description
         for v in videos:
             text = (v['title'] + " " + v['description']).lower()
-            if 'fronx' in text and not fronx_video:
-                fronx_video = v
-            if 'every' in text and not every_video:
-                every_video = v
+            if 'fronx' in text:
+                fronx_candidates.append(v)
+            if 'every' in text:
+                every_candidates.append(v)
+
+        def score_candidate(v):
+            txt = (v['title'] + " " + v['description']).lower()
+            score = 0
+            if any(k in txt for k in self.CUSTOMER_REVIEW_INDICATORS):
+                score += 10
+            elif any(k in txt for k in ['customer', 'review', 'feedback', 'remarks', 'interview', 'point of view', 'delivery']):
+                score += 5
+            return score
+
+        fronx_candidates.sort(key=score_candidate, reverse=True)
+        every_candidates.sort(key=score_candidate, reverse=True)
 
         # Evaluate Fronx
         fronx_res = {'status': 'missing', 'video_id': None, 'video_title': None, 'video_url': None, 'reason': 'No Fronx video uploaded this month.'}
-        if fronx_video:
-            v_id = fronx_video['video_id']
-            fronx_res['video_id'] = v_id
-            fronx_res['video_title'] = fronx_video['title']
-            fronx_res['video_url'] = f"https://www.youtube.com/watch?v={v_id}"
+        for v in fronx_candidates:
+            v_id = v['video_id']
             transcript = self.fetch_video_transcript(v_id)
-            eval_res = self.verify_customer_remarks_with_gemini(fronx_video['title'], fronx_video['description'], transcript, 'Fronx')
+            eval_res = self.verify_customer_remarks_with_gemini(v['title'], v['description'], transcript, 'Fronx')
+            
+            # Record current candidate
+            fronx_res['video_id'] = v_id
+            fronx_res['video_title'] = v['title']
+            fronx_res['video_url'] = f"https://www.youtube.com/watch?v={v_id}"
             fronx_res['status'] = 'verified' if eval_res['verified'] else 'rejected'
             fronx_res['reason'] = eval_res['reason']
 
+            # If verified, stop at best matching verified video
+            if eval_res['verified']:
+                break
+
         # Evaluate Every
         every_res = {'status': 'missing', 'video_id': None, 'video_title': None, 'video_url': None, 'reason': 'No Every video uploaded this month.'}
-        if every_video:
-            v_id = every_video['video_id']
-            every_res['video_id'] = v_id
-            every_res['video_title'] = every_video['title']
-            every_res['video_url'] = f"https://www.youtube.com/watch?v={v_id}"
+        for v in every_candidates:
+            v_id = v['video_id']
             transcript = self.fetch_video_transcript(v_id)
-            eval_res = self.verify_customer_remarks_with_gemini(every_video['title'], every_video['description'], transcript, 'Every')
+            eval_res = self.verify_customer_remarks_with_gemini(v['title'], v['description'], transcript, 'Every')
+            
+            # Record current candidate
+            every_res['video_id'] = v_id
+            every_res['video_title'] = v['title']
+            every_res['video_url'] = f"https://www.youtube.com/watch?v={v_id}"
             every_res['status'] = 'verified' if eval_res['verified'] else 'rejected'
             every_res['reason'] = eval_res['reason']
+
+            # If verified, stop at best matching verified video
+            if eval_res['verified']:
+                break
 
         # Calculate compliance score
         score = 0
@@ -248,3 +289,4 @@ Reply strictly in JSON format:
             'every': every_res,
             'compliance_score': score
         }
+
