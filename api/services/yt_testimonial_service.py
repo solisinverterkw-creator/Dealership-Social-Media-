@@ -137,7 +137,10 @@ class YtTestimonialService:
         'testimonial', 'delivery review', 'customer experience', 'delivery feedback',
         'customer reaction', 'customer interview', 'client review', 'client feedback',
         'client remarks', 'customer point of view', 'customer views', 'customer saying',
-        'customer talk', 'customer handover review', 'buyers review', 'buyer review'
+        'customer talk', 'customer handover review', 'buyers review', 'buyer review',
+        'satisfied customer', 'satisfaction', 'exchange plan', 'exchange program',
+        'exchange department', 'exchange review', 'trade-in review', 'customer exchange',
+        'feedback from exchange'
     ]
 
     def verify_customer_remarks_with_gemini(self, title: str, description: str, transcript: str, car_model: str) -> dict:
@@ -159,8 +162,8 @@ You are an AI Compliance Auditor for Suzuki Dealerships.
 We are auditing a YouTube video for Suzuki {car_model}.
 
 CRITERIA:
-1. The video must feature a real CUSTOMER giving feedback / review / remarks / testimonial regarding the car (e.g. driving experience, satisfaction, handover remarks, delivery feedback).
-2. Videos whose Title or Description explicitly indicate "Customer Review", "Customer Feedback", "Customer Remarks", "Owner Review", or customer interview remarks must be ACCEPTED (verified: true).
+1. The video must feature a real CUSTOMER giving feedback / review / remarks / testimonial regarding the car or dealership exchange plan (e.g. driving experience, satisfaction, handover remarks, delivery feedback, or car exchange / trade-in experience).
+2. Videos whose Title or Description explicitly indicate "Customer Review", "Customer Feedback", "Customer Remarks", "Owner Review", "Satisfied Customer", "Exchange Plan", "Exchange Program", or customer interview remarks must be ACCEPTED (verified: true).
 3. If the video is purely a sales pitch / walkaround by showroom staff, stock display event, or general ceremony with no customer review/feedback, it must be REJECTED (verified: false).
 4. Note: Dealership videos in Pakistan are spoken in Urdu/local languages and YouTube rarely generates automatic subtitles. Do NOT reject solely because auto-subtitles are unavailable if the video title/description indicates a customer review.
 
@@ -213,11 +216,28 @@ Reply strictly in JSON format:
     @staticmethod
     def is_fronx_video(title: str, description: str) -> bool:
         """
-        Strictly matches Suzuki Fronx videos.
-        Excludes other car models unless Fronx is explicitly mentioned.
+        Matches Suzuki Fronx videos or customer exchange program review videos (used for Fronx upgrade/campaigns).
+        Excludes other car models unless Fronx or Exchange Plan customer review is explicitly mentioned.
         """
         combined = (title + " " + description).lower()
-        return bool(re.search(r'\bfronx\b', combined))
+        if re.search(r'\bfronx\b', combined):
+            return True
+        
+        # Recognize customer exchange / trade-in review videos (e.g. 'Satisfied customer of Suzuki Exchange Plan')
+        is_exchange = any(term in combined for term in ['exchange plan', 'exchange program', 'exchange department', 'car exchange', 'trade-in', 'exchange offer'])
+        is_customer_review = any(term in combined for term in [
+            'satisfied customer', 'customer review', 'customer feedback', 'feedback from exchange',
+            'client review', 'customer experience', 'testimonial', 'customer remarks'
+        ])
+        if is_exchange and is_customer_review:
+            # If the video is explicitly titled for another specific model (e.g., Alto, Cultus, Swift delivery), exclude
+            other_models = ['alto', 'swift', 'cultus', 'wagon r', 'wagonr', 'bolan', 'ravi', 'jimny', 'mehran', 'every']
+            title_lower = title.lower()
+            if any(re.search(rf'\b{m}\b', title_lower) for m in other_models):
+                return False
+            return True
+
+        return False
 
     @staticmethod
     def is_every_video(title: str, description: str) -> bool:
