@@ -54,9 +54,11 @@ fputcsv($out, [
     'Own Used Car Post Link',
     'PSMCL Exchange Tracked',
     'PSMCL Exchange Reshared',
+    'PSMCL Exchange Post Link',
     'PSMCL Exchange Status',
     'PSMCL Used Car Tracked',
     'PSMCL Used Car Reshared',
+    'PSMCL Used Car Post Link',
     'PSMCL Used Car Status',
     'Compliance Score',
     'Overall Compliance',
@@ -74,6 +76,7 @@ foreach ($dealerships as $i => $d) {
 
     $psmclExTr = $r ? (int)$r['psmcl_exchange_tracked'] : 0;
     $psmclExRe = $r ? (int)$r['psmcl_exchange_reshared'] : 0;
+    $psmclExUrl = $r ? ($r['psmcl_exchange_url'] ?? '') : '';
     if (!$r || $r['psmcl_exchange_status'] === 'no_source_post') {
         $psmclExSt = 'No PSMCL Post';
     } elseif ($r['psmcl_exchange_status'] === 'reshared') {
@@ -84,6 +87,7 @@ foreach ($dealerships as $i => $d) {
 
     $psmclUcTr = $r ? (int)$r['psmcl_usedcar_tracked'] : 0;
     $psmclUcRe = $r ? (int)$r['psmcl_usedcar_reshared'] : 0;
+    $psmclUcUrl = $r ? ($r['psmcl_usedcar_url'] ?? '') : '';
     if (!$r || $r['psmcl_usedcar_status'] === 'no_source_post') {
         $psmclUcSt = 'No PSMCL Post';
     } elseif ($r['psmcl_usedcar_status'] === 'reshared') {
@@ -114,9 +118,11 @@ foreach ($dealerships as $i => $d) {
         $ownUcUrl,
         $psmclExTr,
         $psmclExRe,
+        $psmclExUrl,
         $psmclExSt,
         $psmclUcTr,
         $psmclUcRe,
+        $psmclUcUrl,
         $psmclUcSt,
         $score . '%',
         $compStatus,

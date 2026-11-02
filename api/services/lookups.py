@@ -117,6 +117,39 @@ class FacebookPostsLookup:
             elif not image_url and att.get('url'):
                 image_url = att.get('thumbnail_url') or att.get('url')
 
+        # Fallback to photos / images / header_image / media
+        if not image_url:
+            photos = post.get('photos') or post.get('images') or []
+            if isinstance(photos, list) and photos:
+                first = photos[0]
+                image_url = first if isinstance(first, str) else (first.get('url') or first.get('image_url'))
+            elif post.get('header_image'):
+                image_url = post.get('header_image')
+            elif post.get('media'):
+                media = post.get('media')
+                if isinstance(media, list) and media:
+                    image_url = media[0].get('url') if isinstance(media[0], dict) else media[0]
+
+        # Extract original_post metadata if this is a shared post
+        orig_post = post.get('original_post') or {}
+        orig_content = orig_post.get('content') or orig_post.get('message')
+        orig_id = str(orig_post.get('post_id') or orig_post.get('id') or '')
+        orig_url = orig_post.get('url') or orig_post.get('post_url')
+        orig_author = orig_post.get('author') or orig_post.get('page_name') or orig_post.get('user')
+
+        # Also check original_post for image attachments
+        if not image_url and orig_post:
+            for att in orig_post.get('attachments', []):
+                if not image_url and att.get('url'):
+                    image_url = att.get('thumbnail_url') or att.get('url')
+            if not image_url:
+                orig_photos = orig_post.get('photos') or orig_post.get('images') or []
+                if isinstance(orig_photos, list) and orig_photos:
+                    first = orig_photos[0]
+                    image_url = first if isinstance(first, str) else (first.get('url') or first.get('image_url'))
+                elif orig_post.get('header_image'):
+                    image_url = orig_post.get('header_image')
+
         created_time = None
         date_posted = post.get('date_posted')
         if date_posted:
@@ -134,7 +167,10 @@ class FacebookPostsLookup:
             'video_url': video_url,
             'created_time': created_time,
             'source_url': post.get('url'),
-            'original_post_message': post.get('original_post', {}).get('content') if post.get('original_post') else None
+            'original_post_message': orig_content,
+            'original_post_id': orig_id if orig_id else None,
+            'original_post_url': orig_url,
+            'original_post_author': orig_author
         }
 
     def get_recent_posts(self, page_input: str, limit: int = 10, cached_page_id: str = None) -> dict:

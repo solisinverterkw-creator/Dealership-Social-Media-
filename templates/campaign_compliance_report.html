@@ -157,6 +157,9 @@
             <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">
               ✅ Reshared ({{ r.psmcl_exchange_reshared }}/{{ r.psmcl_exchange_tracked }})
             </span>
+            {% if r.psmcl_exchange_url %}
+              <div style="margin-top:4px;"><a href="{{ r.psmcl_exchange_url }}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>
+            {% endif %}
           {% elif r.psmcl_exchange_status == 'no_source_post' %}
             <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">
               — No PSMCL Post
@@ -174,6 +177,9 @@
             <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">
               ✅ Reshared ({{ r.psmcl_usedcar_reshared }}/{{ r.psmcl_usedcar_tracked }})
             </span>
+            {% if r.psmcl_usedcar_url %}
+              <div style="margin-top:4px;"><a href="{{ r.psmcl_usedcar_url }}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>
+            {% endif %}
           {% elif r.psmcl_usedcar_status == 'no_source_post' %}
             <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">
               — No PSMCL Post
@@ -282,7 +288,8 @@ async function checkOneDealership(id, btnEl) {
     const psmclExCell = document.getElementById(`cell-psmcl-ex-${id}`);
     if (psmclExCell) {
       if (data.psmcl_exchange.status === 'reshared') {
-        psmclExCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Reshared (${data.psmcl_exchange.reshared}/${data.psmcl_exchange.tracked})</span>`;
+        psmclExCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Reshared (${data.psmcl_exchange.reshared}/${data.psmcl_exchange.tracked})</span>` +
+          (data.psmcl_exchange.url ? `<div style="margin-top:4px;"><a href="${data.psmcl_exchange.url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>` : '');
       } else if (data.psmcl_exchange.status === 'no_source_post') {
         psmclExCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— No PSMCL Post</span>`;
       } else {
@@ -294,7 +301,8 @@ async function checkOneDealership(id, btnEl) {
     const psmclUcCell = document.getElementById(`cell-psmcl-uc-${id}`);
     if (psmclUcCell) {
       if (data.psmcl_usedcar.status === 'reshared') {
-        psmclUcCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Reshared (${data.psmcl_usedcar.reshared}/${data.psmcl_usedcar.tracked})</span>`;
+        psmclUcCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Reshared (${data.psmcl_usedcar.reshared}/${data.psmcl_usedcar.tracked})</span>` +
+          (data.psmcl_usedcar.url ? `<div style="margin-top:4px;"><a href="${data.psmcl_usedcar.url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>` : '');
       } else if (data.psmcl_usedcar.status === 'no_source_post') {
         psmclUcCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— No PSMCL Post</span>`;
       } else {

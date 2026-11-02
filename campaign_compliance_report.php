@@ -55,15 +55,24 @@ $db->exec("
         own_usedcar_notes TEXT NULL,
         psmcl_exchange_tracked INT DEFAULT 0,
         psmcl_exchange_reshared INT DEFAULT 0,
+        psmcl_exchange_url VARCHAR(500) NULL,
         psmcl_exchange_status VARCHAR(30) DEFAULT 'no_source_post',
         psmcl_usedcar_tracked INT DEFAULT 0,
         psmcl_usedcar_reshared INT DEFAULT 0,
+        psmcl_usedcar_url VARCHAR(500) NULL,
         psmcl_usedcar_status VARCHAR(30) DEFAULT 'no_source_post',
         compliance_score INT DEFAULT 0,
         checked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uq_dealership_campaign (dealership_id, date_from, date_to)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ");
+
+try {
+    $db->exec("ALTER TABLE campaign_compliance_records ADD COLUMN psmcl_exchange_url VARCHAR(500) NULL");
+} catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE campaign_compliance_records ADD COLUMN psmcl_usedcar_url VARCHAR(500) NULL");
+} catch (Exception $e) {}
 
 if (!$isSuperAdmin && empty($scopedIds)) {
     $dealerships = [];
@@ -76,7 +85,7 @@ if (!$isSuperAdmin && empty($scopedIds)) {
     $dealerships = $stmt->fetchAll();
 }
 
-$defaultFrom = date('Y-m-01');
+$defaultFrom = date('Y-m-d', strtotime('-30 days'));
 $defaultTo = date('Y-m-d');
 $from = $_GET['from'] ?? $defaultFrom;
 $to = $_GET['to'] ?? $defaultTo;
@@ -284,6 +293,9 @@ if ($hasRange) {
               <td style="text-align:center;" id="cell-psmcl-ex-<?= $d['id'] ?>">
                 <?php if ($r && $r['psmcl_exchange_status'] === 'reshared'): ?>
                   <span class="badge-green">✅ Reshared (<?= (int)$r['psmcl_exchange_reshared'] ?>/<?= (int)$r['psmcl_exchange_tracked'] ?>)</span>
+                  <?php if (!empty($r['psmcl_exchange_url'])): ?>
+                    <div style="margin-top:4px;"><a href="<?= htmlspecialchars($r['psmcl_exchange_url']) ?>" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>
+                  <?php endif; ?>
                 <?php elseif (!$r || $r['psmcl_exchange_status'] === 'no_source_post'): ?>
                   <span class="badge-gray">— No PSMCL Post</span>
                 <?php else: ?>
@@ -295,6 +307,9 @@ if ($hasRange) {
               <td style="text-align:center;" id="cell-psmcl-uc-<?= $d['id'] ?>">
                 <?php if ($r && $r['psmcl_usedcar_status'] === 'reshared'): ?>
                   <span class="badge-green">✅ Reshared (<?= (int)$r['psmcl_usedcar_reshared'] ?>/<?= (int)$r['psmcl_usedcar_tracked'] ?>)</span>
+                  <?php if (!empty($r['psmcl_usedcar_url'])): ?>
+                    <div style="margin-top:4px;"><a href="<?= htmlspecialchars($r['psmcl_usedcar_url']) ?>" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>
+                  <?php endif; ?>
                 <?php elseif (!$r || $r['psmcl_usedcar_status'] === 'no_source_post'): ?>
                   <span class="badge-gray">— No PSMCL Post</span>
                 <?php else: ?>
@@ -400,7 +415,8 @@ async function checkOneDealership(id, btnEl) {
     const psmclExCell = document.getElementById(`cell-psmcl-ex-${id}`);
     if (psmclExCell) {
       if (data.psmcl_exchange.status === 'reshared') {
-        psmclExCell.innerHTML = `<span class="badge-green">✅ Reshared (${data.psmcl_exchange.reshared}/${data.psmcl_exchange.tracked})</span>`;
+        psmclExCell.innerHTML = `<span class="badge-green">✅ Reshared (${data.psmcl_exchange.reshared}/${data.psmcl_exchange.tracked})</span>` +
+          (data.psmcl_exchange.url ? `<div style="margin-top:4px;"><a href="${data.psmcl_exchange.url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>` : '');
       } else if (data.psmcl_exchange.status === 'no_source_post') {
         psmclExCell.innerHTML = `<span class="badge-gray">— No PSMCL Post</span>`;
       } else {
@@ -412,7 +428,8 @@ async function checkOneDealership(id, btnEl) {
     const psmclUcCell = document.getElementById(`cell-psmcl-uc-${id}`);
     if (psmclUcCell) {
       if (data.psmcl_usedcar.status === 'reshared') {
-        psmclUcCell.innerHTML = `<span class="badge-green">✅ Reshared (${data.psmcl_usedcar.reshared}/${data.psmcl_usedcar.tracked})</span>`;
+        psmclUcCell.innerHTML = `<span class="badge-green">✅ Reshared (${data.psmcl_usedcar.reshared}/${data.psmcl_usedcar.tracked})</span>` +
+          (data.psmcl_usedcar.url ? `<div style="margin-top:4px;"><a href="${data.psmcl_usedcar.url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>` : '');
       } else if (data.psmcl_usedcar.status === 'no_source_post') {
         psmclUcCell.innerHTML = `<span class="badge-gray">— No PSMCL Post</span>`;
       } else {

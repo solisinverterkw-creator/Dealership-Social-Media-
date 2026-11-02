@@ -4832,8 +4832,8 @@ def campaign_compliance_view():
         abort(403)
 
     now = current_time_pk()
-    # Default range: 1st of current month to today
-    default_from = now.replace(day=1).strftime('%Y-%m-%d')
+    # Default range: last 30 days to today so all recent campaigns are captured
+    default_from = (now - timedelta(days=30)).strftime('%Y-%m-%d')
     default_to = now.strftime('%Y-%m-%d')
 
     from_val = request.args.get('from', default_from)
@@ -4863,6 +4863,24 @@ def campaign_compliance_view():
                 CampaignSourcePost.published_at < to_dt
             ).count()
 
+            # If no source posts tracked yet for this range, trigger background/sync refresh
+            if source_stats['exchange_tracked'] == 0 and source_stats['usedcar_tracked'] == 0:
+                try:
+                    svc = CampaignComplianceService()
+                    svc.refresh_source_posts_for_range(from_val, to_val)
+                    source_stats['exchange_tracked'] = db_session.query(CampaignSourcePost).filter(
+                        CampaignSourcePost.category == 'exchange',
+                        CampaignSourcePost.published_at >= from_dt,
+                        CampaignSourcePost.published_at < to_dt
+                    ).count()
+                    source_stats['usedcar_tracked'] = db_session.query(CampaignSourcePost).filter(
+                        CampaignSourcePost.category == 'certified_used_car',
+                        CampaignSourcePost.published_at >= from_dt,
+                        CampaignSourcePost.published_at < to_dt
+                    ).count()
+                except Exception:
+                    pass
+
             d_ids = [d.id for d in dealerships]
             recs = db_session.query(CampaignComplianceRecord).filter(
                 CampaignComplianceRecord.dealership_id.in_(d_ids),
@@ -4887,9 +4905,11 @@ def campaign_compliance_view():
                     'psmcl_exchange_status': r.psmcl_exchange_status if r else ('no_source_post' if source_stats['exchange_tracked'] == 0 else 'missed'),
                     'psmcl_exchange_tracked': r.psmcl_exchange_tracked if r else source_stats['exchange_tracked'],
                     'psmcl_exchange_reshared': r.psmcl_exchange_reshared if r else 0,
+                    'psmcl_exchange_url': getattr(r, 'psmcl_exchange_url', None) if r else None,
                     'psmcl_usedcar_status': r.psmcl_usedcar_status if r else ('no_source_post' if source_stats['usedcar_tracked'] == 0 else 'missed'),
                     'psmcl_usedcar_tracked': r.psmcl_usedcar_tracked if r else source_stats['usedcar_tracked'],
                     'psmcl_usedcar_reshared': r.psmcl_usedcar_reshared if r else 0,
+                    'psmcl_usedcar_url': getattr(r, 'psmcl_usedcar_url', None) if r else None,
                     'compliance_score': r.compliance_score if r else 0,
                     'checked_at': r.checked_at.strftime('%d %b, %H:%M') if (r and r.checked_at) else None
                 })
@@ -4967,7 +4987,7 @@ def export_campaign_compliance():
     recs_map = {r.dealership_id: r for r in recs}
 
     def generate_campaign_csv():
-        yield "\ufeffSr #,Dealership Name,Tracking From,Tracking To,Own Exchange Content,Own Exchange Post Link,Own Certified Used Car Content,Own Used Car Post Link,PSMCL Exchange Tracked,PSMCL Exchange Reshared,PSMCL Exchange Status,PSMCL Used Car Tracked,PSMCL Used Car Reshared,PSMCL Used Car Status,Compliance Score,Overall Compliance,Last Checked\n"
+        yield "\ufeffSr #,Dealership Name,Tracking From,Tracking To,Own Exchange Content,Own Exchange Post Link,Own Certified Used Car Content,Own Used Car Post Link,PSMCL Exchange Tracked,PSMCL Exchange Reshared,PSMCL Exchange Post Link,PSMCL Exchange Status,PSMCL Used Car Tracked,PSMCL Used Car Reshared,PSMCL Used Car Post Link,PSMCL Used Car Status,Compliance Score,Overall Compliance,Last Checked\n"
         for i, d in enumerate(dealerships):
             r = recs_map.get(d.id)
             d_name = (d.name or "").replace('"', '""')
@@ -4980,6 +5000,7 @@ def export_campaign_compliance():
 
             psmcl_ex_tr = r.psmcl_exchange_tracked if r else 0
             psmcl_ex_re = r.psmcl_exchange_reshared if r else 0
+            psmcl_ex_url = getattr(r, 'psmcl_exchange_url', '') or ''
             if not r or r.psmcl_exchange_status == 'no_source_post':
                 psmcl_ex_st = "No PSMCL Post"
             elif r.psmcl_exchange_status == 'reshared':
@@ -4989,6 +5010,7 @@ def export_campaign_compliance():
 
             psmcl_uc_tr = r.psmcl_usedcar_tracked if r else 0
             psmcl_uc_re = r.psmcl_usedcar_reshared if r else 0
+            psmcl_uc_url = getattr(r, 'psmcl_usedcar_url', '') or ''
             if not r or r.psmcl_usedcar_status == 'no_source_post':
                 psmcl_uc_st = "No PSMCL Post"
             elif r.psmcl_usedcar_status == 'reshared':
@@ -5006,7 +5028,7 @@ def export_campaign_compliance():
 
             checked = r.checked_at.strftime('%Y-%m-%d %H:%M') if (r and r.checked_at) else "Never"
 
-            yield f'{i+1},"{d_name}","{from_val}","{to_val}","{own_ex_status}","{own_ex_link}","{own_uc_status}","{own_uc_link}",{psmcl_ex_tr},{psmcl_ex_re},"{psmcl_ex_st}",{psmcl_uc_tr},{psmcl_uc_re},"{psmcl_uc_st}",{score}%,"{overall}","{checked}"\n'
+            yield f'{i+1},"{d_name}","{from_val}","{to_val}","{own_ex_status}","{own_ex_link}","{own_uc_status}","{own_uc_link}",{psmcl_ex_tr},{psmcl_ex_re},"{psmcl_ex_url}","{psmcl_ex_st}",{psmcl_uc_tr},{psmcl_uc_re},"{psmcl_uc_url}","{psmcl_uc_st}",{score}%,"{overall}","{checked}"\n'
 
     filename = f"campaign_compliance_{from_val}_to_{to_val}.csv"
     return Response(

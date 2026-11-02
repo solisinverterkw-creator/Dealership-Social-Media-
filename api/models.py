@@ -461,10 +461,12 @@ class CampaignComplianceRecord(Base):
     # PSMCL Source Reshares
     psmcl_exchange_tracked = Column(Integer, default=0)
     psmcl_exchange_reshared = Column(Integer, default=0)
+    psmcl_exchange_url = Column(String(500), nullable=True)
     psmcl_exchange_status = Column(String(30), default='no_source_post')  # 'reshared', 'missed', 'no_source_post'
 
     psmcl_usedcar_tracked = Column(Integer, default=0)
     psmcl_usedcar_reshared = Column(Integer, default=0)
+    psmcl_usedcar_url = Column(String(500), nullable=True)
     psmcl_usedcar_status = Column(String(30), default='no_source_post')  # 'reshared', 'missed', 'no_source_post'
 
     compliance_score = Column(Integer, default=0)
