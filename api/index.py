@@ -27,11 +27,13 @@ from api.models import (
     CrmRawData, CrmScore, SalesRecord, SalesSummary, StockRecord,
     AgeingRecord, StockChassisRecord, TargetPage, PostLog, AppSetting,
     ReshareCheck, ReshareOwnPostStat, ProcessedSourcePost,
-    CrmVoipAuditReport, CrmVoipAuditItem, YtTestimonialRecord
+    CrmVoipAuditReport, CrmVoipAuditItem, YtTestimonialRecord,
+    CampaignSourcePost, PostImageScanCache, CampaignComplianceRecord
 )
 # Alias for backward compatibility with code that uses ReshareSourcePost name
 ReshareSourcePost = ProcessedSourcePost
 from api.services.yt_testimonial_service import YtTestimonialService
+from api.services.campaign_compliance_service import CampaignComplianceService
 
 from api.auth import (
     hash_password, verify_password, attempt_login, logout_user,
@@ -155,6 +157,7 @@ def sidebar_sections_list():
         'syndication_report': {'label': 'Integration Report', 'page': 'syndication_report.php'},
         'post_breakdown': {'label': 'Post Breakdown Report', 'page': 'post_breakdown_report.php'},
         'reshare_compliance': {'label': 'Reshare Compliance', 'page': 'reshare_compliance_report.php'},
+        'campaign_compliance': {'label': 'Exchange & Used Car Compliance', 'page': 'campaign_compliance_report.php'},
         'target_pages': {'label': 'Target Pages', 'page': 'target_pages.php'},
         'exchange_token': {'label': 'Exchange Token', 'page': 'exchange_token.php'},
         'submit_post_check': {'label': 'Post Approval', 'page': 'submit_post_check.php'},
@@ -4818,6 +4821,199 @@ def export_reshare_compliance():
         return Response(generate_missed(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=missed_reshares.csv"})
         
     return redirect(url_for('reshare_compliance'))
+
+# --- CAMPAIGN COMPLIANCE (EXCHANGE & CERTIFIED USED CAR) ---
+
+@app.route('/campaign_compliance')
+@app.route('/campaign_compliance_report.php', endpoint='campaign_compliance')
+@require_login
+def campaign_compliance_view():
+    if not can_view('campaign_compliance') and not can_view('reshare_compliance') and not is_super_admin():
+        abort(403)
+
+    now = current_time_pk()
+    # Default range: 1st of current month to today
+    default_from = now.replace(day=1).strftime('%Y-%m-%d')
+    default_to = now.strftime('%Y-%m-%d')
+
+    from_val = request.args.get('from', default_from)
+    to_val = request.args.get('to', default_to)
+    has_range = bool(from_val and to_val)
+
+    dealerships = get_allowed_dealerships()
+    rows = []
+    source_stats = {'exchange_tracked': 0, 'usedcar_tracked': 0}
+
+    if has_range:
+        try:
+            from_dt = datetime.strptime(from_val, '%Y-%m-%d')
+            to_dt = datetime.strptime(to_val, '%Y-%m-%d') + timedelta(days=1)
+            from_date_obj = from_dt.date()
+            to_date_obj = datetime.strptime(to_val, '%Y-%m-%d').date()
+
+            # PSMCL source posts tracked in range
+            source_stats['exchange_tracked'] = db_session.query(CampaignSourcePost).filter(
+                CampaignSourcePost.category == 'exchange',
+                CampaignSourcePost.published_at >= from_dt,
+                CampaignSourcePost.published_at < to_dt
+            ).count()
+            source_stats['usedcar_tracked'] = db_session.query(CampaignSourcePost).filter(
+                CampaignSourcePost.category == 'certified_used_car',
+                CampaignSourcePost.published_at >= from_dt,
+                CampaignSourcePost.published_at < to_dt
+            ).count()
+
+            d_ids = [d.id for d in dealerships]
+            recs = db_session.query(CampaignComplianceRecord).filter(
+                CampaignComplianceRecord.dealership_id.in_(d_ids),
+                CampaignComplianceRecord.date_from == from_date_obj,
+                CampaignComplianceRecord.date_to == to_date_obj
+            ).all()
+            recs_map = {r.dealership_id: r for r in recs}
+
+            for d in dealerships:
+                r = recs_map.get(d.id)
+                rows.append({
+                    'id': d.id,
+                    'name': d.name,
+                    'fb_input': d.fb_input or d.fb_url,
+                    'record': r,
+                    'own_exchange_status': r.own_exchange_status if r else 'not_uploaded',
+                    'own_exchange_count': r.own_exchange_count if r else 0,
+                    'own_exchange_url': r.own_exchange_url if r else None,
+                    'own_usedcar_status': r.own_usedcar_status if r else 'not_uploaded',
+                    'own_usedcar_count': r.own_usedcar_count if r else 0,
+                    'own_usedcar_url': r.own_usedcar_url if r else None,
+                    'psmcl_exchange_status': r.psmcl_exchange_status if r else ('no_source_post' if source_stats['exchange_tracked'] == 0 else 'missed'),
+                    'psmcl_exchange_tracked': r.psmcl_exchange_tracked if r else source_stats['exchange_tracked'],
+                    'psmcl_exchange_reshared': r.psmcl_exchange_reshared if r else 0,
+                    'psmcl_usedcar_status': r.psmcl_usedcar_status if r else ('no_source_post' if source_stats['usedcar_tracked'] == 0 else 'missed'),
+                    'psmcl_usedcar_tracked': r.psmcl_usedcar_tracked if r else source_stats['usedcar_tracked'],
+                    'psmcl_usedcar_reshared': r.psmcl_usedcar_reshared if r else 0,
+                    'compliance_score': r.compliance_score if r else 0,
+                    'checked_at': r.checked_at.strftime('%d %b, %H:%M') if (r and r.checked_at) else None
+                })
+        except Exception:
+            pass
+
+    from_formatted = datetime.strptime(from_val, '%Y-%m-%d').strftime('%d %b %Y') if from_val else ""
+    to_formatted = datetime.strptime(to_val, '%Y-%m-%d').strftime('%d %b %Y') if to_val else ""
+
+    return render_template(
+        'campaign_compliance_report.html',
+        from_val=from_val,
+        to_val=to_val,
+        has_range=has_range,
+        rows=rows,
+        source_stats=source_stats,
+        from_formatted=from_formatted,
+        to_formatted=to_formatted
+    )
+
+@app.route('/check_campaign_dealership.php')
+@require_login
+def check_campaign_dealership():
+    d_id = request.args.get('id', type=int)
+    from_date = request.args.get('from')
+    to_date = request.args.get('to')
+    if not d_id or not from_date or not to_date or not can_access_dealership(d_id):
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+
+    try:
+        svc = CampaignComplianceService()
+        res = svc.evaluate_dealership(d_id, from_date, to_date)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/refresh_campaign_source.php')
+@require_login
+def refresh_campaign_source():
+    from_date = request.args.get('from')
+    to_date = request.args.get('to')
+    if not from_date or not to_date:
+        return jsonify({'success': False, 'message': 'Date range is required'}), 400
+
+    try:
+        svc = CampaignComplianceService()
+        res = svc.refresh_source_posts_for_range(from_date, to_date)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/export_campaign_compliance.php')
+@require_login
+def export_campaign_compliance():
+    if not can_view('campaign_compliance') and not can_view('reshare_compliance') and not is_super_admin():
+        abort(403)
+
+    from_val = request.args.get('from', '')
+    to_val = request.args.get('to', '')
+    if not from_val or not to_val:
+        return redirect(url_for('campaign_compliance'))
+
+    dealerships = get_allowed_dealerships()
+    from_dt = datetime.strptime(from_val, '%Y-%m-%d')
+    to_dt = datetime.strptime(to_val, '%Y-%m-%d') + timedelta(days=1)
+    from_date_obj = from_dt.date()
+    to_date_obj = datetime.strptime(to_val, '%Y-%m-%d').date()
+
+    d_ids = [d.id for d in dealerships]
+    recs = db_session.query(CampaignComplianceRecord).filter(
+        CampaignComplianceRecord.dealership_id.in_(d_ids),
+        CampaignComplianceRecord.date_from == from_date_obj,
+        CampaignComplianceRecord.date_to == to_date_obj
+    ).all()
+    recs_map = {r.dealership_id: r for r in recs}
+
+    def generate_campaign_csv():
+        yield "\ufeffSr #,Dealership Name,Tracking From,Tracking To,Own Exchange Content,Own Exchange Post Link,Own Certified Used Car Content,Own Used Car Post Link,PSMCL Exchange Tracked,PSMCL Exchange Reshared,PSMCL Exchange Status,PSMCL Used Car Tracked,PSMCL Used Car Reshared,PSMCL Used Car Status,Compliance Score,Overall Compliance,Last Checked\n"
+        for i, d in enumerate(dealerships):
+            r = recs_map.get(d.id)
+            d_name = (d.name or "").replace('"', '""')
+            
+            own_ex_status = "Uploaded" if (r and r.own_exchange_status == 'uploaded') else "Not Uploaded"
+            own_ex_link = (r.own_exchange_url or "") if (r and r.own_exchange_status == 'uploaded') else ""
+            
+            own_uc_status = "Uploaded" if (r and r.own_usedcar_status == 'uploaded') else "Not Uploaded"
+            own_uc_link = (r.own_usedcar_url or "") if (r and r.own_usedcar_status == 'uploaded') else ""
+
+            psmcl_ex_tr = r.psmcl_exchange_tracked if r else 0
+            psmcl_ex_re = r.psmcl_exchange_reshared if r else 0
+            if not r or r.psmcl_exchange_status == 'no_source_post':
+                psmcl_ex_st = "No PSMCL Post"
+            elif r.psmcl_exchange_status == 'reshared':
+                psmcl_ex_st = "Reshared"
+            else:
+                psmcl_ex_st = "Missed"
+
+            psmcl_uc_tr = r.psmcl_usedcar_tracked if r else 0
+            psmcl_uc_re = r.psmcl_usedcar_reshared if r else 0
+            if not r or r.psmcl_usedcar_status == 'no_source_post':
+                psmcl_uc_st = "No PSMCL Post"
+            elif r.psmcl_usedcar_status == 'reshared':
+                psmcl_uc_st = "Reshared"
+            else:
+                psmcl_uc_st = "Missed"
+
+            score = r.compliance_score if r else 0
+            if score == 100:
+                overall = "100% Compliant"
+            elif score >= 50:
+                overall = "Partial"
+            else:
+                overall = "Non-Compliant"
+
+            checked = r.checked_at.strftime('%Y-%m-%d %H:%M') if (r and r.checked_at) else "Never"
+
+            yield f'{i+1},"{d_name}","{from_val}","{to_val}","{own_ex_status}","{own_ex_link}","{own_uc_status}","{own_uc_link}",{psmcl_ex_tr},{psmcl_ex_re},"{psmcl_ex_st}",{psmcl_uc_tr},{psmcl_uc_re},"{psmcl_uc_st}",{score}%,"{overall}","{checked}"\n'
+
+    filename = f"campaign_compliance_{from_val}_to_{to_val}.csv"
+    return Response(
+        generate_campaign_csv(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-disposition": f"attachment; filename={filename}"}
+    )
 
 # --- EXPORT REPORT UTILS ---
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DECIMAL, BigInteger, DateTime, Date, ForeignKey, Table, UniqueConstraint, func
+from sqlalchemy import Column, Integer, String, Text, DECIMAL, BigInteger, DateTime, Date, ForeignKey, Table, UniqueConstraint, func, Boolean
 from sqlalchemy.orm import relationship, synonym
 from api.database import Base
 
@@ -413,3 +413,66 @@ class YtTestimonialRecord(Base):
 
 # Alias for backward compatibility
 ReshareSourcePost = ProcessedSourcePost
+
+class CampaignSourcePost(Base):
+    __tablename__ = 'campaign_source_posts'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_post_id = Column(String(50), nullable=False, unique=True)
+    category = Column(String(50), nullable=False)  # 'exchange', 'certified_used_car'
+    message_snippet = Column(String(500), nullable=True)
+    image_url = Column(String(1000), nullable=True)
+    post_url = Column(String(500), nullable=True)
+    published_at = Column(DateTime, nullable=True)
+    detected_keywords = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=func.now())
+
+class PostImageScanCache(Base):
+    __tablename__ = 'post_image_scan_cache'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    post_id = Column(String(100), nullable=False, unique=True)
+    image_url = Column(String(1000), nullable=True)
+    extracted_text = Column(Text, nullable=True)
+    is_exchange = Column(Boolean, default=False)
+    is_certified_used_car = Column(Boolean, default=False)
+    classification_reason = Column(String(500), nullable=True)
+    scanned_at = Column(DateTime, default=func.now())
+
+class CampaignComplianceRecord(Base):
+    __tablename__ = 'campaign_compliance_records'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dealership_id = Column(Integer, ForeignKey('dealerships.id', ondelete='CASCADE'), nullable=False)
+    date_from = Column(Date, nullable=False)
+    date_to = Column(Date, nullable=False)
+
+    # Dealership Own Content
+    own_exchange_count = Column(Integer, default=0)
+    own_exchange_url = Column(String(500), nullable=True)
+    own_exchange_status = Column(String(30), default='not_uploaded')  # 'uploaded', 'not_uploaded'
+    own_exchange_notes = Column(Text, nullable=True)
+
+    own_usedcar_count = Column(Integer, default=0)
+    own_usedcar_url = Column(String(500), nullable=True)
+    own_usedcar_status = Column(String(30), default='not_uploaded')  # 'uploaded', 'not_uploaded'
+    own_usedcar_notes = Column(Text, nullable=True)
+
+    # PSMCL Source Reshares
+    psmcl_exchange_tracked = Column(Integer, default=0)
+    psmcl_exchange_reshared = Column(Integer, default=0)
+    psmcl_exchange_status = Column(String(30), default='no_source_post')  # 'reshared', 'missed', 'no_source_post'
+
+    psmcl_usedcar_tracked = Column(Integer, default=0)
+    psmcl_usedcar_reshared = Column(Integer, default=0)
+    psmcl_usedcar_status = Column(String(30), default='no_source_post')  # 'reshared', 'missed', 'no_source_post'
+
+    compliance_score = Column(Integer, default=0)
+    checked_at = Column(DateTime, default=func.now())
+
+    dealership = relationship('Dealership')
+
+    __table_args__ = (
+        UniqueConstraint('dealership_id', 'date_from', 'date_to', name='uq_dealership_campaign_compliance'),
+    )
+

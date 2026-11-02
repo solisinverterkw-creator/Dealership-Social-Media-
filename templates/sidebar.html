@@ -36,6 +36,7 @@
     {% endif %}
     {% if can_view('reshare_compliance') %}
       <a href="{{ url_for('reshare_compliance') }}" class="sidebar-link {% if ep == 'reshare_compliance' %}active{% endif %}">Reshare Compliance</a>
+      <a href="{{ url_for('campaign_compliance') }}" class="sidebar-link {% if ep == 'campaign_compliance' %}active{% endif %}">Exchange &amp; Used Car</a>
     {% endif %}
     {% if can_view('target_pages') %}
       <a href="{{ url_for('target_pages') }}" class="sidebar-link {% if ep == 'target_pages' %}active{% endif %}">Target Pages</a>

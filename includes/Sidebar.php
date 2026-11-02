@@ -24,6 +24,7 @@ function navLinkClass(string $page, string $current): string
     <?php if (Auth::canView('syndication_report')): ?><a href="syndication_report.php" class="<?= navLinkClass('syndication_report.php', $__currentPage) ?>">Integration Report</a><?php endif; ?>
     <?php if (Auth::canView('post_breakdown')): ?><a href="post_breakdown_report.php" class="<?= navLinkClass('post_breakdown_report.php', $__currentPage) ?>">Post Breakdown Report</a><?php endif; ?>
     <?php if (Auth::canView('reshare_compliance')): ?><a href="reshare_compliance_report.php" class="<?= navLinkClass('reshare_compliance_report.php', $__currentPage) ?>">Reshare Compliance</a><?php endif; ?>
+    <?php if (Auth::canView('reshare_compliance') || Auth::canView('campaign_compliance')): ?><a href="campaign_compliance_report.php" class="<?= navLinkClass('campaign_compliance_report.php', $__currentPage) ?>">Exchange &amp; Used Car</a><?php endif; ?>
     <?php if (Auth::canView('target_pages')): ?><a href="target_pages.php" class="<?= navLinkClass('target_pages.php', $__currentPage) ?>">Target Pages</a><?php endif; ?>
     <?php if (Auth::canView('exchange_token')): ?><a href="exchange_token.php" class="<?= navLinkClass('exchange_token.php', $__currentPage) ?>">Exchange Token</a><?php endif; ?>
     <div style="margin:16px 0 6px; padding:0 12px; font-size:10px; color:var(--muted); font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.5px;">Content Compliance</div>

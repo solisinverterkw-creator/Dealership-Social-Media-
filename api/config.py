@@ -79,7 +79,20 @@ class Config:
                 return setting.setting_value.strip()
         except Exception:
             pass
+        val = ''
         if default_env_var:
-            return os.environ.get(default_env_var, '')
-        return os.environ.get(key_name.upper(), '')
+            val = os.environ.get(default_env_var, '')
+        if not val:
+            val = os.environ.get(key_name.upper(), '')
+        if not val and key_name.lower() in ('gemini_api_key', 'gemini'):
+            key_file = os.path.join(root_dir, 'gemini_key.txt')
+            if os.path.exists(key_file):
+                try:
+                    with open(key_file, 'r', encoding='utf-8') as kf:
+                        content = kf.read().strip()
+                        if content:
+                            return content
+                except Exception:
+                    pass
+        return val
 
