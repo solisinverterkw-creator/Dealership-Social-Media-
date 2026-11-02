@@ -70,7 +70,11 @@ def can_access_dealership(dealership_id: int) -> bool:
         return False
     if is_super_admin():
         return True
-    return int(dealership_id) in get_dealership_ids()
+    scoped = get_dealership_ids()
+    if not scoped:
+        # Regional Office / Unscoped users have access to all network dealerships
+        return True
+    return int(dealership_id) in scoped
 
 def can_view(section_key: str) -> bool:
     """Check if the current user can view a specific sidebar section."""

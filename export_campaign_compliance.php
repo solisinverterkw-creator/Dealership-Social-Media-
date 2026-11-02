@@ -14,14 +14,14 @@ $isSuperAdmin = Auth::isSuperAdmin();
 $from = $_GET['from'] ?? date('Y-m-01');
 $to = $_GET['to'] ?? date('Y-m-d');
 
-if (!$isSuperAdmin && empty($scopedIds)) {
-    $dealerships = [];
-} else {
-    $sql = "SELECT id, name, fb_input, fb_url FROM dealerships WHERE 1=1"
-        . (!$isSuperAdmin ? " AND id IN (" . implode(',', array_fill(0, count($scopedIds), '?')) . ")" : "")
-        . " ORDER BY name";
+if (!$isSuperAdmin && !empty($scopedIds)) {
+    $sql = "SELECT id, name, fb_input, fb_url FROM dealerships WHERE id <= 21 AND id IN (" . implode(',', array_fill(0, count($scopedIds), '?')) . ") ORDER BY name";
     $stmt = $db->prepare($sql);
-    $stmt->execute(!$isSuperAdmin ? $scopedIds : []);
+    $stmt->execute($scopedIds);
+    $dealerships = $stmt->fetchAll();
+} else {
+    $sql = "SELECT id, name, fb_input, fb_url FROM dealerships WHERE id <= 21 ORDER BY name";
+    $stmt = $db->query($sql);
     $dealerships = $stmt->fetchAll();
 }
 
