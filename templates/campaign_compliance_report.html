@@ -194,10 +194,45 @@ async function checkOneDealership(id, btnEl) {
   const { from, to } = getActiveRange();
 
   try {
-    const res = await fetch(`/check_campaign_dealership.php?id=${id}&from=${from}&to=${to}`);
-    const data = await res.json();
-    if (!data.success) {
-      alert(`Dealership ${id}: ${data.message || 'Evaluation failed'}`);
+    let snapshotId = null;
+    let data = null;
+    let attempts = 0;
+    const maxAttempts = 50;
+
+    while (attempts < maxAttempts) {
+      let url = `/check_campaign_dealership.php?id=${id}&from=${from}&to=${to}`;
+      if (snapshotId) {
+        url += `&snapshot_id=${encodeURIComponent(snapshotId)}`;
+      }
+
+      const res = await fetch(url);
+      const rawText = await res.text();
+      try {
+        data = JSON.parse(rawText);
+      } catch (e) {
+        throw new Error(`Server returned non-JSON response (HTTP ${res.status}): ${rawText.substring(0, 150)}`);
+      }
+
+      if (!data.success) {
+        alert(`Dealership ${id}: ${data.message || 'Evaluation failed'}`);
+        return;
+      }
+
+      if (data.status === 'building') {
+        snapshotId = data.snapshot_id;
+        attempts++;
+        if (btnEl) {
+          btnEl.innerText = `Scraping (${attempts * 3}s)...`;
+        }
+        await new Promise(r => setTimeout(r, 3000));
+        continue;
+      }
+
+      break;
+    }
+
+    if (!data || data.status === 'building') {
+      alert(`Dealership ${id}: Scraping timed out after 2.5 minutes. Please try again.`);
       return;
     }
 

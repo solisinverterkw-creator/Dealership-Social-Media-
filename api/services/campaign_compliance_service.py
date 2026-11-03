@@ -78,19 +78,19 @@ class CampaignComplianceService:
         vision_is_usedcar = False
         reason = ''
 
-        # 2. If image_url is available, fetch image and scan with Gemini Vision
+        # 2. If image_url is available and keywords not already both met, scan image with Gemini Vision
         gemini_key = self.get_gemini_key()
-        if image_url and gemini_key:
+        if image_url and gemini_key and not (text_is_exchange and text_is_usedcar):
             try:
-                # Fetch image bytes (timeout 10s)
-                img_res = requests.get(image_url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+                # Fetch image bytes (timeout 5s)
+                img_res = requests.get(image_url, timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
                 if img_res.status_code == 200 and len(img_res.content) > 500:
                     raw_bytes = img_res.content
                     
                     # Resize and re-encode to compact JPEG
                     with Image.open(io.BytesIO(raw_bytes)) as img:
                         w, h = img.size
-                        max_dim = 720
+                        max_dim = 600
                         if w > max_dim or h > max_dim:
                             if w >= h:
                                 new_w = max_dim
@@ -102,25 +102,23 @@ class CampaignComplianceService:
                         if img.mode in ('RGBA', 'P'):
                             img = img.convert('RGB')
                         buf = io.BytesIO()
-                        img.save(buf, format='JPEG', quality=80)
+                        img.save(buf, format='JPEG', quality=75)
                         b64_data = base64.b64encode(buf.getvalue()).decode('utf-8')
 
                     prompt = f"""You are an AI Auditor for Suzuki Dealership social media marketing campaigns in Pakistan.
-Carefully inspect this social media banner / graphic image and its caption:
+Inspect this social media graphic banner and caption:
 Caption: "{combined_text}"
 
-TASKS:
-1. Read ALL visible headline text and banner labels written inside the image (both English and Urdu).
-2. Check if this graphic specifically promotes:
-   a) "Exchange" / "Trade-in" (e.g. Pak Suzuki Exchange Program, trade old car for a new one, exchange offer, exchange gala, تبادلہ).
-   b) "Certified Used Car" (e.g. Suzuki Certified Used Cars, Used Car Gala, Certified pre-owned with warranty, سرٹیفائیڈ یوزڈ کار).
+Check if this graphic specifically promotes:
+a) "Exchange" / "Trade-in" (Pak Suzuki Exchange Program, trade old car, exchange offer, exchange gala, تبادلہ).
+b) "Certified Used Car" (Suzuki Certified Used Cars, Used Car Gala, Certified pre-owned with warranty, سرٹیفائیڈ یوزڈ کار).
 
 Reply STRICTLY in JSON:
 {{
-  "extracted_text": "all key headlines and text read from the graphic",
+  "extracted_text": "key headlines read from graphic",
   "is_exchange": true or false,
   "is_certified_used_car": true or false,
-  "reason": "1 short explanation sentence"
+  "reason": "1 short explanation"
 }}
 """
                     payload = {
@@ -137,15 +135,15 @@ Reply STRICTLY in JSON:
                         }],
                         "generationConfig": {
                             "temperature": 0.1,
-                            "maxOutputTokens": 300,
+                            "maxOutputTokens": 200,
                             "response_mime_type": "application/json"
                         }
                     }
 
-                    for model in self.models:
+                    for model in ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']:
                         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
                         try:
-                            g_res = requests.post(url, json=payload, timeout=20)
+                            g_res = requests.post(url, json=payload, timeout=8)
                             if g_res.status_code == 200:
                                 res_json = g_res.json()
                                 part_text = res_json['candidates'][0]['content']['parts'][0]['text']
@@ -329,12 +327,13 @@ Reply STRICTLY in JSON:
             'new_usedcar': usedcar_count
         }
 
-    def evaluate_dealership(self, dealership_id: int, from_date: str, to_date: str) -> dict:
+    def evaluate_dealership(self, dealership_id: int, from_date: str, to_date: str, snapshot_id: str = None) -> dict:
         """
-        Scrapes dealership page posts in range with Bright Data, runs caption keyword checks,
-        then analyzes image graphics with Gemini Vision to identify:
-        1. Exchange Posts (Count & Status)
-        2. Certified Used Car Posts (Count & Status)
+        Asynchronous Bright Data scraping + AI Caption & Graphic inspection:
+        - If snapshot_id is None, triggers Bright Data async job and returns immediately ({status: 'building', snapshot_id: ...})
+        - If snapshot_id is provided, checks status:
+          * if still building, returns {status: 'building'}
+          * if ready, processes posts, runs AI inspection, saves compliance record and returns final counts.
         """
         d = db_session.query(Dealership).filter(Dealership.id == dealership_id).first()
         if not d:
@@ -343,15 +342,45 @@ Reply STRICTLY in JSON:
         from_dt = datetime.strptime(from_date, '%Y-%m-%d')
         to_dt = datetime.strptime(to_date, '%Y-%m-%d') + timedelta(days=1)
 
-        # 1. Fetch dealership posts using Bright Data scraper
-        lookup = FacebookPostsLookup()
         dealership_posts = []
-        if d.fb_input:
-            posts_res = lookup.get_posts_in_range(d.fb_input, from_date, to_date, d.fb_page_id, max_posts=100)
-            if posts_res.get('success') and posts_res.get('posts'):
-                dealership_posts.extend(posts_res['posts'])
 
-        # Include approved PostSubmissions
+        # 1. Asynchronous Bright Data Facebook Page Scraper
+        from api.services.bright_data import BrightDataClient
+        client = BrightDataClient()
+        lookup = FacebookPostsLookup()
+
+        if d.fb_input:
+            if not snapshot_id:
+                # Trigger Bright Data asynchronously (~0.5s)
+                page_url = lookup.extract_page_url(d.fb_input)
+                start_date = lookup.to_bright_data_date(from_date)
+                end_date = lookup.to_bright_data_date(to_date)
+                inputs = [{'url': page_url, 'start_date': start_date, 'end_date': end_date, 'num_of_posts': 40}]
+                trig = client.trigger_dataset(Config.BRIGHTDATA_DATASET_PAGE_POSTS, inputs)
+
+                if trig.get('success') and trig.get('snapshot_id'):
+                    return {
+                        'success': True,
+                        'status': 'building',
+                        'snapshot_id': trig['snapshot_id'],
+                        'dealership_id': dealership_id
+                    }
+                # If trigger failed (e.g. token error or offline), fall back to DB submissions
+                print(f"[CampaignCompliance] Trigger dataset failed for {d.name}: {trig.get('message')}", flush=True)
+            else:
+                # Check existing snapshot progress (~0.3s)
+                snap_res = client.check_snapshot(snapshot_id)
+                if snap_res.get('status') == 'building':
+                    return {
+                        'success': True,
+                        'status': 'building',
+                        'snapshot_id': snapshot_id,
+                        'dealership_id': dealership_id
+                    }
+                if snap_res.get('status') == 'done' and snap_res.get('data'):
+                    dealership_posts = [lookup.map_post(p) for p in snap_res['data']]
+
+        # 2. Include approved PostSubmissions
         submissions = db_session.query(PostSubmission).filter(
             PostSubmission.dealership_id == dealership_id,
             PostSubmission.submitted_at >= from_dt,
@@ -365,7 +394,7 @@ Reply STRICTLY in JSON:
                 'created_time': sub.submitted_at.isoformat() if sub.submitted_at else None
             })
 
-        # Include PostLog
+        # 3. Include PostLog
         logs = db_session.query(PostLog).filter(
             PostLog.dealership_name == d.name,
             PostLog.posted_at >= from_dt,
@@ -381,6 +410,8 @@ Reply STRICTLY in JSON:
 
         exchange_count = 0
         usedcar_count = 0
+        image_scans_done = 0
+        max_image_scans = 5
 
         for dp in dealership_posts:
             # Step 1: Check Caption / Text
@@ -388,16 +419,25 @@ Reply STRICTLY in JSON:
             orig_msg = (dp.get('original_post_message') or '').strip()
             combined_text = f"{msg} {orig_msg}".strip()
 
-            # Step 2: Check caption keywords, then run Gemini Multimodal Image Analysis
-            scan = self.scan_post_image_and_text(
-                dp.get('id'),
-                combined_text,
-                dp.get('image_url')
-            )
+            is_ex = self.has_exchange_keywords(combined_text)
+            is_uc = self.has_usedcar_keywords(combined_text)
 
-            if scan['is_exchange']:
+            # Step 2: Check image graphic with AI only if not both detected from caption
+            if not (is_ex and is_uc) and dp.get('image_url') and image_scans_done < max_image_scans:
+                scan = self.scan_post_image_and_text(
+                    dp.get('id'),
+                    combined_text,
+                    dp.get('image_url')
+                )
+                if scan.get('is_exchange'):
+                    is_ex = True
+                if scan.get('is_certified_used_car'):
+                    is_uc = True
+                image_scans_done += 1
+
+            if is_ex:
                 exchange_count += 1
-            if scan['is_certified_used_car']:
+            if is_uc:
                 usedcar_count += 1
 
         ex_status = 'uploaded' if exchange_count > 0 else 'not_uploaded'
@@ -449,6 +489,7 @@ Reply STRICTLY in JSON:
 
         return {
             'success': True,
+            'status': 'done',
             'dealership_id': dealership_id,
             'dealership_name': d.name,
             'exchange_count': exchange_count,

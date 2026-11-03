@@ -4918,12 +4918,13 @@ def check_campaign_dealership():
     d_id = request.args.get('id', type=int)
     from_date = request.args.get('from')
     to_date = request.args.get('to')
+    snapshot_id = request.args.get('snapshot_id')
     if not d_id or not from_date or not to_date or not can_access_dealership(d_id):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
 
     try:
         svc = CampaignComplianceService()
-        res = svc.evaluate_dealership(d_id, from_date, to_date)
+        res = svc.evaluate_dealership(d_id, from_date, to_date, snapshot_id=snapshot_id)
         return jsonify(res)
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
