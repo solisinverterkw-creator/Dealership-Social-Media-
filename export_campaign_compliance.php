@@ -48,18 +48,11 @@ fputcsv($out, [
     'Dealership Name',
     'Tracking From',
     'Tracking To',
-    'Own Exchange Content',
-    'Own Exchange Post Link',
-    'Own Certified Used Car Content',
-    'Own Used Car Post Link',
-    'PSMCL Exchange Tracked',
-    'PSMCL Exchange Reshared',
-    'PSMCL Exchange Post Link',
-    'PSMCL Exchange Status',
-    'PSMCL Used Car Tracked',
-    'PSMCL Used Car Reshared',
-    'PSMCL Used Car Post Link',
-    'PSMCL Used Car Status',
+    'Exchange Posts Count',
+    'Exchange Status',
+    'Certified Used Car Posts Count',
+    'Certified Used Car Status',
+    'Total Posts',
     'Compliance Score',
     'Overall Compliance',
     'Last Checked'
@@ -68,33 +61,13 @@ fputcsv($out, [
 foreach ($dealerships as $i => $d) {
     $r = $recordsMap[$d['id']] ?? null;
 
-    $ownExStatus = ($r && $r['own_exchange_status'] === 'uploaded') ? 'Uploaded' : 'Not Uploaded';
-    $ownExUrl = ($r && $r['own_exchange_status'] === 'uploaded') ? ($r['own_exchange_url'] ?? '') : '';
+    $exCount = $r ? (int)($r['own_exchange_count'] ?? 0) : 0;
+    $exStatus = ($exCount > 0) ? 'Uploaded' : 'Not Uploaded';
 
-    $ownUcStatus = ($r && $r['own_usedcar_status'] === 'uploaded') ? 'Uploaded' : 'Not Uploaded';
-    $ownUcUrl = ($r && $r['own_usedcar_status'] === 'uploaded') ? ($r['own_usedcar_url'] ?? '') : '';
+    $ucCount = $r ? (int)($r['own_usedcar_count'] ?? 0) : 0;
+    $ucStatus = ($ucCount > 0) ? 'Uploaded' : 'Not Uploaded';
 
-    $psmclExTr = $r ? (int)$r['psmcl_exchange_tracked'] : 0;
-    $psmclExRe = $r ? (int)$r['psmcl_exchange_reshared'] : 0;
-    $psmclExUrl = $r ? ($r['psmcl_exchange_url'] ?? '') : '';
-    if (!$r || $r['psmcl_exchange_status'] === 'no_source_post') {
-        $psmclExSt = 'No PSMCL Post';
-    } elseif ($r['psmcl_exchange_status'] === 'reshared') {
-        $psmclExSt = 'Reshared';
-    } else {
-        $psmclExSt = 'Missed';
-    }
-
-    $psmclUcTr = $r ? (int)$r['psmcl_usedcar_tracked'] : 0;
-    $psmclUcRe = $r ? (int)$r['psmcl_usedcar_reshared'] : 0;
-    $psmclUcUrl = $r ? ($r['psmcl_usedcar_url'] ?? '') : '';
-    if (!$r || $r['psmcl_usedcar_status'] === 'no_source_post') {
-        $psmclUcSt = 'No PSMCL Post';
-    } elseif ($r['psmcl_usedcar_status'] === 'reshared') {
-        $psmclUcSt = 'Reshared';
-    } else {
-        $psmclUcSt = 'Missed';
-    }
+    $totPosts = $exCount + $ucCount;
 
     $score = $r ? (int)$r['compliance_score'] : 0;
     if ($score === 100) {
@@ -112,18 +85,11 @@ foreach ($dealerships as $i => $d) {
         $d['name'],
         $from,
         $to,
-        $ownExStatus,
-        $ownExUrl,
-        $ownUcStatus,
-        $ownUcUrl,
-        $psmclExTr,
-        $psmclExRe,
-        $psmclExUrl,
-        $psmclExSt,
-        $psmclUcTr,
-        $psmclUcRe,
-        $psmclUcUrl,
-        $psmclUcSt,
+        $exCount,
+        $exStatus,
+        $ucCount,
+        $ucStatus,
+        $totPosts,
         $score . '%',
         $compStatus,
         $lastChecked

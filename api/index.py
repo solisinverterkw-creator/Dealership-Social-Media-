@@ -4834,25 +4834,6 @@ def campaign_compliance_view():
         abort(403)
 
     now = current_time_pk()
-    # Auto-ensure table columns exist in database
-    from sqlalchemy import text
-    try:
-        from api.database import init_db
-        init_db()
-    except Exception:
-        pass
-    for col in ['psmcl_exchange_url', 'psmcl_usedcar_url']:
-        try:
-            db_session.execute(text(f"ALTER TABLE campaign_compliance_records ADD COLUMN IF NOT EXISTS {col} VARCHAR(500)"))
-            db_session.commit()
-        except Exception:
-            db_session.rollback()
-            try:
-                db_session.execute(text(f"ALTER TABLE campaign_compliance_records ADD COLUMN {col} VARCHAR(500)"))
-                db_session.commit()
-            except Exception:
-                db_session.rollback()
-
     # Default range: last 30 days to today so all recent campaigns are captured
     default_from = (now - timedelta(days=30)).strftime('%Y-%m-%d')
     default_to = now.strftime('%Y-%m-%d')
@@ -4866,7 +4847,11 @@ def campaign_compliance_view():
         dealerships = db_session.query(Dealership).filter(Dealership.id <= 21).order_by(Dealership.id).all()
 
     rows = []
-    source_stats = {'exchange_tracked': 0, 'usedcar_tracked': 0}
+    stats = {
+        'dealerships_with_exchange': 0,
+        'dealerships_with_usedcar': 0,
+        'total_detected_posts': 0
+    }
 
     if has_range:
         from_dt = datetime.strptime(from_val, '%Y-%m-%d')
@@ -4874,22 +4859,6 @@ def campaign_compliance_view():
         from_date_obj = from_dt.date()
         to_date_obj = datetime.strptime(to_val, '%Y-%m-%d').date()
 
-        # PSMCL source posts tracked in range
-        try:
-            source_stats['exchange_tracked'] = db_session.query(CampaignSourcePost).filter(
-                CampaignSourcePost.category == 'exchange',
-                CampaignSourcePost.published_at >= from_dt,
-                CampaignSourcePost.published_at < to_dt
-            ).count()
-            source_stats['usedcar_tracked'] = db_session.query(CampaignSourcePost).filter(
-                CampaignSourcePost.category == 'certified_used_car',
-                CampaignSourcePost.published_at >= from_dt,
-                CampaignSourcePost.published_at < to_dt
-            ).count()
-        except Exception:
-            db_session.rollback()
-
-        # Query existing compliance records safely
         recs_map = {}
         try:
             d_ids = [d.id for d in dealerships]
@@ -4905,26 +4874,27 @@ def campaign_compliance_view():
 
         for d in dealerships:
             r = recs_map.get(d.id)
+            ex_cnt = (r.own_exchange_count or 0) if r else 0
+            uc_cnt = (r.own_usedcar_count or 0) if r else 0
+            tot_cnt = ex_cnt + uc_cnt
+            score = r.compliance_score if r else 0
+
+            if ex_cnt > 0:
+                stats['dealerships_with_exchange'] += 1
+            if uc_cnt > 0:
+                stats['dealerships_with_usedcar'] += 1
+            stats['total_detected_posts'] += tot_cnt
+
             rows.append({
                 'id': d.id,
                 'name': d.name,
                 'fb_input': d.fb_input or d.fb_url,
-                'record': r,
-                'own_exchange_status': r.own_exchange_status if r else 'not_uploaded',
-                'own_exchange_count': r.own_exchange_count if r else 0,
-                'own_exchange_url': r.own_exchange_url if r else None,
-                'own_usedcar_status': r.own_usedcar_status if r else 'not_uploaded',
-                'own_usedcar_count': r.own_usedcar_count if r else 0,
-                'own_usedcar_url': r.own_usedcar_url if r else None,
-                'psmcl_exchange_status': r.psmcl_exchange_status if r else ('no_source_post' if source_stats['exchange_tracked'] == 0 else 'missed'),
-                'psmcl_exchange_tracked': r.psmcl_exchange_tracked if r else source_stats['exchange_tracked'],
-                'psmcl_exchange_reshared': r.psmcl_exchange_reshared if r else 0,
-                'psmcl_exchange_url': getattr(r, 'psmcl_exchange_url', None) if r else None,
-                'psmcl_usedcar_status': r.psmcl_usedcar_status if r else ('no_source_post' if source_stats['usedcar_tracked'] == 0 else 'missed'),
-                'psmcl_usedcar_tracked': r.psmcl_usedcar_tracked if r else source_stats['usedcar_tracked'],
-                'psmcl_usedcar_reshared': r.psmcl_usedcar_reshared if r else 0,
-                'psmcl_usedcar_url': getattr(r, 'psmcl_usedcar_url', None) if r else None,
-                'compliance_score': r.compliance_score if r else 0,
+                'exchange_count': ex_cnt,
+                'exchange_status': r.own_exchange_status if r else 'not_uploaded',
+                'usedcar_count': uc_cnt,
+                'usedcar_status': r.own_usedcar_status if r else 'not_uploaded',
+                'total_posts': tot_cnt,
+                'compliance_score': score,
                 'checked_at': r.checked_at.strftime('%d %b, %H:%M') if (r and r.checked_at) else None
             })
 
@@ -4937,7 +4907,7 @@ def campaign_compliance_view():
         to_val=to_val,
         has_range=has_range,
         rows=rows,
-        source_stats=source_stats,
+        stats=stats,
         from_formatted=from_formatted,
         to_formatted=to_formatted
     )
@@ -4985,6 +4955,9 @@ def export_campaign_compliance():
         return redirect(url_for('campaign_compliance'))
 
     dealerships = get_allowed_dealerships()
+    if not dealerships:
+        dealerships = db_session.query(Dealership).filter(Dealership.id <= 21).order_by(Dealership.id).all()
+
     from_dt = datetime.strptime(from_val, '%Y-%m-%d')
     to_dt = datetime.strptime(to_val, '%Y-%m-%d') + timedelta(days=1)
     from_date_obj = from_dt.date()
@@ -4999,37 +4972,18 @@ def export_campaign_compliance():
     recs_map = {r.dealership_id: r for r in recs}
 
     def generate_campaign_csv():
-        yield "\ufeffSr #,Dealership Name,Tracking From,Tracking To,Own Exchange Content,Own Exchange Post Link,Own Certified Used Car Content,Own Used Car Post Link,PSMCL Exchange Tracked,PSMCL Exchange Reshared,PSMCL Exchange Post Link,PSMCL Exchange Status,PSMCL Used Car Tracked,PSMCL Used Car Reshared,PSMCL Used Car Post Link,PSMCL Used Car Status,Compliance Score,Overall Compliance,Last Checked\n"
+        yield "\ufeffSr #,Dealership Name,Tracking From,Tracking To,Exchange Posts Count,Exchange Status,Certified Used Car Posts Count,Certified Used Car Status,Total Posts,Compliance Score,Overall Compliance,Last Checked\n"
         for i, d in enumerate(dealerships):
             r = recs_map.get(d.id)
             d_name = (d.name or "").replace('"', '""')
             
-            own_ex_status = "Uploaded" if (r and r.own_exchange_status == 'uploaded') else "Not Uploaded"
-            own_ex_link = (r.own_exchange_url or "") if (r and r.own_exchange_status == 'uploaded') else ""
+            ex_count = (r.own_exchange_count or 0) if r else 0
+            ex_status = "Uploaded" if (r and r.own_exchange_status == 'uploaded') else "Not Uploaded"
             
-            own_uc_status = "Uploaded" if (r and r.own_usedcar_status == 'uploaded') else "Not Uploaded"
-            own_uc_link = (r.own_usedcar_url or "") if (r and r.own_usedcar_status == 'uploaded') else ""
+            uc_count = (r.own_usedcar_count or 0) if r else 0
+            uc_status = "Uploaded" if (r and r.own_usedcar_status == 'uploaded') else "Not Uploaded"
 
-            psmcl_ex_tr = r.psmcl_exchange_tracked if r else 0
-            psmcl_ex_re = r.psmcl_exchange_reshared if r else 0
-            psmcl_ex_url = getattr(r, 'psmcl_exchange_url', '') or ''
-            if not r or r.psmcl_exchange_status == 'no_source_post':
-                psmcl_ex_st = "No PSMCL Post"
-            elif r.psmcl_exchange_status == 'reshared':
-                psmcl_ex_st = "Reshared"
-            else:
-                psmcl_ex_st = "Missed"
-
-            psmcl_uc_tr = r.psmcl_usedcar_tracked if r else 0
-            psmcl_uc_re = r.psmcl_usedcar_reshared if r else 0
-            psmcl_uc_url = getattr(r, 'psmcl_usedcar_url', '') or ''
-            if not r or r.psmcl_usedcar_status == 'no_source_post':
-                psmcl_uc_st = "No PSMCL Post"
-            elif r.psmcl_usedcar_status == 'reshared':
-                psmcl_uc_st = "Reshared"
-            else:
-                psmcl_uc_st = "Missed"
-
+            tot_posts = ex_count + uc_count
             score = r.compliance_score if r else 0
             if score == 100:
                 overall = "100% Compliant"
@@ -5040,7 +4994,7 @@ def export_campaign_compliance():
 
             checked = r.checked_at.strftime('%Y-%m-%d %H:%M') if (r and r.checked_at) else "Never"
 
-            yield f'{i+1},"{d_name}","{from_val}","{to_val}","{own_ex_status}","{own_ex_link}","{own_uc_status}","{own_uc_link}",{psmcl_ex_tr},{psmcl_ex_re},"{psmcl_ex_url}","{psmcl_ex_st}",{psmcl_uc_tr},{psmcl_uc_re},"{psmcl_uc_url}","{psmcl_uc_st}",{score}%,"{overall}","{checked}"\n'
+            yield f'{i+1},"{d_name}","{from_val}","{to_val}",{ex_count},"{ex_status}",{uc_count},"{uc_status}",{tot_posts},{score}%,"{overall}","{checked}"\n'
 
     filename = f"campaign_compliance_{from_val}_to_{to_val}.csv"
     return Response(

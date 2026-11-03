@@ -331,10 +331,10 @@ Reply STRICTLY in JSON:
 
     def evaluate_dealership(self, dealership_id: int, from_date: str, to_date: str) -> dict:
         """
-        Scrapes dealership page posts in range with Bright Data, runs text + image OCR/vision,
-        and determines:
-        1. Dealership Own Content: Exchange (Uploaded / Not Uploaded) & Used Car (Uploaded / Not Uploaded)
-        2. PSMCL Source Content: Exchange (Reshared / Missed) & Used Car (Reshared / Missed)
+        Scrapes dealership page posts in range with Bright Data, runs caption keyword checks,
+        then analyzes image graphics with Gemini Vision to identify:
+        1. Exchange Posts (Count & Status)
+        2. Certified Used Car Posts (Count & Status)
         """
         d = db_session.query(Dealership).filter(Dealership.id == dealership_id).first()
         if not d:
@@ -343,27 +343,7 @@ Reply STRICTLY in JSON:
         from_dt = datetime.strptime(from_date, '%Y-%m-%d')
         to_dt = datetime.strptime(to_date, '%Y-%m-%d') + timedelta(days=1)
 
-        # 1. Fetch PSMCL source posts for this date range
-        source_posts = db_session.query(CampaignSourcePost).filter(
-            CampaignSourcePost.published_at >= from_dt,
-            CampaignSourcePost.published_at < to_dt
-        ).all()
-        
-        # If no source posts tracked yet for this date range, auto-refresh now
-        if not source_posts:
-            try:
-                self.refresh_source_posts_for_range(from_date, to_date)
-                source_posts = db_session.query(CampaignSourcePost).filter(
-                    CampaignSourcePost.published_at >= from_dt,
-                    CampaignSourcePost.published_at < to_dt
-                ).all()
-            except Exception as e:
-                print(f"[CampaignCompliance] Auto-refresh source posts failed: {e}")
-
-        exchange_sources = [sp for sp in source_posts if sp.category == 'exchange']
-        usedcar_sources = [sp for sp in source_posts if sp.category == 'certified_used_car']
-
-        # 2. Fetch dealership posts using Bright Data scraper
+        # 1. Fetch dealership posts using Bright Data scraper
         lookup = FacebookPostsLookup()
         dealership_posts = []
         if d.fb_input:
@@ -382,8 +362,7 @@ Reply STRICTLY in JSON:
                 'id': f"sub_{sub.id}",
                 'message': sub.caption or '',
                 'image_url': sub.image_path if sub.image_path and sub.image_path.startswith('http') else None,
-                'created_time': sub.submitted_at.isoformat() if sub.submitted_at else None,
-                'source_url': None
+                'created_time': sub.submitted_at.isoformat() if sub.submitted_at else None
             })
 
         # Include PostLog
@@ -397,160 +376,40 @@ Reply STRICTLY in JSON:
                 'id': f"log_{log.id}",
                 'message': log.message or '',
                 'image_url': None,
-                'created_time': log.posted_at.isoformat() if log.posted_at else None,
-                'source_url': log.source_url
+                'created_time': log.posted_at.isoformat() if log.posted_at else None
             })
 
-        # Matching & Reshare classification helpers
-        def normalize_str(s):
-            if not s:
-                return ''
-            return re.sub(r'[^a-zA-Z0-9\u0600-\u06FF]+', ' ', s.lower()).strip()
-
-        def is_match(d_post, s_post):
-            d_msg = normalize_str(d_post.get('message') or '')
-            d_orig = normalize_str(d_post.get('original_post_message') or '')
-            s_msg = normalize_str(s_post.message_snippet or '')
-
-            # 1. Text snippet overlap
-            if s_msg and len(s_msg) >= 15:
-                s_slice = s_msg[:35]
-                if s_slice in d_msg or s_slice in d_orig:
-                    return True
-                s_words = {w for w in s_msg.split() if len(w) > 4}
-                d_words = {w for w in (d_msg + ' ' + d_orig).split() if len(w) > 4}
-                if len(s_words & d_words) >= 3:
-                    return True
-
-            # 2. Source post ID match
-            s_id = str(s_post.source_post_id or '').split('_')[-1]
-            if s_id and len(s_id) >= 6:
-                d_orig_id = str(d_post.get('original_post_id') or '').split('_')[-1]
-                if s_id == d_orig_id:
-                    return True
-                if s_id in str(d_post.get('original_post_url') or '') or s_id in str(d_post.get('source_url') or ''):
-                    return True
-
-            # 3. Direct URL match
-            if s_post.post_url and (s_post.post_url in str(d_post.get('original_post_url') or '') or s_post.post_url in str(d_post.get('source_url') or '')):
-                return True
-
-            return False
-
-        def is_psmcl_reshare(d_post):
-            author = (d_post.get('original_post_author') or '').lower()
-            orig_url = (d_post.get('original_post_url') or '').lower()
-            orig_msg = (d_post.get('original_post_message') or '').lower()
-            msg = (d_post.get('message') or '').lower()
-            if any(term in author for term in ['suzuki pakistan', 'pak suzuki', 'suzukipakistan']):
-                return True
-            if 'suzukipakistan' in orig_url or 'suzuki.pakistan' in orig_url or 'suzukipakistanofficial' in orig_url:
-                return True
-            if any(term in orig_msg for term in ['pak suzuki', 'suzuki pakistan']):
-                return True
-            if 'shared a post' in msg or 'shared suzuki pakistan' in msg:
-                return True
-            if d_post.get('original_post_id') or d_post.get('original_post_message'):
-                return True
-            return False
-
-        psmcl_exchange_posts = []
-        psmcl_usedcar_posts = []
-        own_exchange_posts = []
-        own_usedcar_posts = []
+        exchange_count = 0
+        usedcar_count = 0
 
         for dp in dealership_posts:
-            # Combine post caption AND original post message for scanning
+            # Step 1: Check Caption / Text
             msg = (dp.get('message') or '').strip()
             orig_msg = (dp.get('original_post_message') or '').strip()
             combined_text = f"{msg} {orig_msg}".strip()
 
-            # Scan with keyword matcher + Gemini Multimodal Vision
+            # Step 2: Check caption keywords, then run Gemini Multimodal Image Analysis
             scan = self.scan_post_image_and_text(
                 dp.get('id'),
                 combined_text,
                 dp.get('image_url')
             )
 
-            is_ex = scan['is_exchange']
-            is_uc = scan['is_certified_used_car']
+            if scan['is_exchange']:
+                exchange_count += 1
+            if scan['is_certified_used_car']:
+                usedcar_count += 1
 
-            if not is_ex and not is_uc:
-                continue
+        ex_status = 'uploaded' if exchange_count > 0 else 'not_uploaded'
+        uc_status = 'uploaded' if usedcar_count > 0 else 'not_uploaded'
 
-            matches_source_ex = any(is_match(dp, sp) for sp in exchange_sources)
-            matches_source_uc = any(is_match(dp, sp) for sp in usedcar_sources)
-            is_reshared = is_psmcl_reshare(dp) or matches_source_ex or matches_source_uc
-
-            if is_ex:
-                if is_reshared:
-                    psmcl_exchange_posts.append(dp)
-                else:
-                    own_exchange_posts.append(dp)
-
-            if is_uc:
-                if is_reshared:
-                    psmcl_usedcar_posts.append(dp)
-                else:
-                    own_usedcar_posts.append(dp)
-
-        # Status determination: Own Content
-        own_ex_status = 'uploaded' if len(own_exchange_posts) > 0 else 'not_uploaded'
-        own_ex_url = own_exchange_posts[0].get('source_url') or own_exchange_posts[0].get('image_url') if own_exchange_posts else None
-
-        own_uc_status = 'uploaded' if len(own_usedcar_posts) > 0 else 'not_uploaded'
-        own_uc_url = own_usedcar_posts[0].get('source_url') or own_usedcar_posts[0].get('image_url') if own_usedcar_posts else None
-
-        # Status determination: PSMCL Reshares
-        exchange_reshared_count = len(psmcl_exchange_posts)
-        exchange_tracked_count = max(len(exchange_sources), exchange_reshared_count)
-        psmcl_ex_url = psmcl_exchange_posts[0].get('source_url') or psmcl_exchange_posts[0].get('image_url') if psmcl_exchange_posts else None
-
-        if exchange_reshared_count > 0:
-            psmcl_ex_status = 'reshared'
-        elif exchange_tracked_count == 0:
-            psmcl_ex_status = 'no_source_post'
+        # Overall compliance score: 100% (both), 50% (one), 0% (none)
+        if exchange_count > 0 and usedcar_count > 0:
+            score = 100
+        elif exchange_count > 0 or usedcar_count > 0:
+            score = 50
         else:
-            psmcl_ex_status = 'missed'
-
-        usedcar_reshared_count = len(psmcl_usedcar_posts)
-        usedcar_tracked_count = max(len(usedcar_sources), usedcar_reshared_count)
-        psmcl_uc_url = psmcl_usedcar_posts[0].get('source_url') or psmcl_usedcar_posts[0].get('image_url') if psmcl_usedcar_posts else None
-
-        if usedcar_reshared_count > 0:
-            psmcl_uc_status = 'reshared'
-        elif usedcar_tracked_count == 0:
-            psmcl_uc_status = 'no_source_post'
-        else:
-            psmcl_uc_status = 'missed'
-
-        # Score calculation: Each applicable criterion contributes equally
-        total_criteria = 0
-        achieved_criteria = 0
-
-        # Own Exchange is always expected
-        total_criteria += 1
-        if own_ex_status == 'uploaded':
-            achieved_criteria += 1
-
-        # Own Used Car is always expected
-        total_criteria += 1
-        if own_uc_status == 'uploaded':
-            achieved_criteria += 1
-
-        # PSMCL Exchange (if PSMCL posted or dealership reshared)
-        if psmcl_ex_status != 'no_source_post':
-            total_criteria += 1
-            if psmcl_ex_status == 'reshared':
-                achieved_criteria += 1
-
-        # PSMCL Used Car (if PSMCL posted or dealership reshared)
-        if psmcl_uc_status != 'no_source_post':
-            total_criteria += 1
-            if psmcl_uc_status == 'reshared':
-                achieved_criteria += 1
-
-        score = int(round((achieved_criteria / total_criteria) * 100)) if total_criteria > 0 else 0
+            score = 0
 
         # Save to database
         from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
@@ -567,39 +426,19 @@ Reply STRICTLY in JSON:
                 dealership_id=dealership_id,
                 date_from=from_date_obj,
                 date_to=to_date_obj,
-                own_exchange_count=len(own_exchange_posts),
-                own_exchange_url=own_ex_url,
-                own_exchange_status=own_ex_status,
-                own_usedcar_count=len(own_usedcar_posts),
-                own_usedcar_url=own_uc_url,
-                own_usedcar_status=own_uc_status,
-                psmcl_exchange_tracked=exchange_tracked_count,
-                psmcl_exchange_reshared=exchange_reshared_count,
-                psmcl_exchange_url=psmcl_ex_url,
-                psmcl_exchange_status=psmcl_ex_status,
-                psmcl_usedcar_tracked=usedcar_tracked_count,
-                psmcl_usedcar_reshared=usedcar_reshared_count,
-                psmcl_usedcar_url=psmcl_uc_url,
-                psmcl_usedcar_status=psmcl_uc_status,
+                own_exchange_count=exchange_count,
+                own_exchange_status=ex_status,
+                own_usedcar_count=usedcar_count,
+                own_usedcar_status=uc_status,
                 compliance_score=score,
                 checked_at=datetime.utcnow()
             )
             db_session.add(rec)
         else:
-            rec.own_exchange_count = len(own_exchange_posts)
-            rec.own_exchange_url = own_ex_url
-            rec.own_exchange_status = own_ex_status
-            rec.own_usedcar_count = len(own_usedcar_posts)
-            rec.own_usedcar_url = own_uc_url
-            rec.own_usedcar_status = own_uc_status
-            rec.psmcl_exchange_tracked = exchange_tracked_count
-            rec.psmcl_exchange_reshared = exchange_reshared_count
-            rec.psmcl_exchange_url = psmcl_ex_url
-            rec.psmcl_exchange_status = psmcl_ex_status
-            rec.psmcl_usedcar_tracked = usedcar_tracked_count
-            rec.psmcl_usedcar_reshared = usedcar_reshared_count
-            rec.psmcl_usedcar_url = psmcl_uc_url
-            rec.psmcl_usedcar_status = psmcl_uc_status
+            rec.own_exchange_count = exchange_count
+            rec.own_exchange_status = ex_status
+            rec.own_usedcar_count = usedcar_count
+            rec.own_usedcar_status = uc_status
             rec.compliance_score = score
             rec.checked_at = datetime.utcnow()
 
@@ -612,28 +451,11 @@ Reply STRICTLY in JSON:
             'success': True,
             'dealership_id': dealership_id,
             'dealership_name': d.name,
-            'own_exchange': {
-                'status': own_ex_status,
-                'count': len(own_exchange_posts),
-                'url': own_ex_url
-            },
-            'own_usedcar': {
-                'status': own_uc_status,
-                'count': len(own_usedcar_posts),
-                'url': own_uc_url
-            },
-            'psmcl_exchange': {
-                'status': psmcl_ex_status,
-                'tracked': exchange_tracked_count,
-                'reshared': exchange_reshared_count,
-                'url': psmcl_ex_url
-            },
-            'psmcl_usedcar': {
-                'status': psmcl_uc_status,
-                'tracked': usedcar_tracked_count,
-                'reshared': usedcar_reshared_count,
-                'url': psmcl_uc_url
-            },
+            'exchange_count': exchange_count,
+            'exchange_status': ex_status,
+            'usedcar_count': usedcar_count,
+            'usedcar_status': uc_status,
+            'total_posts': exchange_count + usedcar_count,
             'compliance_score': score,
             'checked_at': rec.checked_at.strftime('%d %b, %H:%M') if rec.checked_at else None
         }

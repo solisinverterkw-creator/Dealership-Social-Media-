@@ -6,12 +6,9 @@
 <header>
   <div>
     <h1>Exchange &amp; Certified Used Car Compliance Report</h1>
-    <div class="subtitle">Dealership Own Content vs PSMCL Source Reshares — Verified via Bright Data Scraper &amp; AI Image Scan</div>
+    <div class="subtitle">Dealership Facebook Page Scraped via Bright Data with AI Caption &amp; Graphic Inspection</div>
   </div>
   <div class="toolbar">
-    <button class="btn" id="refresh-source-btn" onclick="refreshSource()" {% if not has_range %}disabled title="Select Tracking Dates, Then Click Load"{% endif %}>
-      🔄 Refresh PSMCL Source Posts
-    </button>
     <a class="btn" href="{{ url_for('export_campaign_compliance', from=from_val, to=to_val) }}" {% if not has_range %}style="pointer-events:none; opacity:0.6;"{% endif %}>
       📥 Export Report (CSV / Excel)
     </a>
@@ -46,29 +43,25 @@
   <div class="stat-card" style="background:var(--card-bg, #1e1e1e); padding:16px 20px; border-radius:8px; border:1px solid var(--border-color, #333);">
     <div style="font-size:11px; text-transform:uppercase; color:var(--muted); font-family:'IBM Plex Mono', monospace;">Total Dealerships</div>
     <div style="font-size:24px; font-weight:700; color:var(--text); margin-top:4px;">{{ rows|length }}</div>
-    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Target Network Scope</div>
+    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Network Scope</div>
   </div>
 
   <div class="stat-card" style="background:var(--card-bg, #1e1e1e); padding:16px 20px; border-radius:8px; border:1px solid var(--border-color, #333);">
-    <div style="font-size:11px; text-transform:uppercase; color:var(--muted); font-family:'IBM Plex Mono', monospace;">Own Exchange Content</div>
-    {% set own_ex_up = rows|selectattr('own_exchange_status', 'equalto', 'uploaded')|list|length %}
-    <div style="font-size:24px; font-weight:700; color:#22c55e; margin-top:4px;">{{ own_ex_up }} / {{ rows|length }}</div>
-    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Dealerships with Own Post</div>
+    <div style="font-size:11px; text-transform:uppercase; color:var(--muted); font-family:'IBM Plex Mono', monospace;">Dealerships with Exchange</div>
+    <div style="font-size:24px; font-weight:700; color:#22c55e; margin-top:4px;">{{ stats.dealerships_with_exchange }} / {{ rows|length }}</div>
+    <div style="font-size:11px; color:var(--muted); margin-top:2px;">At least 1 Exchange Post</div>
   </div>
 
   <div class="stat-card" style="background:var(--card-bg, #1e1e1e); padding:16px 20px; border-radius:8px; border:1px solid var(--border-color, #333);">
-    <div style="font-size:11px; text-transform:uppercase; color:var(--muted); font-family:'IBM Plex Mono', monospace;">Own Used Car Content</div>
-    {% set own_uc_up = rows|selectattr('own_usedcar_status', 'equalto', 'uploaded')|list|length %}
-    <div style="font-size:24px; font-weight:700; color:#3b82f6; margin-top:4px;">{{ own_uc_up }} / {{ rows|length }}</div>
-    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Dealerships with Own Post</div>
+    <div style="font-size:11px; text-transform:uppercase; color:var(--muted); font-family:'IBM Plex Mono', monospace;">Dealerships with Used Car</div>
+    <div style="font-size:24px; font-weight:700; color:#3b82f6; margin-top:4px;">{{ stats.dealerships_with_usedcar }} / {{ rows|length }}</div>
+    <div style="font-size:11px; color:var(--muted); margin-top:2px;">At least 1 Used Car Post</div>
   </div>
 
   <div class="stat-card" style="background:var(--card-bg, #1e1e1e); padding:16px 20px; border-radius:8px; border:1px solid var(--border-color, #333);">
-    <div style="font-size:11px; text-transform:uppercase; color:var(--muted); font-family:'IBM Plex Mono', monospace;">PSMCL Source Posts</div>
-    <div style="font-size:24px; font-weight:700; color:#f59e0b; margin-top:4px;">
-      Ex: {{ source_stats.exchange_tracked }} | UC: {{ source_stats.usedcar_tracked }}
-    </div>
-    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Tracked on Suzuki Pakistan</div>
+    <div style="font-size:11px; text-transform:uppercase; color:var(--muted); font-family:'IBM Plex Mono', monospace;">Total Campaign Posts</div>
+    <div style="font-size:24px; font-weight:700; color:#f59e0b; margin-top:4px;">{{ stats.total_detected_posts }}</div>
+    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Identified in Date Range</div>
   </div>
 </div>
 {% endif %}
@@ -82,28 +75,14 @@
   <table style="width:100%; border-collapse:collapse;">
     <thead>
       <tr>
-        <th style="width:35px;">#</th>
-        <th style="width:180px;">Dealership</th>
-        <th colspan="2" style="text-align:center; background:rgba(255,255,255,0.03); border-bottom:1px solid var(--border-color);">
-          Dealership Own Content
-        </th>
-        <th colspan="2" style="text-align:center; background:rgba(255,255,255,0.06); border-bottom:1px solid var(--border-color);">
-          Pak Suzuki (PSMCL) Reshares
-        </th>
-        <th style="width:105px; text-align:center;">Score</th>
-        <th style="width:110px; text-align:center;">Checked</th>
-        <th style="width:75px; text-align:center;">Action</th>
-      </tr>
-      <tr style="font-size:11px; opacity:0.85;">
-        <th></th>
-        <th></th>
-        <th style="text-align:center; background:rgba(255,255,255,0.03);">Exchange (Own)</th>
-        <th style="text-align:center; background:rgba(255,255,255,0.03);">Used Car (Own)</th>
-        <th style="text-align:center; background:rgba(255,255,255,0.06);">Exchange (PSMCL)</th>
-        <th style="text-align:center; background:rgba(255,255,255,0.06);">Used Car (PSMCL)</th>
-        <th></th>
-        <th></th>
-        <th></th>
+        <th style="width:40px;">#</th>
+        <th style="width:220px;">Dealership</th>
+        <th style="text-align:center; width:150px;">Exchange Posts</th>
+        <th style="text-align:center; width:180px;">Certified Used Car Posts</th>
+        <th style="text-align:center; width:110px;">Total Posts</th>
+        <th style="text-align:center; width:100px;">Score</th>
+        <th style="text-align:center; width:120px;">Checked</th>
+        <th style="text-align:center; width:90px;">Action</th>
       </tr>
     </thead>
     <tbody>
@@ -113,82 +92,41 @@
         <td class="name">
           <strong>{{ r.name }}</strong>
           {% if r.fb_input %}
-            <div style="font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; max-width:180px; white-space:nowrap;">
+            <div style="font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; max-width:220px; white-space:nowrap;">
               {{ r.fb_input }}
             </div>
           {% endif %}
         </td>
 
-        <!-- Own Exchange Content -->
-        <td style="text-align:center;" id="cell-own-ex-{{ r.id }}">
-          {% if r.own_exchange_status == 'uploaded' %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">
-              ✅ Uploaded ({{ r.own_exchange_count }})
+        <!-- Exchange Posts Count -->
+        <td style="text-align:center;" id="cell-ex-{{ r.id }}">
+          {% if r.exchange_count > 0 %}
+            <span style="display:inline-block; padding:4px 10px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">
+              ✅ {{ r.exchange_count }} {{ 'Post' if r.exchange_count == 1 else 'Posts' }}
             </span>
-            {% if r.own_exchange_url %}
-              <div style="margin-top:4px;"><a href="{{ r.own_exchange_url }}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>
-            {% endif %}
           {% else %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">
-              ❌ Not Uploaded
+            <span style="display:inline-block; padding:4px 10px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">
+              ❌ 0 Posts
             </span>
           {% endif %}
         </td>
 
-        <!-- Own Used Car Content -->
-        <td style="text-align:center;" id="cell-own-uc-{{ r.id }}">
-          {% if r.own_usedcar_status == 'uploaded' %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">
-              ✅ Uploaded ({{ r.own_usedcar_count }})
+        <!-- Certified Used Car Posts Count -->
+        <td style="text-align:center;" id="cell-uc-{{ r.id }}">
+          {% if r.usedcar_count > 0 %}
+            <span style="display:inline-block; padding:4px 10px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">
+              ✅ {{ r.usedcar_count }} {{ 'Post' if r.usedcar_count == 1 else 'Posts' }}
             </span>
-            {% if r.own_usedcar_url %}
-              <div style="margin-top:4px;"><a href="{{ r.own_usedcar_url }}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>
-            {% endif %}
           {% else %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">
-              ❌ Not Uploaded
+            <span style="display:inline-block; padding:4px 10px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">
+              ❌ 0 Posts
             </span>
           {% endif %}
         </td>
 
-        <!-- PSMCL Exchange Reshare -->
-        <td style="text-align:center;" id="cell-psmcl-ex-{{ r.id }}">
-          {% if r.psmcl_exchange_status == 'reshared' %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">
-              ✅ Reshared ({{ r.psmcl_exchange_reshared }}/{{ r.psmcl_exchange_tracked }})
-            </span>
-            {% if r.psmcl_exchange_url %}
-              <div style="margin-top:4px;"><a href="{{ r.psmcl_exchange_url }}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>
-            {% endif %}
-          {% elif r.psmcl_exchange_status == 'no_source_post' %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">
-              — No PSMCL Post
-            </span>
-          {% else %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">
-              ❌ Missed (0/{{ r.psmcl_exchange_tracked }})
-            </span>
-          {% endif %}
-        </td>
-
-        <!-- PSMCL Used Car Reshare -->
-        <td style="text-align:center;" id="cell-psmcl-uc-{{ r.id }}">
-          {% if r.psmcl_usedcar_status == 'reshared' %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">
-              ✅ Reshared ({{ r.psmcl_usedcar_reshared }}/{{ r.psmcl_usedcar_tracked }})
-            </span>
-            {% if r.psmcl_usedcar_url %}
-              <div style="margin-top:4px;"><a href="{{ r.psmcl_usedcar_url }}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>
-            {% endif %}
-          {% elif r.psmcl_usedcar_status == 'no_source_post' %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">
-              — No PSMCL Post
-            </span>
-          {% else %}
-            <span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">
-              ❌ Missed (0/{{ r.psmcl_usedcar_tracked }})
-            </span>
-          {% endif %}
+        <!-- Total Campaign Posts -->
+        <td style="text-align:center; font-weight:600;" id="cell-tot-{{ r.id }}">
+          {{ r.total_posts }} Posts
         </td>
 
         <!-- Score -->
@@ -225,9 +163,10 @@
 {% if has_range %}
 <div class="subtitle" style="margin-top:20px; line-height:1.6; font-size:12px; color:var(--muted);">
   <strong>Auditing Notes:</strong><br>
-  • <strong>Dealership Own Content:</strong> Scraped directly from dealership Facebook pages via Bright Data. Evaluates whether the dealership created and published its own posts/flyers for <em>Exchange</em> or <em>Certified Used Car</em>.<br>
-  • <strong>Pak Suzuki (PSMCL) Content:</strong> Monitors whether dealership shared official Exchange or Used Car campaigns published on the central Suzuki Pakistan page.<br>
-  • <strong>Multimodal AI Graphic Inspection:</strong> Uses Gemini Vision Flash to read text embedded inside image banners (e.g. flyers with no caption text) looking for <em>"Exchange"</em>, <em>"Certified Used Car"</em>, <em>"Trade-In"</em>, and <em>"Used Car Gala"</em>.
+  • <strong>Dealership Page Scraper:</strong> Fetches all posts directly from the dealership's Facebook page published within the selected date range.<br>
+  • <strong>Step 1 (Caption &amp; Text Scan):</strong> First inspects post captions, text, and descriptions for keywords: <em>Exchange, Certified Used Car, Used Car Gala, Trade-In, تبادلہ, سرٹیفائیڈ یوزڈ کار</em>.<br>
+  • <strong>Step 2 (Multimodal AI Image Scan):</strong> When graphic flyers or banners are attached, Gemini Vision analyzes the image graphic directly to detect embedded promotional text.<br>
+  • <strong>Simplified Post Count:</strong> Reports the exact number of verified Exchange and Certified Used Car posts detected for each dealership.
 </div>
 {% endif %}
 {% endblock %}
@@ -262,52 +201,30 @@ async function checkOneDealership(id, btnEl) {
       return;
     }
 
-    // Update Own Exchange Cell
-    const ownExCell = document.getElementById(`cell-own-ex-${id}`);
-    if (ownExCell) {
-      if (data.own_exchange.status === 'uploaded') {
-        ownExCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Uploaded (${data.own_exchange.count})</span>` +
-          (data.own_exchange.url ? `<div style="margin-top:4px;"><a href="${data.own_exchange.url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>` : '');
+    // Update Exchange Posts Cell
+    const exCell = document.getElementById(`cell-ex-${id}`);
+    if (exCell) {
+      if (data.exchange_count > 0) {
+        exCell.innerHTML = `<span style="display:inline-block; padding:4px 10px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ ${data.exchange_count} ${data.exchange_count === 1 ? 'Post' : 'Posts'}</span>`;
       } else {
-        ownExCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>`;
+        exCell.innerHTML = `<span style="display:inline-block; padding:4px 10px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ 0 Posts</span>`;
       }
     }
 
-    // Update Own Used Car Cell
-    const ownUcCell = document.getElementById(`cell-own-uc-${id}`);
-    if (ownUcCell) {
-      if (data.own_usedcar.status === 'uploaded') {
-        ownUcCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Uploaded (${data.own_usedcar.count})</span>` +
-          (data.own_usedcar.url ? `<div style="margin-top:4px;"><a href="${data.own_usedcar.url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>` : '');
+    // Update Used Car Posts Cell
+    const ucCell = document.getElementById(`cell-uc-${id}`);
+    if (ucCell) {
+      if (data.usedcar_count > 0) {
+        ucCell.innerHTML = `<span style="display:inline-block; padding:4px 10px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ ${data.usedcar_count} ${data.usedcar_count === 1 ? 'Post' : 'Posts'}</span>`;
       } else {
-        ownUcCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Not Uploaded</span>`;
+        ucCell.innerHTML = `<span style="display:inline-block; padding:4px 10px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ 0 Posts</span>`;
       }
     }
 
-    // Update PSMCL Exchange Cell
-    const psmclExCell = document.getElementById(`cell-psmcl-ex-${id}`);
-    if (psmclExCell) {
-      if (data.psmcl_exchange.status === 'reshared') {
-        psmclExCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Reshared (${data.psmcl_exchange.reshared}/${data.psmcl_exchange.tracked})</span>` +
-          (data.psmcl_exchange.url ? `<div style="margin-top:4px;"><a href="${data.psmcl_exchange.url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>` : '');
-      } else if (data.psmcl_exchange.status === 'no_source_post') {
-        psmclExCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— No PSMCL Post</span>`;
-      } else {
-        psmclExCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Missed (0/${data.psmcl_exchange.tracked})</span>`;
-      }
-    }
-
-    // Update PSMCL Used Car Cell
-    const psmclUcCell = document.getElementById(`cell-psmcl-uc-${id}`);
-    if (psmclUcCell) {
-      if (data.psmcl_usedcar.status === 'reshared') {
-        psmclUcCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; font-size:12px;">✅ Reshared (${data.psmcl_usedcar.reshared}/${data.psmcl_usedcar.tracked})</span>` +
-          (data.psmcl_usedcar.url ? `<div style="margin-top:4px;"><a href="${data.psmcl_usedcar.url}" target="_blank" style="font-size:11px; color:var(--accent);">▶ View Post</a></div>` : '');
-      } else if (data.psmcl_usedcar.status === 'no_source_post') {
-        psmclUcCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(148,163,184,0.12); color:var(--muted); font-size:12px;">— No PSMCL Post</span>`;
-      } else {
-        psmclUcCell.innerHTML = `<span style="display:inline-block; padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; font-weight:600; font-size:12px;">❌ Missed (0/${data.psmcl_usedcar.tracked})</span>`;
-      }
+    // Update Total Posts Cell
+    const totCell = document.getElementById(`cell-tot-${id}`);
+    if (totCell) {
+      totCell.innerText = `${data.total_posts || 0} Posts`;
     }
 
     // Update Score Cell
@@ -336,33 +253,6 @@ async function checkOneDealership(id, btnEl) {
       btnEl.disabled = false;
       btnEl.classList.remove('loading');
       btnEl.innerText = 'Check';
-    }
-  }
-}
-
-async function refreshSource() {
-  const btn = document.getElementById('refresh-source-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerText = 'Refreshing PSMCL...';
-  }
-  const { from, to } = getActiveRange();
-
-  try {
-    const res = await fetch(`/refresh_campaign_source.php?from=${from}&to=${to}`);
-    const data = await res.json();
-    if (data.success) {
-      alert(`PSMCL Source Posts Refreshed!\nExchange Posts Tracked: ${data.exchange_tracked} (${data.new_exchange} new)\nCertified Used Car Posts Tracked: ${data.usedcar_tracked} (${data.new_usedcar} new)`);
-      window.location.reload();
-    } else {
-      alert(`Refresh failed: ${data.message || 'Unknown error'}`);
-    }
-  } catch (err) {
-    alert(`Network error: ${err.message}`);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerText = '🔄 Refresh PSMCL Source Posts';
     }
   }
 }
