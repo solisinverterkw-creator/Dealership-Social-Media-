@@ -165,6 +165,10 @@
   </a>
   {% endif %}
 
+  <a href="{{ url_for('fronx_skill_report') }}" class="feature-card" style="padding:16px 20px; border:1px solid rgba(217,119,6,0.35); background:linear-gradient(135deg, rgba(217,119,6,0.08), rgba(0,0,0,0.2));">
+    <div class="feature-card-title" style="color:var(--gold); margin-bottom:0; font-size:14px; font-weight:700;">🎯 Fronx Skill Test &amp; Dealership Rankings</div>
+  </a>
+
   {% if is_super_admin() %}
   <a href="{{ url_for('users') }}" class="feature-card" style="padding:16px 20px;">
     <div class="feature-card-title" style="color:var(--gold); margin-bottom:0; font-size:14px; font-weight:700;">👤 User Management</div>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suzuki Fronx – Sales Team Product & Competitor Skill Test | ROSP</title>
+  <link rel="stylesheet" href="/assets/fronx/styles.css" />
+</head>
+<body>
+
+  <!-- Sticky Top Brand Header -->
+  <header class="brand-header">
+    <div class="brand-header-inner">
+      <div class="brand-logo">
+        <div class="suzuki-s">S</div>
+        <div class="brand-titles">
+          <h1 id="hdrTitle">Suzuki Fronx – Product & Competitor Mastery Test</h1>
+          <p id="hdrDealer">Pak Suzuki Dealership Network • Sales Skill Assessment</p>
+        </div>
+      </div>
+
+      <div class="header-controls no-print">
+        <span id="saveStatus" class="save-badge hidden">✓ Auto-Saved • محفوظ</span>
+
+        <div id="timerBox" class="timer-pill hidden" title="Remaining Time">
+          <span>⏱</span>
+          <span id="timerText">50:00</span>
+        </div>
+
+        <div class="lang-switch" title="Language Display Mode">
+          <button type="button" data-lang="both" class="active" onclick="setLangMode('both')">EN + اردو</button>
+          <button type="button" data-lang="en" onclick="setLangMode('en')">English</button>
+          <button type="button" data-lang="ur" onclick="setLangMode('ur')">اردو</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SCREEN 1: WELCOME & REGISTRATION -->
+  <main id="screenWelcome" class="container-narrow">
+    <div class="hero-strip">
+      <span class="badge-red">Pak Suzuki Local Lineup Assessment</span>
+      <h2 style="font-size:1.55rem; font-weight:800; margin-bottom:6px;" class="en">
+        Suzuki Fronx vs All SUV &amp; Sedan Competitors
+      </h2>
+      <p style="font-size:0.93rem; opacity:0.92; max-width:620px;" class="en">
+        Select your dealership below and evaluate your product mastery across Fronx local variants (GL / GLX Mild-Hybrid / ADAS), direct crossovers &amp; sedans (Kia Stonic, Peugeot 2008, MG ZS, City, Yaris), and latest Chinese brands (Jaecoo J5 &amp; J7, Omoda, BYD, Jetour, Chery, Changan, Haval).
+      </p>
+      <div class="ur" style="color:#f8fafc; margin-top:10px; font-size:1.03rem;">
+        اپنی ڈیلرشپ منتخب کریں اور سوزوکی فرونکس (لوکل ماڈل) بمقابلہ تمام مقابل گاڑیوں (جیکو J5/J7، اوموڈا، BYD، جیٹور، چیری، چنگان، ایم جی، اسٹونک، پیژو 2008، سٹی اور یارِس) کی سیلز مہارت کا آن لائن ٹیسٹ دیں۔
+      </div>
+    </div>
+
+    <!-- Resume Unfinished Session Banner -->
+    <div id="resumeBanner" class="card hidden" style="border-left:5px solid var(--gold); background:var(--gold-bg);">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div>
+          <h3 style="font-size:1rem; color:#92400e;">⚡ Unfinished Test Found / ادھورا ٹیسٹ موجود ہے</h3>
+          <p id="resumeInfo" style="font-size:0.86rem; color:#78350f; margin-top:3px;"></p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-primary" onclick="resumeSavedSession()">Resume Test • جاری رکھیں</button>
+          <button type="button" class="btn btn-outline" onclick="discardSavedSession()">Start Fresh</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:1.15rem; margin-bottom:4px;" class="en">Candidate Registration</h3>
+      <div class="ur" style="font-size:1rem; font-weight:700; margin-bottom:10px;">امیدوار کی معلومات اور ڈیلرشپ کا انتخاب کریں</div>
+
+      <div id="regError" class="alert-banner"></div>
+
+      <form id="regForm" onsubmit="handleRegistration(event)">
+        <div class="form-grid">
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label style="color:#e30613; font-weight:800;">Dealership * <span class="ur-inline">اپنی ڈیلرشپ منتخب کریں</span></label>
+            <select id="inpDealershipSelect" class="input" style="border:2px solid #e30613; font-weight:700;" required>
+              <option value="">-- Select Your Dealership (تمام ڈیلرشپس) --</option>
+              {% for d in dealerships %}
+              <option value="{{ d.id }}" data-name="{{ d.name }}">{{ d.name }}{% if d.region %} ({{ d.region }}){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Full Name * <span class="ur-inline">پورا نام</span></label>
+            <input type="text" id="inpName" class="input" placeholder="e.g. Muhammad Usman" required />
+          </div>
+          <div class="form-group">
+            <label>Employee / Sales ID * <span class="ur-inline">ایمپلائی آئی ڈی</span></label>
+            <input type="text" id="inpEmpId" class="input" placeholder="e.g. PS-104" required />
+          </div>
+          <div class="form-group">
+            <label>Mobile / WhatsApp * <span class="ur-inline">موبائل نمبر</span></label>
+            <input type="tel" id="inpPhone" class="input" placeholder="03XX-XXXXXXX" required />
+          </div>
+          <div class="form-group">
+            <label>Showroom Branch / Location <span class="ur-inline">برانچ</span></label>
+            <input type="text" id="inpBranch" class="input" placeholder="Main 3S Showroom / City Branch" value="Main Showroom" />
+          </div>
+          <div class="form-group">
+            <label>Designation * <span class="ur-inline">عہدہ</span></label>
+            <select id="inpRole" class="input" required>
+              <option value="Sales Executive">Sales Executive (سیلز ایگزیکٹو)</option>
+              <option value="Senior Sales Executive">Senior Sales Executive (سینئر سیلز ایگزیکٹو)</option>
+              <option value="Team Leader / Floor Manager">Team Leader / Floor Manager (ٹیم لیڈر / منیجر)</option>
+              <option value="Corporate / Fleet Executive">Corporate / Fleet Executive (کارپوریٹ سیلز)</option>
+              <option value="Digital / BDC Representative">Digital / Online Lead Rep (ڈیجیٹل سیلز)</option>
+              <option value="Trainee Sales Officer">Trainee Sales Officer (ٹرینی)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Auto Sales Experience <span class="ur-inline">تجربہ</span></label>
+            <select id="inpExp" class="input">
+              <option value="Less than 1 year">Less than 1 year (1 سال سے کم)</option>
+              <option value="1 - 3 years" selected>1 – 3 years (1 سے 3 سال)</option>
+              <option value="3 - 5 years">3 – 5 years (3 سے 5 سال)</option>
+              <option value="5+ years">5+ years (5 سال سے زائد)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div style="font-size:0.8rem; color:var(--slate-500);">
+            <a href="{{ url_for('fronx_comparison_view') }}" target="_blank" style="color:var(--suzuki-blue); font-weight:600; text-decoration:none;">📊 Study Battlecard Sheet</a>
+            &nbsp;•&nbsp;
+            <a href="{{ url_for('fronx_skill_report') }}" style="color:var(--slate-500); text-decoration:none;">🔐 Dealership Report</a>
+          </div>
+          <button type="submit" id="btnProceedInstructions" class="btn btn-primary">
+            Continue to Instructions • آگے بڑھیں →
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- SCREEN 2: INSTRUCTIONS -->
+  <main id="screenInstructions" class="container-narrow hidden">
+    <div class="card">
+      <h2 style="font-size:1.3rem; color:var(--suzuki-blue-dark); margin-bottom:6px;" class="en">
+        Test Structure &amp; Quality Scoring Rules
+      </h2>
+      <div class="ur" style="font-size:1.1rem; font-weight:700; color:var(--suzuki-blue-dark); margin-bottom:16px;">
+        ٹیسٹ کے اصول، اسکورنگ اور اینٹی چیٹنگ کی شرائط
+      </div>
+
+      <div class="kpi-mini-grid" style="margin-bottom:20px;">
+        <div class="kpi-mini">
+          <div class="lbl">Total Questions / کل سوالات</div>
+          <div class="val" id="instTotalQ">68</div>
+          <div style="font-size:0.75rem; color:var(--slate-500);" id="instSubQ">60 MCQs + 8 Open Pitch</div>
+        </div>
+        <div class="kpi-mini">
+          <div class="lbl">Time Allowed / وقت</div>
+          <div class="val"><span id="instDuration">50</span> Min</div>
+          <div style="font-size:0.75rem; color:var(--slate-500);">Auto-submits at 00:00</div>
+        </div>
+        <div class="kpi-mini">
+          <div class="lbl">Quality Score / کل نمبر</div>
+          <div class="val">100 Pts</div>
+          <div style="font-size:0.75rem; color:var(--slate-500);">60 MCQ + 30 Pitch + 10 Focus</div>
+        </div>
+      </div>
+
+      <ul style="padding-left:20px; font-size:0.93rem; color:var(--slate-700); display:flex; flex-direction:column; gap:8px;" class="en">
+        <li><strong>Bilingual Format:</strong> Every question appears in both <strong>English</strong> and <strong>Urdu (اردو)</strong>. You can write open-ended answers in English, Urdu, or Roman Urdu.</li>
+        <li><strong>Auto-Save Protection:</strong> Every answer saves instantly. If connectivity drops, reopen the link to resume.</li>
+        <li><strong>Open-Ended Pitch Quality (30% Weight):</strong> The last 8 questions test your persuasive selling points against Jaecoo J5, BYD, Omoda, Jetour, Peugeot, Stonic, City, and Yaris.</li>
+        <li><strong>Anti-Cheating &amp; AI Forensics Active:</strong> Copying questions, pasting text from ChatGPT/WhatsApp, or switching browser tabs is blocked and logged directly to your Dealership Management.</li>
+      </ul>
+
+      <div class="ur" style="background:var(--slate-50); padding:14px 18px; border-radius:10px; margin-top:16px; border-right:4px solid var(--suzuki-red);">
+        • ہر سوال <strong>انگلش اور اردو</strong> دونوں میں موجود ہے۔ تحریری سوالات کا جواب آپ انگلش، اردو یا رومن اردو کسی میں بھی اپنے الفاظ میں لکھیں۔<br/>
+        • <strong>سخت ہدایت:</strong> سوال کاپی کرنا، ChatGPT یا واٹس ایپ سے جواب پیسٹ کرنا، یا دوسری اسکرین پر جانا اینٹی چیٹ سسٹم خودکار طریقے سے پکڑ کر آپ کی ڈیلرشپ رپورٹ میں درج کر دے گا۔
+      </div>
+
+      <div style="margin-top:24px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-outline" onclick="backToWelcome()">← Edit Details</button>
+        <button type="button" class="btn btn-danger" onclick="startExamNow()">
+          🚀 Start Official Test • ٹیسٹ شروع کریں
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- SCREEN 3: ACTIVE EXAM -->
+  <main id="screenExam" class="container hidden">
+    <div id="tabWarningBanner" class="alert-banner"></div>
+
+    <div class="progress-wrap" title="Completion Progress">
+      <div id="examProgressFill" class="progress-fill" style="width:0%"></div>
+    </div>
+
+    <div class="exam-grid">
+      <!-- Left: Question Display -->
+      <div class="card no-copy" id="questionCard">
+        <div class="q-meta">
+          <span id="qSectionBadge" class="section-chip">Section A</span>
+          <span id="qCounterText" class="q-counter">Question 1 of 68</span>
+        </div>
+
+        <div id="qTextEn" class="q-text-en en"></div>
+        <div id="qTextUr" class="q-text-ur ur"></div>
+
+        <!-- MCQ Options Container -->
+        <div id="mcqContainer" class="options-list"></div>
+
+        <!-- Open-Ended Answer Container -->
+        <div id="openContainer" class="hidden">
+          <div style="margin-bottom:10px; font-size:0.85rem; color:var(--suzuki-blue); font-weight:600;">
+            <span id="openHintEn" class="en"></span>
+            <div id="openHintUr" class="ur" style="font-size:0.92rem; color:var(--suzuki-blue);"></div>
+          </div>
+          <textarea
+            id="openTextarea"
+            placeholder="Write your detailed showroom pitch / points here in your own words... (انگلش، اردو یا رومن اردو میں جواب لکھیں)"
+            oninput="handleOpenInput(this.value)"
+          ></textarea>
+          <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.8rem; color:var(--slate-500);">
+            <span id="openWordCount">0 words</span>
+            <span id="openDepthFeedback" style="font-weight:700;">Write at least 3–5 solid points for full marks</span>
+          </div>
+        </div>
+
+        <!-- Navigation Footer -->
+        <div class="q-nav-footer">
+          <div style="display:flex; gap:8px;">
+            <button type="button" id="btnPrev" class="btn btn-outline" onclick="navQuestion(-1)">← Previous</button>
+            <button type="button" id="btnFlag" class="btn btn-outline btn-flag" onclick="toggleFlagCurrent()">⚑ Mark Review</button>
+          </div>
+
+          <div style="display:flex; gap:8px;">
+            <button type="button" id="btnNext" class="btn btn-primary" onclick="navQuestion(1)">Next • اگلا سوال →</button>
+            <button type="button" id="btnFinishOpen" class="btn btn-success" onclick="openReviewModal()">✓ Review &amp; Submit</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Question Palette -->
+      <aside class="card palette-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="font-size:0.92rem; color:var(--slate-800);">Question Navigator</h4>
+          <span id="paletteSummary" style="font-size:0.78rem; font-weight:700; color:var(--green);">0 / 68 Done</span>
+        </div>
+
+        <div id="paletteGrid" class="palette-grid"></div>
+
+        <div class="legend">
+          <span><i class="dot" style="background:var(--green)"></i> Answered</span>
+          <span><i class="dot" style="background:var(--gold)"></i> Review</span>
+          <span><i class="dot" style="background:var(--slate-200)"></i> Pending</span>
+          <span><i class="dot" style="border:1.5px dashed var(--slate-500)"></i> Written Pitch</span>
+        </div>
+
+        <button type="button" class="btn btn-danger" style="width:100%; margin-top:16px;" onclick="openReviewModal()">
+          Submit Final Test • جمع کروائیں
+        </button>
+      </aside>
+    </div>
+  </main>
+
+  <!-- SCREEN 4: RESULT -->
+  <main id="screenResult" class="container-narrow hidden">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--slate-200);">
+        <div>
+          <span class="badge-red">Official Assessment Result</span>
+          <h2 id="resCandidateName" style="font-size:1.4rem; color:var(--slate-900);"></h2>
+          <p id="resCandidateMeta" style="font-size:0.85rem; color:var(--slate-500);"></p>
+        </div>
+        <div id="cloudSyncPill" style="font-size:0.8rem; font-weight:700; padding:6px 12px; border-radius:999px;"></div>
+      </div>
+
+      <div class="score-hero">
+        <div id="resGauge" class="gauge-ring" style="--pct: 0%;">
+          <div class="gauge-inner">
+            <div id="resQualityScore" class="gauge-num">0</div>
+            <div class="gauge-sub">QUALITY SCORE / 100</div>
+          </div>
+        </div>
+
+        <div>
+          <div id="resGradeBadge" class="grade-pill grade-A">Grade A</div>
+          <h3 id="resHeadlineEn" style="font-size:1.15rem; margin-bottom:4px;" class="en"></h3>
+          <div id="resHeadlineUr" class="ur" style="font-size:1rem; margin-bottom:12px;"></div>
+
+          <div class="kpi-mini-grid">
+            <div class="kpi-mini">
+              <div class="lbl">MCQ Accuracy (60 pts)</div>
+              <div class="val" id="resMcqPts">0 / 60</div>
+              <div id="resMcqRaw" style="font-size:0.75rem; color:var(--slate-500);"></div>
+            </div>
+            <div class="kpi-mini">
+              <div class="lbl">Sales Pitch Quality (30 pts)</div>
+              <div class="val" id="resOpenPts">0 / 30</div>
+              <div style="font-size:0.74rem; color:var(--slate-500);">Evaluated by Telemetry &amp; AI</div>
+            </div>
+            <div class="kpi-mini">
+              <div class="lbl">Focus &amp; Discipline (10 pts)</div>
+              <div class="val" id="resDiscPts">10 / 10</div>
+              <div id="resTabInfo" style="font-size:0.74rem; color:var(--slate-500);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Diagnostics -->
+    <div class="card">
+      <h3 style="font-size:1.08rem; margin-bottom:4px;" class="en">Section-wise Skill Diagnostics</h3>
+      <div class="ur" style="font-size:0.98rem; font-weight:700; margin-bottom:16px;">سیکشن کے لحاظ سے مہارت کی تفصیل</div>
+      <div id="resSectionBars"></div>
+    </div>
+
+    <!-- Action Plan -->
+    <div class="card">
+      <h3 style="font-size:1.08rem; margin-bottom:4px;" class="en">Personalized Coaching Recommendations</h3>
+      <div class="ur" style="font-size:0.98rem; font-weight:700; margin-bottom:12px;">بہتری کے لیے تجاویز</div>
+      <div id="resCoachingList" style="font-size:0.92rem; color:var(--slate-700);"></div>
+
+      <div class="no-print" style="margin-top:22px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" onclick="window.print()">🖨 Print / Save Result PDF</button>
+        <a href="{{ url_for('fronx_comparison_view') }}" class="btn btn-outline">📊 Open Fronx Master Battlecard</a>
+        <button type="button" id="btnRetrySync" class="btn btn-success hidden" onclick="retryCloudUpload()">↻ Retry Save</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: PRE-SUBMIT REVIEW -->
+  <div id="reviewModal" class="modal-backdrop">
+    <div class="modal-box">
+      <h3 style="font-size:1.2rem; color:var(--slate-900); margin-bottom:4px;" class="en">Ready to Submit Your Test?</h3>
+      <div class="ur" style="font-size:1rem; font-weight:700; margin-bottom:14px;">کیا آپ ٹیسٹ جمع کروانے کے لیے تیار ہیں؟</div>
+
+      <div id="modalStatsGrid" class="kpi-mini-grid" style="margin-bottom:16px;"></div>
+      <div id="modalUnansweredWarn" class="alert-banner" style="display:none;"></div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+        <button type="button" class="btn btn-outline" onclick="closeReviewModal()">← Back to Questions</button>
+        <button type="button" id="btnConfirmSubmit" class="btn btn-danger" onclick="submitFinalExam(false)">
+          ✓ Confirm &amp; Submit Final Result
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="secToast" class="sec-toast"></div>
+
+  <!-- Injected Config directly linked with ROSP Database API -->
+  <script>
+    window.APP_CONFIG = {
+      SUBMIT_API_URL: "{{ url_for('api_fronx_submit') }}",
+      CHECK_EMP_URL: "{{ url_for('api_fronx_check_emp') }}",
+      TEST_DURATION_MIN: 50,
+      ALLOW_RETAKE: false,
+      SHOW_ANSWERS_AFTER_TEST: false,
+      DEFAULT_LANG_MODE: "both",
+      WEIGHTS: { mcq: 60, open: 30, discipline: 10 },
+      ANTI_CHEAT: {
+        BLOCK_QUESTION_COPY: true,
+        BLOCK_OPEN_PASTE: true,
+        DETECT_AI_WRITING: true,
+        TRACK_AWAY_SECONDS: true,
+        REQUEST_FULLSCREEN: true
+      },
+      TAB_SWITCH_PENALTY: 2
+    };
+  </script>
+  <script src="/assets/fronx/questions.js"></script>
+  <script src="/assets/fronx/app.js"></script>
+</body>
+</html>

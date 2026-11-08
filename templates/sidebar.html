@@ -78,6 +78,7 @@
       <a href="{{ url_for('crm_data_quality') }}" class="sidebar-link {% if ep == 'crm_data_quality' %}active{% endif %}">CRM Data Quality Checker</a>
     {% endif %}
     <a href="{{ url_for('crm_voip_audit') }}" class="sidebar-link {% if ep == 'crm_voip_audit' %}active{% endif %}">VoIP Call &amp; Follow-up Audit</a>
+    <a href="{{ url_for('fronx_skill_report') }}" class="sidebar-link {% if ep in ['fronx_skill_report', 'fronx_skill_portal'] %}active{% endif %}" style="color:var(--gold); font-weight:700;">🎯 Fronx Skill Test Report</a>
     {% if can_view('brand_assets') %}
       <a href="{{ url_for('brand_assets') }}" class="sidebar-link {% if ep == 'brand_assets' %}active{% endif %}">Brand Assets</a>
     {% endif %}

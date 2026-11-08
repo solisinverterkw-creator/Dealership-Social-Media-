@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Inspect Submission – {{ s.candidate_name }} | ROSP Suzuki{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1 class="brand-h1">🔍 Candidate Assessment Audit: {{ s.candidate_name }}</h1>
+    <div class="subtitle">
+      {{ s.dealership_name }} · {{ s.emp_id }} · {{ s.designation }} · Quality Score: <strong style="color:var(--gold);">{{ s.quality_score }}/100</strong>
+    </div>
+  </div>
+  <div class="toolbar">
+    <a href="{{ url_for('fronx_skill_report') }}" class="btn">← Back to All Dealerships</a>
+    <button type="button" class="btn primary" onclick="window.print()">🖨 Print Candidate Sheet</button>
+  </div>
+</header>
+
+<!-- FORENSICS & ANTI-CHEAT AUDIT CARD -->
+<div class="detail-card" style="margin-bottom:20px; background:var(--panel); border:1px solid {% if s.integrity_status == 'HIGH_RISK' %}#ef4444{% elif s.integrity_status == 'SUSPICIOUS' %}#eab308{% else %}#22c55e{% endif %}; border-radius:14px; padding:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+    <h2 style="margin:0; font-size:16px; font-weight:700;">🕵️ Anti-Cheat &amp; AI Writing Forensics</h2>
+    <span class="badge" style="background:{% if s.integrity_status == 'HIGH_RISK' %}rgba(239,68,68,0.2); color:#ef4444;{% elif s.integrity_status == 'SUSPICIOUS' %}rgba(234,179,8,0.2); color:#eab308;{% else %}rgba(34,197,94,0.2); color:#22c55e;{% endif %} padding:6px 14px; font-weight:800; font-size:12px; border-radius:20px;">
+      {{ s.integrity_status }} ({{ s.cheat_risk_pct }}% Risk)
+    </span>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:14px;">
+    <div style="background:var(--panel-solid); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+      <div style="font-size:11px; color:var(--muted);">Tab Switches</div>
+      <div style="font-size:18px; font-weight:800; color:#fff;">{{ s.tab_switches }}</div>
+    </div>
+    <div style="background:var(--panel-solid); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+      <div style="font-size:11px; color:var(--muted);">Screen Away Time</div>
+      <div style="font-size:18px; font-weight:800; color:#fff;">{{ s.away_total_sec }}s</div>
+    </div>
+    <div style="background:var(--panel-solid); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+      <div style="font-size:11px; color:var(--muted);">Copy Attempts</div>
+      <div style="font-size:18px; font-weight:800; color:#fff;">{{ s.copy_attempts }}</div>
+    </div>
+    <div style="background:var(--panel-solid); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+      <div style="font-size:11px; color:var(--muted);">Paste / Burst Traps</div>
+      <div style="font-size:18px; font-weight:800; color:#fff;">{{ s.paste_attempts }}</div>
+    </div>
+    <div style="background:var(--panel-solid); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+      <div style="font-size:11px; color:var(--muted);">Total Time Taken</div>
+      <div style="font-size:18px; font-weight:800; color:#fff;">{{ (s.time_taken_sec // 60) }}m {{ (s.time_taken_sec % 60) }}s</div>
+    </div>
+  </div>
+
+  {% if forensic_flags %}
+    <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px; margin-top:10px;">
+      <strong style="color:#ef4444; font-size:12px; text-transform:uppercase;">Flagged Security Anomalies:</strong>
+      <ul style="margin:6px 0 0 18px; font-size:12px; color:#fca5a5;">
+        {% for f in forensic_flags %}
+          <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div style="color:#22c55e; font-size:13px; font-weight:600;">
+      ✓ Clean session: Natural typing cadence, stayed focused on test screen, zero paste/copy violations.
+    </div>
+  {% endif %}
+</div>
+
+<!-- SECTION SCORES -->
+<div class="detail-card" style="margin-bottom:20px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:20px;">
+  <h2 style="margin:0 0 14px 0; font-size:16px; font-weight:700;">📊 Section-wise Diagnostics</h2>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px;">
+    {% for sec_k, sec_v in section_stats.items() %}
+    <div style="background:var(--panel-solid); padding:12px; border-radius:10px; border:1px solid var(--border);">
+      <div style="font-size:11px; color:var(--muted); font-weight:700;">Section {{ sec_k }}</div>
+      <div style="font-size:13px; font-weight:700; color:#fff; margin-top:2px;">{{ sec_v.name }}</div>
+      <div style="font-size:18px; font-weight:900; color:{% if sec_v.pct >= 80 %}#22c55e{% elif sec_v.pct >= 60 %}#60a5fa{% else %}#ef4444{% endif %}; margin-top:4px;">
+        {{ sec_v.pct }}%
+      </div>
+      <div style="font-size:11px; color:var(--muted);">{{ sec_v.correct }}/{{ sec_v.total }} correct</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- OPEN-ENDED PITCHES AUDIT -->
+<div class="detail-card" style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:20px;">
+  <h2 style="margin:0 0 14px 0; font-size:16px; font-weight:700;">💬 Written Sales Pitches &amp; AI Fingerprint Analysis</h2>
+  {% for oq in open_questions %}
+    {% set od = open_details.get(oq.id, {}) %}
+    {% set qf = od.get('forensics', {}) %}
+    <div style="border:1px solid {% if qf.get('aiRisk', 0) >= 40 %}#ef4444{% else %}var(--border){% endif %}; border-radius:10px; padding:16px; margin-bottom:14px; background:var(--panel-solid);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+        <div style="font-weight:700; font-size:14px; color:var(--text); flex:1;">
+          <span style="color:var(--gold);">{{ oq.id }}.</span> {{ oq.q }}
+        </div>
+        <div style="background:rgba(99,102,241,0.2); color:#a5b4fc; padding:4px 10px; border-radius:6px; font-weight:800; font-size:12px;">
+          Marks: {{ od.get('autoPts', 0) }}/{{ oq.max or 5 }}
+        </div>
+      </div>
+
+      {% if qf %}
+      <div style="margin-top:6px; font-size:11px; color:var(--muted);">
+        ⌨️ Keys: {{ qf.get('keystrokes', 0) }} • Backspaces: {{ qf.get('backspaces', 0) }} • Speed: {{ qf.get('wpm', '—') }} WPM • Away: {{ qf.get('awaySec', 0) }}s
+        {% if qf.get('signals') %}
+          <div style="color:#ef4444; font-weight:700; margin-top:2px;">
+            🚨 AI Risk ({{ qf.get('aiRisk') }}%): {{ qf.get('signals')|join('; ') }}
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div style="margin-top:10px; padding:12px; background:rgba(0,0,0,0.3); border-radius:8px; border:1px solid var(--border); font-size:13px; color:#fff; line-height:1.6; white-space:pre-wrap;">
+        {{ od.get('answer') or '(No answer written)' }}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

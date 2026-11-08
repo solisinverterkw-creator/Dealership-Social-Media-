@@ -28,7 +28,8 @@ from api.models import (
     AgeingRecord, StockChassisRecord, TargetPage, PostLog, AppSetting,
     ReshareCheck, ReshareOwnPostStat, ProcessedSourcePost,
     CrmVoipAuditReport, CrmVoipAuditItem, YtTestimonialRecord,
-    CampaignSourcePost, PostImageScanCache, CampaignComplianceRecord
+    CampaignSourcePost, PostImageScanCache, CampaignComplianceRecord,
+    SalesSkillTestSubmission
 )
 # Alias for backward compatibility with code that uses ReshareSourcePost name
 ReshareSourcePost = ProcessedSourcePost
@@ -5948,6 +5949,284 @@ def crm_voip_audit_export():
         download_name=f"VoIP_Audit_{selected_date_str}.xlsx",
         as_attachment=True,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
+# ==============================================================================
+# SUZUKI FRONX SALES SKILL TEST & ALL 21 DEALERSHIPS REPORTING SUITE
+# ==============================================================================
+
+OPEN_QUESTIONS_REF = [
+    {'id': 'O1', 'q': 'How would you pitch the Fronx GLX Mild-Hybrid against a customer considering the Kia Stonic EX+?', 'max': 5},
+    {'id': 'O2', 'q': 'A buyer is attracted to Peugeot 2008 Active/Allure for European styling. How do you convince them Fronx is the smarter financial & ownership choice in Pakistan?', 'max': 5},
+    {'id': 'O3', 'q': 'A customer is torn between a high-spec sedan (Honda City 1.5 Aspire / Toyota Yaris ATIV X) and Fronx. What key crossover advantages do you emphasize?', 'max': 5},
+    {'id': 'O4', 'q': 'A prospect is considering newly launched Chinese SUVs (Jaecoo J5 / J7 PHEV, Haval Jolion). What is your objection-handling strategy highlighting Suzuki strengths?', 'max': 5},
+    {'id': 'O5', 'q': 'Explain the practical everyday benefit of the SHVS Mild-Hybrid System with ISG to a customer worried about fuel costs in Pakistan.', 'max': 5},
+    {'id': 'O6', 'q': 'How do you demonstrate the Suzuki HEARTECT platform and 6-Airbag passive safety package to a safety-conscious family customer?', 'max': 5},
+    {'id': 'O7', 'q': 'A customer is looking at base Fronx GL (1.5L 5MT / 4AT). What customer profile is this best suited for vs Chinese entry models?', 'max': 5},
+    {'id': 'O8', 'q': 'Summarize Suzuki Fronx\'s 3 greatest competitive battlecard advantages that no competitor can match simultaneously in Pakistan.', 'max': 5}
+]
+
+@app.route('/fronx-skill-portal')
+def fronx_skill_portal():
+    """Public assessment portal for sales consultants across all 21 Pak Suzuki dealerships."""
+    dealerships = db_session.query(Dealership).filter(Dealership.id <= 21).order_by(Dealership.name.asc()).all()
+    return render_template('fronx_test_portal.html', dealerships=dealerships)
+
+@app.route('/fronx-comparison')
+def fronx_comparison_view():
+    """Master comparison battlecard sheet (Fronx vs all competitors)."""
+    return render_template('fronx_comparison.html')
+
+@app.route('/fronx-skill-report')
+@require_login
+def fronx_skill_report():
+    """All 21 Dealerships ranking, participation, quality scores and forensics report."""
+    dealerships = get_allowed_dealerships()
+    dealership_ids = [d.id for d in dealerships]
+
+    if is_super_admin():
+        subs_query = db_session.query(SalesSkillTestSubmission).order_by(SalesSkillTestSubmission.submitted_at.desc())
+    else:
+        subs_query = db_session.query(SalesSkillTestSubmission).filter(
+            or_(
+                SalesSkillTestSubmission.dealership_id.in_(dealership_ids),
+                SalesSkillTestSubmission.dealership_id == None
+            )
+        ).order_by(SalesSkillTestSubmission.submitted_at.desc())
+
+    submissions = subs_query.all()
+
+    # Map submissions to dealerships
+    dealer_subs_map = {}
+    for s in submissions:
+        k = s.dealership_id or s.dealership_name
+        if k not in dealer_subs_map:
+            dealer_subs_map[k] = []
+        dealer_subs_map[k].append(s)
+
+    dealerships_data = []
+    total_candidates = len(submissions)
+    total_grade_a = sum(1 for s in submissions if s.grade == 'A')
+    total_ai_flagged = sum(1 for s in submissions if s.integrity_status in ('HIGH_RISK', 'SUSPICIOUS') or (s.cheat_risk_pct or 0) >= 40)
+    all_scores = [float(s.quality_score or 0) for s in submissions]
+    national_avg_score = round(sum(all_scores) / total_candidates, 1) if total_candidates > 0 else 0.0
+
+    for d in dealerships:
+        d_subs = dealer_subs_map.get(d.id, [])
+        if not d_subs:
+            # Fallback fuzzy match on dealership name
+            d_subs = [s for s in submissions if s.dealership_name and (d.name.lower() in s.dealership_name.lower() or s.dealership_name.lower() in d.name.lower())]
+
+        t_count = len(d_subs)
+        d_scores = [float(s.quality_score or 0) for s in d_subs]
+        d_avg = round(sum(d_scores) / t_count, 1) if t_count > 0 else 0.0
+        d_grade_a = sum(1 for s in d_subs if s.grade == 'A')
+        d_flagged = sum(1 for s in d_subs if s.integrity_status in ('HIGH_RISK', 'SUSPICIOUS') or (s.cheat_risk_pct or 0) >= 40)
+
+        dealerships_data.append({
+            'id': d.id,
+            'name': d.name,
+            'region': getattr(d, 'region', None),
+            'tested_count': t_count,
+            'avg_score': d_avg,
+            'grade_a_count': d_grade_a,
+            'flagged_count': d_flagged
+        })
+
+    # Sort dealerships by avg_score descending, then participation
+    dealerships_data.sort(key=lambda x: (x['avg_score'], x['tested_count']), reverse=True)
+
+    return render_template(
+        'fronx_skill_report.html',
+        dealerships_data=dealerships_data,
+        submissions=submissions,
+        total_candidates=total_candidates,
+        national_avg_score=national_avg_score,
+        total_grade_a=total_grade_a,
+        total_ai_flagged=total_ai_flagged
+    )
+
+@app.route('/fronx-submission/<int:sub_id>')
+@require_login
+def fronx_submission_inspect(sub_id):
+    """Detailed candidate audit: AI forensics, keystroke cadence, section breakdown, written pitches."""
+    s = db_session.query(SalesSkillTestSubmission).filter(SalesSkillTestSubmission.id == sub_id).first()
+    if not s:
+        abort(404)
+
+    payload = {}
+    if s.payload_json:
+        try:
+            payload = json.loads(s.payload_json)
+        except Exception:
+            payload = {}
+
+    forensic_flags = []
+    forensics = payload.get('forensics') or {}
+    if isinstance(forensics, dict):
+        forensic_flags = forensics.get('flags') or []
+
+    mcq_details = payload.get('mcqDetails') or {}
+    open_details = payload.get('openDetails') or {}
+    section_stats = payload.get('sectionStats') or {}
+
+    return render_template(
+        'fronx_submission_inspect.html',
+        s=s,
+        payload=payload,
+        forensic_flags=forensic_flags,
+        mcq_details=mcq_details,
+        open_details=open_details,
+        open_questions=OPEN_QUESTIONS_REF,
+        section_stats=section_stats
+    )
+
+@app.route('/api/fronx/submit', methods=['POST'])
+def api_fronx_submit():
+    """Receives and securely stores assessment submissions from candidates."""
+    data = request.get_json(silent=True) or {}
+    if not data:
+        return jsonify({'error': 'Invalid payload'}), 400
+
+    sub_uid = data.get('submissionId') or f"SUB-{int(time.time()*1000)}"
+    emp_id = (data.get('empId') or '').strip().upper()
+    if not emp_id:
+        return jsonify({'error': 'Employee ID is required'}), 400
+
+    # Retake validation
+    existing = db_session.query(SalesSkillTestSubmission).filter(
+        SalesSkillTestSubmission.emp_id == emp_id
+    ).first()
+    if existing:
+        return jsonify({
+            'error': f'Assessment already submitted for Employee ID {emp_id}',
+            'existing_score': float(existing.quality_score or 0)
+        }), 400
+
+    dealership_id = data.get('dealershipId')
+    try:
+        dealership_id = int(dealership_id) if dealership_id else None
+    except Exception:
+        dealership_id = None
+
+    dealership_name = data.get('dealershipName') or 'Pak Suzuki Dealership'
+    forensics = data.get('forensics') or {}
+
+    submission = SalesSkillTestSubmission(
+        submission_uid=sub_uid,
+        dealership_id=dealership_id,
+        dealership_name=dealership_name,
+        candidate_name=data.get('name') or 'Anonymous Candidate',
+        emp_id=emp_id,
+        phone=data.get('phone'),
+        designation=data.get('role'),
+        experience=data.get('experience'),
+        quality_score=Decimal(str(data.get('qualityScore', 0.0))),
+        grade=data.get('grade', 'D'),
+        mcq_correct=int(data.get('mcqCorrect', 0)),
+        mcq_total=int(data.get('mcqTotal', 60)),
+        mcq_pct=int(data.get('mcqPct', 0)),
+        mcq_weighted=Decimal(str(data.get('mcqWeighted', 0.0))),
+        open_weighted=Decimal(str(data.get('openWeighted', 0.0))),
+        discipline_weighted=Decimal(str(data.get('disciplineWeighted', 0.0))),
+        integrity_status=forensics.get('integrityStatus', 'CLEAN'),
+        cheat_risk_pct=int(forensics.get('cheatRiskPct', 0)),
+        tab_switches=int(data.get('tabSwitches', 0)),
+        away_total_sec=int(forensics.get('awayTotalSec', 0)),
+        copy_attempts=int(forensics.get('copyAttempts', 0)),
+        paste_attempts=int(forensics.get('pasteAttempts', 0)),
+        time_taken_sec=int(data.get('timeTakenSec', 0)),
+        manager_reviewed=False,
+        payload_json=json.dumps(data)
+    )
+
+    try:
+        db_session.add(submission)
+        db_session.commit()
+        return jsonify({'success': True, 'submission_uid': sub_uid})
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/fronx/check-emp', methods=['GET'])
+def api_fronx_check_emp():
+    """Checks if an employee has already submitted the test (retake prevention)."""
+    emp_id = (request.args.get('empId') or '').strip().upper()
+    if not emp_id:
+        return jsonify({'exists': False})
+
+    existing = db_session.query(SalesSkillTestSubmission).filter(
+        SalesSkillTestSubmission.emp_id == emp_id
+    ).first()
+
+    if existing:
+        return jsonify({
+            'exists': True,
+            'dealership': existing.dealership_name,
+            'score': float(existing.quality_score or 0),
+            'grade': existing.grade
+        })
+    return jsonify({'exists': False})
+
+@app.route('/fronx-skill-report/export')
+@require_login
+def fronx_skill_export_csv():
+    """Exports all dealership candidate assessments as a CSV file."""
+    dealerships = get_allowed_dealerships()
+    dealership_ids = [d.id for d in dealerships]
+
+    if is_super_admin():
+        submissions = db_session.query(SalesSkillTestSubmission).order_by(SalesSkillTestSubmission.submitted_at.desc()).all()
+    else:
+        submissions = db_session.query(SalesSkillTestSubmission).filter(
+            or_(
+                SalesSkillTestSubmission.dealership_id.in_(dealership_ids),
+                SalesSkillTestSubmission.dealership_id == None
+            )
+        ).order_by(SalesSkillTestSubmission.submitted_at.desc()).all()
+
+    import csv
+    import io
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Submission UID", "Dealership", "Candidate Name", "Employee ID", "Phone",
+        "Designation", "Experience", "Quality Score (100)", "Grade", "MCQ Score (60)",
+        "Open Pitch Score (30)", "Discipline (10)", "Integrity Status", "AI Cheat Risk %",
+        "Tab Switches", "Away Seconds", "Copy Attempts", "Paste Traps", "Time Taken (Sec)",
+        "Submitted At"
+    ])
+
+    for s in submissions:
+        writer.writerow([
+            s.submission_uid,
+            s.dealership_name,
+            s.candidate_name,
+            s.emp_id,
+            s.phone or "",
+            s.designation or "",
+            s.experience or "",
+            float(s.quality_score or 0),
+            s.grade,
+            float(s.mcq_weighted or 0),
+            float(s.open_weighted or 0),
+            float(s.discipline_weighted or 0),
+            s.integrity_status,
+            s.cheat_risk_pct,
+            s.tab_switches,
+            s.away_total_sec,
+            s.copy_attempts,
+            s.paste_attempts,
+            s.time_taken_sec,
+            s.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if s.submitted_at else ""
+        ])
+
+    csv_data = output.getvalue()
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=Suzuki_Fronx_Skill_Report_All_Dealerships.csv"}
     )
 
 # --- BOOTSTRAP INITIALIZE DATABASE ---

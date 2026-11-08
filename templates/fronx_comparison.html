@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suzuki Fronx (Local) – Master Comparison & Sales Battlecard Sheet</title>
+  <link rel="stylesheet" href="/assets/fronx/styles.css" />
+  <style>
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1.5px solid var(--slate-300);
+      background: #fff;
+      font-weight: 700;
+      font-size: 0.86rem;
+      color: var(--slate-700);
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--suzuki-blue);
+      border-color: var(--suzuki-blue);
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(0, 51, 153, 0.22);
+    }
+
+    /* Highlighted Fronx Column in Comparison Tables */
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+      min-width: 940px;
+    }
+    .comp-table th, .comp-table td {
+      padding: 10px 11px;
+      border: 1px solid var(--slate-200);
+      vertical-align: top;
+    }
+    .comp-table thead th {
+      background: var(--slate-800);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      position: sticky;
+      top: 0;
+    }
+    .comp-table th.fronx-col {
+      background: linear-gradient(135deg, #b91c1c, var(--suzuki-red)) !important;
+      color: #fff !important;
+      border: 2px solid #991b1b;
+      font-size: 0.88rem;
+    }
+    .comp-table td.fronx-col {
+      background: #eff6ff;
+      border-left: 2.5px solid var(--suzuki-blue);
+      border-right: 2.5px solid var(--suzuki-blue);
+      font-weight: 700;
+      color: var(--suzuki-blue-dark);
+    }
+    .comp-table td.feat-col {
+      background: var(--slate-50);
+      font-weight: 700;
+      color: var(--slate-800);
+      width: 175px;
+    }
+    .win-tag {
+      display: inline-block;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+    .miss-tag {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    /* Winning Feature Cards */
+    .win-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 16px;
+    }
+    .win-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1.5px solid #bfdbfe;
+      border-top: 4px solid var(--suzuki-blue);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .win-card.red-top { border-top-color: var(--suzuki-red); }
+    .win-card h4 {
+      font-size: 0.98rem;
+      color: var(--suzuki-blue-dark);
+      margin-bottom: 6px;
+    }
+    .win-card p { font-size: 0.85rem; color: var(--slate-600); }
+
+    /* Objection Battlecards */
+    .obj-card {
+      border: 1px solid var(--slate-200);
+      border-left: 5px solid var(--suzuki-red);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 14px;
+      background: #fff;
+    }
+    .obj-q {
+      font-weight: 800;
+      color: #991b1b;
+      font-size: 0.96rem;
+      margin-bottom: 8px;
+    }
+    .obj-a {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.89rem;
+      color: #14532d;
+    }
+
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      .comp-section { display: block !important; page-break-after: always; }
+      .comp-table { min-width: 100%; font-size: 0.72rem; }
+      .brand-header { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="brand-header">
+    <div class="brand-header-inner">
+      <div class="brand-logo">
+        <div class="suzuki-s">S</div>
+        <div class="brand-titles">
+          <h1>Suzuki Fronx (Pakistan Local CKD) – Master Comparison Sheet</h1>
+          <p>Showroom Battlecard: Fronx vs Jaecoo J5/J7, BYD, Omoda, Jetour, Chery, Changan, MG, Stonic, 2008, City & Yaris</p>
+        </div>
+      </div>
+
+      <div class="header-controls no-print">
+        <div class="lang-switch">
+          <button type="button" data-lang="both" class="active" onclick="setCompLang('both')">EN + اردو</button>
+          <button type="button" data-lang="en" onclick="setCompLang('en')">English</button>
+          <button type="button" data-lang="ur" onclick="setCompLang('ur')">اردو</button>
+        </div>
+        <button type="button" class="btn btn-danger" style="padding:7px 14px; font-size:0.8rem;" onclick="printAllSheets()">🖨 Print / Save PDF</button>
+        <a href="index.html" class="btn btn-outline" style="padding:7px 14px; font-size:0.8rem;">📝 Go to Online Test</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width:1280px;">
+
+    <!-- Interactive Section Filter Tabs -->
+    <div class="tab-bar no-print">
+      <button class="tab-btn active" onclick="showTab('all', this)">📑 View All Sections</button>
+      <button class="tab-btn" onclick="showTab('secHighlights', this)">🏆 Fronx 10 Best Features</button>
+      <button class="tab-btn" onclick="showTab('secVariants', this)">🚗 Local Fronx Variants</button>
+      <button class="tab-btn" onclick="showTab('secDirect', this)">⚔️ vs J5, Stonic, 2008, MG, City, Yaris</button>
+      <button class="tab-btn" onclick="showTab('secChinese', this)">🐉 vs All Chinese Brands (BYD, Omoda, Jetour, Chery, Changan)</button>
+      <button class="tab-btn" onclick="showTab('secObjections', this)">💬 Showroom Objection Scripts</button>
+    </div>
+
+    <!-- ==================== SECTION 1: FRONX 10 HERO ADVANTAGES ==================== -->
+    <section id="secHighlights" class="comp-section" style="margin-bottom:28px;">
+      <div class="hero-strip" style="padding:20px 24px; margin-bottom:16px;">
+        <span class="badge-red">Why Fronx Wins in Pakistan</span>
+        <h2 style="font-size:1.35rem; font-weight:800;" class="en">10 Highlighted USPs of Local Suzuki Fronx GLX / ADAS</h2>
+        <div class="ur" style="color:#fff; font-size:1.05rem;">پاکستانی سوزوکی فرونکس GLX / ADAS کی 10 نمایاں خصوصیات جو اسے مقابل گاڑیوں سے ممتاز بناتی ہیں</div>
+      </div>
+
+      <div class="win-grid">
+        <div class="win-card red-top">
+          <h4>1. SHVS Smart Mild-Hybrid (K15C DualJet)</h4>
+          <p class="en"><strong>Advantage:</strong> Auto Idle Stop-Start + Regenerative Braking + Torque Assist gives superb city fuel economy—with <strong>ZERO plug-in charging</strong> hassle!</p>
+          <div class="ur">سگنل پر آٹو اسٹاپ، بریک سے خودکار چارجنگ اور بہترین سٹی فیول ایوریج — بغیر کسی چارجنگ کے جھنجھٹ کے!</div>
+        </div>
+
+        <div class="win-card">
+          <h4>2. Smooth 6-Speed AT + Paddle Shifters</h4>
+          <p class="en"><strong>Advantage:</strong> True 6-speed torque-converter automatic—no CVT rubber-band whine (City/Yaris/MG Vibe) and no Dry-DCT overheating in traffic (Stonic/Jetour).</p>
+          <div class="ur">پائیدار 6-اسپیڈ آٹومیٹک مع پیڈل شفٹرز — نہ CVT کا شور اور نہ شدید ٹریفک میں DCT گیئر ہیٹ اَپ ہونے کا خطرہ۔</div>
+        </div>
+
+        <div class="win-card red-top">
+          <h4>3. Full Radar + Camera ADAS Suite</h4>
+          <p class="en"><strong>Advantage:</strong> Autonomous Emergency Braking (AEB), Adaptive Cruise Control, Lane Keep Assist, Blind Spot Monitor & Rear Cross Traffic Alert under Rs. 6.9M!</p>
+          <div class="ur">آٹو ایمرجنسی بریکنگ، ایڈاپٹو کروز، لین کیپ اسسٹ اور بلائنڈ اسپاٹ مانیٹر — جو اسٹونک، پیژو، سٹی یا یارِس میں نہیں!</div>
+        </div>
+
+        <div class="win-card">
+          <h4>4. 360° Around View Bird's-Eye Camera</h4>
+          <p class="en"><strong>Advantage:</strong> 4-camera stitched top & 3D view saves bumpers from motorbikes, narrow bazaars, and high footpaths.</p>
+          <div class="ur">چار کیمروں سے گاڑی کے چاروں طرف کا 360 منظر — تنگ بازاروں، پارکنگ اور موٹر سائیکلوں سے خراش سے مکمل بچاؤ۔</div>
+        </div>
+
+        <div class="win-card red-top">
+          <h4>5. Fighter-Jet Head-Up Display (HUD)</h4>
+          <p class="en"><strong>Advantage:</strong> Projects speed, hybrid energy flow, and ADAS alerts in the driver's line of sight—segment-exclusive cockpit luxury.</p>
+          <div class="ur">ڈرائیور کی نظر کے سامنے اسپیڈ اور الرٹس دکھانے والا ہیڈ اَپ ڈسپلے — اس بجٹ کی کسی مقابل کراس اوور یا سیڈان میں نہیں۔</div>
+        </div>
+
+        <div class="win-card">
+          <h4>6. 6 SRS Airbags + HEARTECT High-Tensile Body</h4>
+          <p class="en"><strong>Advantage:</strong> Front, Side & Curtain airbags + ESP + Hill Hold—<strong>3x more airbags</strong> than Honda City Aspire & Toyota Yaris!</p>
+          <div class="ur">6 ایئر بیگز، ESP، ہِل ہولڈ اور مضبوط ہائی ٹینسائل HEARTECT فریم — سٹی اور یارِس کے 2 ایئر بیگز سے تین گنا زیادہ تحفظ۔</div>
+        </div>
+
+        <div class="win-card red-top">
+          <h4>7. 170mm SUV Ground Clearance + High Seating</h4>
+          <p class="en"><strong>Advantage:</strong> Glides over broken roads, monsoon water, and steep speed breakers without scraping underbody; effortless entry for elders.</p>
+          <div class="ur">170 ملی میٹر گراؤنڈ کلیئرنس — اونچے سپیڈ بریکرز، ٹوٹی سڑکوں اور بارش کے پانی میں بے فکر ڈرائیو، بزرگوں کے لیے آرام دہ نشست۔</div>
+        </div>
+
+        <div class="win-card">
+          <h4>8. Rear AC Vents + Wireless Charger + 9" HD</h4>
+          <p class="en"><strong>Advantage:</strong> Wireless Apple CarPlay/Android Auto, Qi wireless charging pad, Rear AC vents, and Rear USB-A + Type-C fast ports.</p>
+          <div class="ur">9 انچ کار پلے اسکرین، وائرلیس فون چارجر، ریئر اے سی وینٹس اور پچھلی سیٹ کے لیے Type-A و Type-C چارجنگ۔</div>
+        </div>
+
+        <div class="win-card red-top">
+          <h4>9. Pak Suzuki 150+ Nationwide 3S Network</h4>
+          <p class="en"><strong>Advantage:</strong> Authorized service & local CKD spare parts from Karachi to Gilgit—unlike Chinese newcomers restricted to 3–5 big cities.</p>
+          <div class="ur">پاکستان کا سب سے بڑا 3S ڈیلرشپ نیٹ ورک اور ہر چھوٹے بڑے شہر میں سستے لوکل پارٹس کی فوری دستیابی۔</div>
+        </div>
+
+        <div class="win-card">
+          <h4>10. Cash-Like Resale & Low Running Cost</h4>
+          <p class="en"><strong>Advantage:</strong> Proven 4-cylinder K-Series engine runs on standard petrol with low periodic maintenance and instant market resale liquidity.</p>
+          <div class="ur">عام پیٹرول پر بہترین کارکردگی، کم ترین مینٹیننس خرچ اور نقد رقم جیسی تیز ترین ری سیل ویلیو۔</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 2: LOCAL FRONX VARIANT MATRIX ==================== -->
+    <section id="secVariants" class="comp-section card" style="margin-bottom:28px;">
+      <h2 style="font-size:1.22rem; color:var(--suzuki-blue-dark); margin-bottom:4px;" class="en">
+        Pakistani Local Suzuki Fronx – All Variants Breakdown & Upsell Guide
+      </h2>
+      <div class="ur" style="font-size:1rem; font-weight:700; margin-bottom:14px;">
+        پاکستانی لوکل سوزوکی فرونکس کے تمام ویرینٹس کا فرق اور اپ گریڈ گائیڈ
+      </div>
+
+      <div class="table-wrap">
+        <table class="comp-table" style="min-width:820px;">
+          <thead>
+            <tr>
+              <th>Specification / Feature</th>
+              <th>Fronx GL (5MT)</th>
+              <th>Fronx GL (4AT)</th>
+              <th class="fronx-col">Fronx GLX Mild-Hybrid (Mono / Two-Tone)</th>
+              <th class="fronx-col">Fronx GLX Mild-Hybrid + ADAS ⭐</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feat-col">Approx. Ex-Factory Price*</td>
+              <td>~Rs. 6.00 Million</td>
+              <td>~Rs. 6.10 Million</td>
+              <td class="fronx-col">~Rs. 6.40M – 6.77M</td>
+              <td class="fronx-col">~Rs. 6.80M – 6.87M <span class="win-tag">FLAGSHIP</span></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Engine & Hybrid System</td>
+              <td>1.5L K15B Petrol (~103 hp / 138 Nm)</td>
+              <td>1.5L K15B Petrol (~103 hp / 138 Nm)</td>
+              <td class="fronx-col">1.5L K15C DualJet + <strong>SHVS Smart Mild-Hybrid</strong></td>
+              <td class="fronx-col">1.5L K15C DualJet + <strong>SHVS Smart Mild-Hybrid</strong></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Transmission</td>
+              <td>5-Speed Manual</td>
+              <td>4-Speed Automatic</td>
+              <td class="fronx-col"><strong>6-Speed AT + Steering Paddle Shifters</strong></td>
+              <td class="fronx-col"><strong>6-Speed AT + Steering Paddle Shifters</strong></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Paint Options</td>
+              <td>Mono-Tone</td>
+              <td>Mono-Tone</td>
+              <td class="fronx-col">Mono-Tone & <strong>Sporty Two-Tone Roof</strong></td>
+              <td class="fronx-col">Mono-Tone & <strong>Sporty Two-Tone Roof</strong></td>
+            </tr>
+            <tr>
+              <td class="feat-col">SRS Airbags</td>
+              <td>Dual Front Airbags</td>
+              <td>Dual Front Airbags</td>
+              <td class="fronx-col"><strong>6 SRS Airbags</strong> (Front, Side, Curtain)</td>
+              <td class="fronx-col"><strong>6 SRS Airbags</strong> (Front, Side, Curtain)</td>
+            </tr>
+            <tr>
+              <td class="feat-col">Camera & HUD</td>
+              <td>Rear View / Parking Sensors</td>
+              <td>Rear View / Parking Sensors</td>
+              <td class="fronx-col"><strong>360° Around View Camera + Head-Up Display (HUD)</strong></td>
+              <td class="fronx-col"><strong>360° Around View Camera + Head-Up Display (HUD)</strong></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Comfort & Tech</td>
+              <td>Standard Infotainment, Tilt Steering, Keyless Entry</td>
+              <td>Standard Infotainment, Tilt Steering, Keyless Entry</td>
+              <td class="fronx-col"><strong>9" HD CarPlay/Android Auto, Wireless Charger, Push Start, Auto Climate, Rear AC, Cruise, Tilt+Telescopic Leather Wheel</strong></td>
+              <td class="fronx-col"><strong>All GLX Luxury Features Included</strong></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Active ADAS Suite</td>
+              <td>ABS + EBD + ESP + Hill Hold</td>
+              <td>ABS + EBD + ESP + Hill Hold</td>
+              <td class="fronx-col">ABS + EBD + ESP + Hill Hold</td>
+              <td class="fronx-col"><strong>+ Autonomous Emergency Braking (AEB), Adaptive Cruise, Lane Keep/Warning, Blind Spot Monitor, RCTA, High Beam Assist</strong></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Target Buyer Persona</td>
+              <td>Value SUV seeker / Fleet / Manual lover upgrading from Cultus/Swift</td>
+              <td>City/Yaris sedan buyer wanting Automatic SUV at ~6.1M</td>
+              <td class="fronx-col">Urban family & executive wanting Hybrid mileage + luxury tech</td>
+              <td class="fronx-col">Safety-first family & Chinese/Crossover cross-shopper</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 3: DIRECT CROSSOVERS & SEDANS ==================== -->
+    <section id="secDirect" class="comp-section card" style="margin-bottom:28px;">
+      <h2 style="font-size:1.22rem; color:var(--suzuki-blue-dark); margin-bottom:4px;" class="en">
+        Direct Comparison: Suzuki Fronx GLX/ADAS vs Jaecoo J5, Stonic, Peugeot 2008, MG ZS, City & Yaris
+      </h2>
+      <div class="ur" style="font-size:1rem; font-weight:700; margin-bottom:14px;">
+        براہِ راست موازنہ: فرونکس بمقابلہ جیکو J5، اسٹونک، پیژو 2008، ایم جی ZS، ہونڈا سٹی اور ٹویوٹا یارِس
+      </div>
+
+      <div class="table-wrap">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Feature / Criterion</th>
+              <th class="fronx-col">★ Suzuki Fronx GLX / ADAS (Local)</th>
+              <th>Jaecoo J5 (BEV / HEV)</th>
+              <th>Kia Stonic (EX+ / Turbo S)</th>
+              <th>Peugeot 2008 (Active / Allure)</th>
+              <th>MG ZS (Vibe / Hybrid+ Essence)</th>
+              <th>Honda City 1.5 Aspire CVT</th>
+              <th>Toyota Yaris 1.5 ATIV X CVT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feat-col">Ex-Factory Price*</td>
+              <td class="fronx-col">Rs. 6.00M – 6.87M <span class="win-tag">SWEET SPOT</span></td>
+              <td>BEV: ~6.0M–6.7M<br/>HEV: ~6.7M–7.7M</td>
+              <td>~Rs. 5.50M – 5.90M</td>
+              <td>~Rs. 5.80M – 6.50M</td>
+              <td>Vibe: ~6.60M<br/>Hybrid+: ~7.1M–7.7M</td>
+              <td>~Rs. 5.73M – 6.15M</td>
+              <td>~Rs. 6.00M – 6.05M</td>
+            </tr>
+            <tr>
+              <td class="feat-col">Body Type & Ground Clearance</td>
+              <td class="fronx-col">Coupe Crossover SUV • <strong>170 mm</strong></td>
+              <td>Compact SUV • 176 mm</td>
+              <td>Subcompact Crossover • ~165–183 mm</td>
+              <td>Compact Crossover • 170 mm</td>
+              <td>Compact Crossover • ~170 mm</td>
+              <td>Low Sedan • <span class="miss-tag">~135–148 mm</span></td>
+              <td>Low Sedan • <span class="miss-tag">~135–145 mm</span></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Powertrain & Fuel Reality</td>
+              <td class="fronx-col"><strong>1.5L 4-Cyl DualJet + SHVS Mild-Hybrid</strong> (Zero charging, regular petrol)</td>
+              <td>BEV (needs charger/range planning) or 1.5T DHT Hybrid</td>
+              <td>1.4L NA 6AT or 1.0L 3-Cyl Turbo 7DCT (Non-Hybrid)</td>
+              <td>1.2L 3-Cyl Turbo 130 hp (Non-Hybrid; sensitive to fuel quality)</td>
+              <td>1.5L NA CVT (Vibe) or 1.5L Hybrid+ 197 PS (costlier)</td>
+              <td>1.5L i-VTEC CVT (Non-Hybrid)</td>
+              <td>1.5L Dual VVT-i CVT (Non-Hybrid)</td>
+            </tr>
+            <tr>
+              <td class="feat-col">Gearbox Durability in Traffic</td>
+              <td class="fronx-col"><strong>6-Speed Torque Converter AT + Paddle Shifters</strong> <span class="win-tag">BEST</span></td>
+              <td>Single-speed EV / Complex DHT</td>
+              <td>6AT / Dry 7-Speed DCT</td>
+              <td>6-Speed AT</td>
+              <td>CVT / 3-Speed Hybrid AT</td>
+              <td>CVT</td>
+              <td>CVT</td>
+            </tr>
+            <tr>
+              <td class="feat-col">SRS Airbags</td>
+              <td class="fronx-col"><strong>6 SRS Airbags</strong></td>
+              <td>Multiple (6 Airbags)</td>
+              <td>6 Airbags</td>
+              <td>4 to 6 Airbags</td>
+              <td>4 to 6 Airbags</td>
+              <td><span class="miss-tag">Only 2 Airbags ✗</span></td>
+              <td><span class="miss-tag">Only 2–3 Airbags ✗</span></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Full ADAS (AEB, ACC, Lane Keep, BSM)</td>
+              <td class="fronx-col"><strong>✔ YES (GLX ADAS)</strong> <span class="win-tag">UNDER 6.9M</span></td>
+              <td>✔ On Premium trims</td>
+              <td><span class="miss-tag">✗ No Radar AEB/ACC</span></td>
+              <td><span class="miss-tag">✗ Missing full ADAS locally</span></td>
+              <td>✗ Not on Vibe (Only Rs. 7.5M+ Essence)</td>
+              <td><span class="miss-tag">✗ No ADAS</span></td>
+              <td><span class="miss-tag">✗ No ADAS</span></td>
+            </tr>
+            <tr>
+              <td class="feat-col">360° Around View Camera</td>
+              <td class="fronx-col"><strong>✔ YES (Bird's-Eye + 3D)</strong></td>
+              <td>✔ Premium trim</td>
+              <td><span class="miss-tag">✗ Rear camera only</span></td>
+              <td><span class="miss-tag">✗ Rear camera only</span></td>
+              <td>✔ On top Essence (Rs. 7.5M+)</td>
+              <td><span class="miss-tag">✗ Rear camera only</span></td>
+              <td><span class="miss-tag">✗ Rear camera only</span></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Head-Up Display (HUD)</td>
+              <td class="fronx-col"><strong>✔ YES (Pop-Up Color HUD)</strong> <span class="win-tag">UNIQUE</span></td>
+              <td><span class="miss-tag">✗ No</span></td>
+              <td><span class="miss-tag">✗ No</span></td>
+              <td><span class="miss-tag">✗ No (i-Cockpit cluster)</span></td>
+              <td><span class="miss-tag">✗ No</span></td>
+              <td><span class="miss-tag">✗ No</span></td>
+              <td><span class="miss-tag">✗ No</span></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Rear AC Vents & Wireless Charger</td>
+              <td class="fronx-col"><strong>✔ Both Rear AC + Wireless Charger</strong></td>
+              <td>✔ Yes (Higher trims)</td>
+              <td>✗ No Rear AC Vents on earlier trims</td>
+              <td>✔ Wireless Charger (Allure)</td>
+              <td>✔ Rear AC</td>
+              <td>✔ Rear AC / <span class="miss-tag">✗ No Wireless Charger</span></td>
+              <td><span class="miss-tag">✗ No Rear Console AC / ✗ No Wireless</span></td>
+            </tr>
+            <tr>
+              <td class="feat-col">Sunroof</td>
+              <td class="fronx-col">No (Focus on Hybrid + HUD + 360 + ADAS)</td>
+              <td>✔ Panoramic (Premium)</td>
+              <td>✔ Standard Sunroof</td>
+              <td>✔ Panoramic (Allure)</td>
+              <td>✔ Panoramic</td>
+              <td>✗ No</td>
+              <td>✗ No</td>
+            </tr>
+            <tr>
+              <td class="feat-col">3S Network & Spare Parts Cost</td>
+              <td class="fronx-col"><strong>150+ Pak Suzuki 3S Nationwide • Cheapest CKD Parts</strong> <span class="win-tag">#1 IN PK</span></td>
+              <td><span class="miss-tag">Brand-new entrant • Few metro outlets</span></td>
+              <td>Moderate LMC network • Expensive parts</td>
+              <td>Small city footprint • Expensive Euro parts</td>
+              <td>Moderate metro network • Costlier parts</td>
+              <td>Strong network • Moderate parts</td>
+              <td>Strong network • Moderate parts</td>
+            </tr>
+            <tr>
+              <td class="feat-col">Resale Liquidity</td>
+              <td class="fronx-col"><strong>★ Cash-Like Suzuki Liquidity</strong></td>
+              <td><span class="miss-tag">Unproven (especially BEV resale)</span></td>
+              <td>Moderate</td>
+              <td>Slow resale / high depreciation</td>
+              <td>Moderate</td>
+              <td>High</td>
+              <td>High</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 4: ALL CHINESE BRANDS MATRIX ==================== -->
+    <section id="secChinese" class="comp-section card" style="margin-bottom:28px;">
+      <h2 style="font-size:1.22rem; color:var(--suzuki-blue-dark); margin-bottom:4px;" class="en">
+        Fronx GLX ADAS vs All Chinese SUVs (BYD, Jaecoo, Omoda, Jetour, Chery, Changan, Haval)
+      </h2>
+      <div class="ur" style="font-size:1rem; font-weight:700; margin-bottom:14px;">
+        تمام چائنیز برانڈز (BYD، جیکو، اوموڈا، جیٹور، چیری، چنگان، ہیول) کے مقابلے میں فرونکس کا مالی اور عملی موازنہ
+      </div>
+
+      <div class="table-wrap">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Model & Brand</th>
+              <th>Approx. Price (Ex-Factory)*</th>
+              <th>Powertrain</th>
+              <th>Buyer Savings with Fronx GLX</th>
+              <th>Chinese Competitor's Practical Risk in Pakistan</th>
+              <th class="fronx-col">★ How Suzuki Fronx Wins the Deal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feat-col"><strong>Suzuki Fronx GLX / ADAS</strong></td>
+              <td class="fronx-col"><strong>Rs. 6.40M – 6.87M</strong></td>
+              <td class="fronx-col">1.5L 4-Cyl Smart Mild-Hybrid (6AT)</td>
+              <td class="fronx-col"><strong>Benchmark Smart Value</strong></td>
+              <td class="fronx-col">Zero EV range anxiety, zero DCT heat risk, zero part-wait risk</td>
+              <td class="fronx-col"><strong>Hybrid economy + ADAS + 360 + HUD + 6 Airbags + 150+ 3S Network</strong></td>
+            </tr>
+            <tr>
+              <td class="feat-col"><strong>Jaecoo J5</strong><br/>(BEV & HEV)</td>
+              <td>Rs. 6.00M – 7.70M</td>
+              <td>49.5 kWh Pure EV or 1.5T DHT Hybrid</td>
+              <td>Save up to <strong>~Rs. 8–9 Lakh</strong> vs HEV Premium</td>
+              <td>BEV highway charger scarcity, load-shedding/solar dependency, brand-new NexGen dealer footprint, uncertain EV resale</td>
+              <td class="fronx-col">Refuel in 2 mins anywhere in Pakistan, proven K-Series reliability, instant cash resale & nationwide workshops</td>
+            </tr>
+            <tr>
+              <td class="feat-col"><strong>Jaecoo J7 PHEV</strong></td>
+              <td>~Rs. 10.00M</td>
+              <td>1.5T Plug-in Hybrid (18.3 kWh)</td>
+              <td>Save <strong>~Rs. 31+ Lakh!</strong></td>
+              <td>1 Crore+ on-road tie-up, heavy insurance (~Rs. 2.5L/yr), complex PHEV electronics & body parts cost</td>
+              <td class="fronx-col">Keep Rs. 31 Lakh in business/bank while still enjoying Hybrid + ADAS + 360° + HUD!</td>
+            </tr>
+            <tr>
+              <td class="feat-col"><strong>Omoda C5 / Omoda E5</strong></td>
+              <td>E5 EV: ~Rs. 8.99M</td>
+              <td>61 kWh Pure EV (E5) / 1.5T CVT (C5)</td>
+              <td>Save <strong>~Rs. 21+ Lakh!</strong></td>
+              <td>Pure EV outstation travel limits, high upfront cost, sparse service centers outside Lahore/Karachi/Islamabad</td>
+              <td class="fronx-col">Unrestricted nationwide family travel + Rs. 21L capital saved + Suzuki peace of mind</td>
+            </tr>
+            <tr>
+              <td class="feat-col"><strong>BYD Atto 3 & Sealion 6</strong></td>
+              <td>~Rs. 8.99M – 9.0M+</td>
+              <td>Blade EV (Atto 3) / DM-i PHEV (Sealion 6)</td>
+              <td>Save <strong>~Rs. 21–25 Lakh!</strong></td>
+              <td>Massive Rs. 9.5M+ on-road cost, 3-phase home charger requirement, expensive collision/body sensors, limited cities</td>
+              <td class="fronx-col">Delivers 90% of daily smart tech (HUD, 360, ADAS, CarPlay) at 30% lower budget & zero plug hassle</td>
+            </tr>
+            <tr>
+              <td class="feat-col"><strong>Jetour Dashing & X70 Plus</strong></td>
+              <td>~Rs. 7.90M – 8.30M</td>
+              <td>1.5L Turbo Petrol + 6DCT (Non-Hybrid)</td>
+              <td>Save <strong>~Rs. 11–18 Lakh!</strong></td>
+              <td>Heavy city fuel consumption (8–10 km/L), touch-only AC controls, small dealer footprint, steep depreciation</td>
+              <td class="fronx-col">35–45% lower monthly petrol bill in city traffic + physical AC toggles + strong Suzuki resale</td>
+            </tr>
+            <tr>
+              <td class="feat-col"><strong>Chery Tiggo 4 Pro & Tiggo 8 Pro</strong></td>
+              <td>Tiggo 8: ~Rs. 9.5M</td>
+              <td>1.5T CVT / 1.6T 7DCT (Non-Hybrid)</td>
+              <td>Save up to <strong>~Rs. 27 Lakh</strong> vs Tiggo 8</td>
+              <td>Buyer hesitation over spare part wait times, heavy turbo fuel thirst, and historic resale drop on used market</td>
+              <td class="fronx-col"> Pak Suzuki's 40+ year uninterrupted manufacturing guarantee + readily stocked CKD parts</td>
+            </tr>
+            <tr>
+              <td class="feat-col"><strong>Changan Oshan X7</strong></td>
+              <td>~Rs. 7.95M – 8.45M</td>
+              <td>1.5L TGDI Turbo + 7DCT (Non-Hybrid)</td>
+              <td>Save <strong>~Rs. 12–17 Lakh!</strong></td>
+              <td>Large body hard to park in crowded markets, 8–10 km/L city petrol average, higher tyres/brake/insurance cost</td>
+              <td class="fronx-col">Sub-4m urban agility + Smart Hybrid fuel economy + Rs. 15L lower capital lock-in for 5-member families</td>
+            </tr>
+            <tr>
+              <td class="feat-col"><strong>Haval Jolion (1.5T / HEV)</strong></td>
+              <td>1.5T: ~7.8M<br/>HEV: ~9.1M</td>
+              <td>1.5T DCT or 1.5L DHT Hybrid</td>
+              <td>Save <strong>~Rs. 22+ Lakh</strong> vs Jolion HEV!</td>
+              <td>To get Hybrid + ADAS in Jolion, buyer spends ~Rs. 9.5M+ on-road</td>
+              <td class="fronx-col">Fronx GLX ADAS brings Hybrid + ADAS + 360° + HUD down into the Rs. 6.8M bracket!</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.76rem; color:var(--slate-500); margin-top:10px;">
+        *Note: Competitor prices & specifications are compiled from official announcements & automotive portals (PakWheels / brand sites) as approximate ex-factory figures and fluctuate with taxes/batches. Always verify live showroom price lists.
+      </p>
+    </section>
+
+    <!-- ==================== SECTION 5: SHOWROOM OBJECTION SCRIPTS ==================== -->
+    <section id="secObjections" class="comp-section card">
+      <h2 style="font-size:1.22rem; color:var(--suzuki-blue-dark); margin-bottom:4px;" class="en">
+        Showroom Floor Battlecards: Customer Objection → Winning Answer
+      </h2>
+      <div class="ur" style="font-size:1rem; font-weight:700; margin-bottom:16px;">
+        کسٹمر کے عام سوالات اور سیلز ٹیم کے لیے تیار شدہ بہترین جوابات
+      </div>
+
+      <div class="obj-card">
+        <div class="obj-q">1. "Jaecoo J5 Electric / Hybrid is similarly priced (~60–77 Lakh) and has 200+ hp & panoramic roof!"</div>
+        <div class="obj-a">
+          <div class="en"><strong>Winning Response:</strong> "Sir, Jaecoo J5 has impressive paper figures. Let's look at 3-to-5 year Pakistani ownership: with J5 Electric, a spontaneous family trip to Murree, Nathia Gali, or Multan means worrying about DC fast chargers and queues, plus uncertain EV resale after 3 years. Even on J5 HEV, it's a brand-new entrant with limited workshops. With <strong>Fronx GLX Mild-Hybrid</strong>, you never plug in—refuel in 2 minutes anywhere in Pakistan, get 6 Airbags, ADAS, 360° Camera & HUD, and enjoy Pak Suzuki's 150+ 3S network and instant cash-like resale!"</div>
+          <div class="ur" style="margin-top:8px;">"سر، کاغذ پر J5 کے فیچرز اچھے ہیں، لیکن پاکستان میں 3 سے 5 سال کے عملی استعمال کو دیکھیں: الیکٹرک گاڑی میں مری، نتھیا گلی یا دوسرے شہر کے سفر پر فاسٹ چارجنگ کی پریشانی، لوڈشیڈنگ اور 3 سال بعد بیٹری و ری سیل کا بڑا سوالیہ نشان ہے۔ جبکہ <strong>فرونکس GLX مائلڈ ہائبرڈ</strong> کو چارجنگ کی کوئی ضرورت نہیں، ہر پمپ سے 2 منٹ میں پیٹرول ڈلوائیں، 6 ایئر بیگز، ADAS، 360 کیمرہ اور HUD کا مزہ لیں، اور پاک سوزوکی کے ملک گیر پارٹس نیٹ ورک و نقد ری سیل سے بے فکر رہیں!"</div>
+        </div>
+      </div>
+
+      <div class="obj-card">
+        <div class="obj-q">2. "Honda City Aspire / Toyota Yaris ATIV X is a proper sedan with a bigger trunk and strong resale."</div>
+        <div class="obj-a">
+          <div class="en"><strong>Winning Response:</strong> "City and Yaris have served well, Sir, but both are older-generation low sedans with <strong>only 2–3 airbags</strong> and low ground clearance that scrapes on big speed breakers with 4 passengers. For virtually the same budget, <strong>Fronx</strong> upgrades your family to a modern Coupe-SUV with <strong>170mm clearance</strong>, high comfortable seating for elders, 60:40 folding cargo flexibility, <strong>6 Airbags, 360° Camera, HUD, Rear AC, and Smart Hybrid economy</strong>—plus Suzuki's equally liquid resale!"</div>
+          <div class="ur" style="margin-top:8px;">"سر، سٹی اور یارِس اچھی سیڈان ہیں مگر پرانی جنریشن کی نیچی گاڑیاں ہیں جن میں صرف 2 ایئر بیگز ہیں اور چار افراد بیٹھنے پر بڑے سپیڈ بریکرز پر نیچے لگتی ہیں۔ تقریباً اسی بجٹ میں <strong>فرونکس</strong> آپ کی فیملی کو جدید کوپے SUV اپ گریڈ دیتی ہے: 170mm گراؤنڈ کلیئرنس، بزرگوں کے لیے آرام دہ اونچی سیٹ، 60:40 فولڈنگ ڈگی، 6 ایئر بیگز، 360 کیمرہ، HUD اور ہائبرڈ فیول بچت!"</div>
+        </div>
+      </div>
+
+      <div class="obj-card">
+        <div class="obj-q">3. "Peugeot 2008 / Kia Stonic has a Sunroof and Turbo power—why doesn't Fronx?"</div>
+        <div class="obj-a">
+          <div class="en"><strong>Winning Response:</strong> "True, Sir—they offer a sunroof and turbo engine. Honestly, in Pakistan's 45°C summer heat and dust, a sunroof stays closed 95% of the year, while 3-cylinder turbos and DCT gearboxes demand high-octane care and expensive parts. Suzuki invested that budget into features you use <strong>every single day</strong>: SHVS Mild-Hybrid fuel savings, 6-Speed Torque Converter AT with Paddle Shifters, 360° Camera for tight parking, Head-Up Display, and full ADAS safety!"</div>
+          <div class="ur" style="margin-top:8px;">"بالکل درست سر، ان میں سن روف اور ٹربو موجود ہے۔ لیکن پاکستان کی شدید گرمی اور دھول مٹی میں سن روف سال کے 95 فیصد دن بند رہتا ہے اور 3-سلنڈر ٹربو/DCT گیئر مہنگا فیول اور مہنگے پارٹس مانگتے ہیں۔ سوزوکی نے وہی پیسہ ان فیچرز میں لگایا ہے جو آپ <strong>روزانہ</strong> استعمال کریں گے: مائلڈ ہائبرڈ پیٹرول بچت، پائیدار 6AT گیئر، 360 کیمرہ، ہیڈ اَپ ڈسپلے اور ADAS سیفٹی!"</div>
+        </div>
+      </div>
+
+      <div class="obj-card">
+        <div class="obj-q">4. "BYD / Omoda / Jetour / Changan Oshan X7 look bigger and have huge 13-inch screens!"</div>
+        <div class="obj-a">
+          <div class="en"><strong>Winning Response:</strong> "Those are Rs. 8.0M to 9.5M+ vehicles on-road, Sir. Choosing <strong>Fronx GLX ADAS</strong> keeps <strong>Rs. 15 to 25 Lakh cash in your pocket</strong>, saves ~Rs. 50,000/year on insurance alone, cuts your city petrol bill nearly in half compared to heavy 1.5T petrol SUVs, parks effortlessly in busy markets, and still gives you a 9-inch wireless CarPlay screen + HUD + 360° Camera + ADAS!"</div>
+          <div class="ur" style="margin-top:8px;">"سر، وہ آن روڈ جاتے جاتے 85 سے 95 لاکھ روپے سے اوپر چلی جاتی ہیں۔ <strong>فرونکس GLX ADAS</strong> منتخب کر کے آپ اپنے <strong>15 سے 25 لاکھ روپے نقد بچاتے ہیں</strong>، سالانہ انشورنس اور شہر کے پیٹرول خرچ میں تقریباً آدھی بچت کرتے ہیں، رش والے بازاروں میں باآسانی پارکنگ کرتے ہیں اور پھر بھی 9 انچ کار پلے، HUD، 360 کیمرہ اور ADAS حاصل کرتے ہیں!"</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function setCompLang(mode) {
+      document.body.classList.remove("lang-en", "lang-ur");
+      if (mode === "en") document.body.classList.add("lang-en");
+      if (mode === "ur") document.body.classList.add("lang-ur");
+      document.querySelectorAll(".lang-switch button").forEach((b) => {
+        b.classList.toggle("active", b.getAttribute("data-lang") === mode);
+      });
+    }
+
+    function showTab(secId, btn) {
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".comp-section").forEach((sec) => {
+        sec.style.display = secId === "all" || sec.id === secId ? "block" : "none";
+      });
+    }
+
+    function printAllSheets() {
+      document.querySelectorAll(".comp-section").forEach((sec) => (sec.style.display = "block"));
+      window.print();
+    }
+  </script>
+</body>
+</html>

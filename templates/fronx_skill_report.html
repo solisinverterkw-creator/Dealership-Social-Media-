@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Fronx Skill Test – All Dealerships Performance Report | ROSP Suzuki{% endblock %}
+
+{% block content %}
+<header>
+  <div>
+    <h1 class="brand-h1">🎯 Suzuki Fronx – All Dealerships Sales Skill Report</h1>
+    <div class="subtitle">
+      {{ total_candidates }} Sales Staff Evaluated across {{ dealerships_data|length }} Dealerships · Quality Score, AI/Cheat Forensics &amp; Product Mastery
+    </div>
+  </div>
+  <div class="toolbar">
+    <a href="{{ url_for('fronx_skill_portal') }}" target="_blank" class="btn primary" style="background:linear-gradient(135deg, #e30613, #be0410); border:none; color:#fff;">
+      📝 Open Live Test Form
+    </a>
+    <a href="{{ url_for('fronx_comparison_view') }}" target="_blank" class="btn" style="background:rgba(217,119,6,0.15); color:var(--gold); border:1px solid rgba(217,119,6,0.35);">
+      📊 Study Battlecard Sheet
+    </a>
+    <a href="{{ url_for('fronx_skill_export_csv') }}" class="btn">⬇ Export Excel (CSV)</a>
+  </div>
+</header>
+
+<!-- Shareable Link Banner for Regional Office & Dealerships -->
+<div class="detail-card" style="margin-bottom:20px; background:linear-gradient(135deg, rgba(0,51,153,0.18), rgba(0,0,0,0.3)); border:1px solid rgba(99,102,241,0.35); padding:16px 20px; border-radius:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <div style="font-size:12px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">
+        📢 Sales Team Live Assessment Link (WhatsApp / Portal Share)
+      </div>
+      <div style="font-size:14px; font-weight:600; color:#fff; margin-top:3px;">
+        Sales consultants can open and complete the assessment directly from:
+      </div>
+      <code id="shareTestLink" style="display:inline-block; margin-top:6px; background:#0f172a; padding:6px 14px; border-radius:8px; border:1px solid var(--border); color:#60a5fa; font-size:13px;">
+        {{ request.host_url.rstrip('/') }}{{ url_for('fronx_skill_portal') }}
+      </code>
+    </div>
+    <button type="button" class="btn" onclick="copyShareLink()" style="background:#2563eb; color:#fff; border:none; padding:8px 16px;">
+      📋 Copy Test Link
+    </button>
+  </div>
+</div>
+
+<!-- TOP KPI SUMMARY CARDS -->
+<div class="stat-cards" style="margin-bottom:24px;">
+  <div class="stat-card-icon">
+    <div class="badge" style="background:rgba(57,135,229,0.15); color:var(--fb);">👥</div>
+    <div class="stat-value" style="color:var(--fb);">{{ total_candidates }}</div>
+    <div class="stat-label">Sales Staff Tested</div>
+    <span class="stat-link" style="color:var(--muted); font-size:11px;">Active Network</span>
+  </div>
+
+  <div class="stat-card-icon">
+    <div class="badge" style="background:rgba(217,119,6,0.15); color:var(--gold);">🏆</div>
+    <div class="stat-value" style="color:var(--gold);">{{ national_avg_score }}/100</div>
+    <div class="stat-label">National Avg Quality Score</div>
+    <span class="stat-link" style="color:var(--muted); font-size:11px;">Benchmark 75+</span>
+  </div>
+
+  <div class="stat-card-icon">
+    <div class="badge" style="background:rgba(34,197,94,0.15); color:var(--gr);">⭐</div>
+    <div class="stat-value" style="color:var(--gr);">{{ total_grade_a }}</div>
+    <div class="stat-label">Certified Experts (Grade A)</div>
+    <span class="stat-link" style="color:var(--gr); font-size:11px;">Ready for Floor Leads</span>
+  </div>
+
+  <div class="stat-card-icon">
+    <div class="badge" style="background:rgba(239,68,68,0.15); color:var(--red);">🕵️</div>
+    <div class="stat-value" style="color:var(--red);">{{ total_ai_flagged }}</div>
+    <div class="stat-label">AI / Cheat Suspected</div>
+    <span class="stat-link" style="color:var(--red); font-size:11px;">Tab Away / Fast Paste</span>
+  </div>
+</div>
+
+<!-- SECTION 1: ALL 21 DEALERSHIPS COMPARISON & RANKINGS -->
+<div class="detail-card" style="margin-bottom:28px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+    <div>
+      <h2 style="margin:0; font-size:17px; font-weight:700;">🏢 All 21 Dealerships – Product Mastery &amp; Compliance Table</h2>
+      <div style="font-size:12px; color:var(--muted); margin-top:2px;">
+        Aggregated average score, staff participation, and integrity health per dealership
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+      <thead>
+        <tr>
+          <th style="padding:10px 12px; text-align:left; background:var(--panel-solid); color:var(--muted);">Rank</th>
+          <th style="padding:10px 12px; text-align:left; background:var(--panel-solid); color:var(--muted);">Dealership Name</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Staff Tested</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Avg Quality Score</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Grade A (Experts)</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">AI / Cheat Flagged</th>
+          <th style="padding:10px 12px; text-align:left; background:var(--panel-solid); color:var(--muted);">Dealership Status</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dealerships_data %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:12px; font-weight:800; color:var(--gold);">#{{ loop.index }}</td>
+          <td style="padding:12px;">
+            <strong style="color:var(--text); font-size:14px;">{{ d.name }}</strong>
+            {% if d.region %}<div style="font-size:11px; color:var(--muted);">Region: {{ d.region }}</div>{% endif %}
+          </td>
+          <td style="padding:12px; text-align:center; font-weight:700;">
+            {% if d.tested_count > 0 %}
+              <span style="color:#60a5fa;">{{ d.tested_count }}</span>
+            {% else %}
+              <span style="color:var(--muted);">0 (Pending)</span>
+            {% endif %}
+          </td>
+          <td style="padding:12px; text-align:center;">
+            {% if d.tested_count > 0 %}
+              <strong style="font-size:15px; color:{% if d.avg_score >= 80 %}#22c55e{% elif d.avg_score >= 65 %}#eab308{% else %}#ef4444{% endif %};">
+                {{ d.avg_score }}/100
+              </strong>
+            {% else %}
+              <span style="color:var(--muted);">—</span>
+            {% endif %}
+          </td>
+          <td style="padding:12px; text-align:center;">
+            {% if d.grade_a_count > 0 %}
+              <span style="background:rgba(34,197,94,0.15); color:#22c55e; padding:3px 8px; border-radius:6px; font-weight:800;">
+                {{ d.grade_a_count }}
+              </span>
+            {% else %}
+              <span style="color:var(--muted);">0</span>
+            {% endif %}
+          </td>
+          <td style="padding:12px; text-align:center;">
+            {% if d.flagged_count > 0 %}
+              <span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:3px 8px; border-radius:6px; font-weight:800;">
+                ⚠️ {{ d.flagged_count }}
+              </span>
+            {% else %}
+              <span style="color:#22c55e; font-weight:700;">0 (Clean)</span>
+            {% endif %}
+          </td>
+          <td style="padding:12px;">
+            {% if d.tested_count == 0 %}
+              <span style="color:var(--muted); font-size:12px;">⏳ No submissions yet</span>
+            {% elif d.avg_score >= 80 %}
+              <span style="color:#22c55e; font-weight:700; font-size:12px;">🏆 High Product Mastery</span>
+            {% elif d.avg_score >= 65 %}
+              <span style="color:#eab308; font-weight:700; font-size:12px;">⚡ Moderate (Training Ongoing)</span>
+            {% else %}
+              <span style="color:#ef4444; font-weight:700; font-size:12px;">⚠️ Coaching Required</span>
+            {% endif %}
+          </td>
+          <td style="padding:12px; text-align:center;">
+            <a href="#submissions-list" onclick="filterByDealership('{{ d.name|escapejs }}')" class="btn" style="font-size:11px; padding:5px 10px;">
+              View Staff
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SECTION 2: INDIVIDUAL CANDIDATES & AI/CHEAT AUDIT LOG -->
+<div class="detail-card" id="submissions-list" style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+    <div>
+      <h2 style="margin:0; font-size:17px; font-weight:700;">📋 Individual Sales Staff Submissions &amp; Telemetry</h2>
+      <div style="font-size:12px; color:var(--muted); margin-top:2px;">
+        Detailed scorecards, AI detection verdicts, and open-ended showroom pitches
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <select id="fltDealership" class="input" style="width:auto; padding:6px 12px; font-size:12px;" onchange="applyFilters()">
+        <option value="ALL">All Dealerships</option>
+        {% for d in dealerships_data %}
+        <option value="{{ d.name }}">{{ d.name }}</option>
+        {% endfor %}
+      </select>
+      <select id="fltGrade" class="input" style="width:auto; padding:6px 12px; font-size:12px;" onchange="applyFilters()">
+        <option value="ALL">All Grades</option>
+        <option value="A">Grade A (85+ Expert)</option>
+        <option value="B">Grade B (70-84 Proficient)</option>
+        <option value="C">Grade C (52-69 Developing)</option>
+        <option value="D">Grade D (&lt;52 Retrain)</option>
+      </select>
+      <select id="fltRisk" class="input" style="width:auto; padding:6px 12px; font-size:12px;" onchange="applyFilters()">
+        <option value="ALL">All AI/Cheat Statuses</option>
+        <option value="FLAGGED">🚨 Flagged Only (Suspected)</option>
+        <option value="CLEAN">🟢 Verified Human Only</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table" id="staffTable" style="width:100%; border-collapse:collapse; font-size:13px;">
+      <thead>
+        <tr>
+          <th style="padding:10px 12px; text-align:left; background:var(--panel-solid); color:var(--muted);">Candidate</th>
+          <th style="padding:10px 12px; text-align:left; background:var(--panel-solid); color:var(--muted);">Dealership</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Quality Score</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Grade</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">AI / Cheat Status</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">MCQ (60)</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Pitch (30)</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Submitted At</th>
+          <th style="padding:10px 12px; text-align:center; background:var(--panel-solid); color:var(--muted);">Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if submissions %}
+          {% for s in submissions %}
+          <tr class="sub-row" data-dealership="{{ s.dealership_name }}" data-grade="{{ s.grade }}" data-risk="{{ s.integrity_status }}" style="border-bottom:1px solid var(--border);">
+            <td style="padding:12px;">
+              <strong style="color:var(--text); font-size:14px;">{{ s.candidate_name }}</strong>
+              <div style="font-size:11px; color:var(--muted);">{{ s.emp_id }} • {{ s.designation }}</div>
+            </td>
+            <td style="padding:12px; color:var(--text); font-weight:600;">
+              {{ s.dealership_name }}
+            </td>
+            <td style="padding:12px; text-align:center;">
+              <strong style="font-size:15px; color:var(--gold);">{{ s.quality_score }}/100</strong>
+            </td>
+            <td style="padding:12px; text-align:center;">
+              <span class="badge" style="background:{% if s.grade == 'A' %}rgba(34,197,94,0.15); color:#22c55e;{% elif s.grade == 'B' %}rgba(59,130,246,0.15); color:#60a5fa;{% elif s.grade == 'C' %}rgba(234,179,8,0.15); color:#eab308;{% else %}rgba(239,68,68,0.15); color:#ef4444;{% endif %} padding:4px 10px; font-weight:800; border-radius:8px;">
+                Grade {{ s.grade }}
+              </span>
+            </td>
+            <td style="padding:12px; text-align:center;">
+              {% if s.integrity_status == 'HIGH_RISK' %}
+                <span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:800;">
+                  🔴 High AI Risk ({{ s.cheat_risk_pct }}%)
+                </span>
+              {% elif s.integrity_status == 'SUSPICIOUS' %}
+                <span style="background:rgba(234,179,8,0.15); color:#eab308; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:800;">
+                  🟡 Suspicious ({{ s.cheat_risk_pct }}%)
+                </span>
+              {% else %}
+                <span style="background:rgba(34,197,94,0.15); color:#22c55e; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:800;">
+                  🟢 Verified Human
+                </span>
+              {% endif %}
+            </td>
+            <td style="padding:12px; text-align:center;">
+              {{ s.mcq_weighted }} <span style="font-size:11px; color:var(--muted);">({{ s.mcq_pct }}%)</span>
+            </td>
+            <td style="padding:12px; text-align:center;">
+              {{ s.open_weighted }}
+            </td>
+            <td style="padding:12px; text-align:center; font-size:11px; color:var(--muted);">
+              {{ s.submitted_at.strftime('%Y-%m-%d %I:%M %p') if s.submitted_at else '—' }}
+            </td>
+            <td style="padding:12px; text-align:center;">
+              <button type="button" class="btn" style="font-size:11px; padding:5px 10px;" onclick="viewSubmissionDetails({{ s.id }})">
+                Inspect
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" style="text-align:center; padding:30px; color:var(--muted);">
+              No submissions recorded yet. Share the live test link above with your dealership sales teams to begin assessments!
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function copyShareLink() {
+  const linkText = document.getElementById('shareTestLink').innerText.trim();
+  navigator.clipboard.writeText(linkText).then(() => {
+    alert('✓ Live Assessment link copied to clipboard!\nYou can now paste it into WhatsApp groups.');
+  }).catch(() => {
+    prompt('Copy this link:', linkText);
+  });
+}
+
+function filterByDealership(name) {
+  document.getElementById('fltDealership').value = name;
+  applyFilters();
+  const el = document.getElementById('submissions-list');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+function applyFilters() {
+  const dVal = document.getElementById('fltDealership').value;
+  const gVal = document.getElementById('fltGrade').value;
+  const rVal = document.getElementById('fltRisk').value;
+
+  document.querySelectorAll('.sub-row').forEach(row => {
+    const d = row.getAttribute('data-dealership');
+    const g = row.getAttribute('data-grade');
+    const r = row.getAttribute('data-risk');
+
+    let show = true;
+    if (dVal !== 'ALL' && d !== dVal) show = false;
+    if (gVal !== 'ALL' && g !== gVal) show = false;
+    if (rVal === 'FLAGGED' && r === 'CLEAN') show = false;
+    if (rVal === 'CLEAN' && r !== 'CLEAN') show = false;
+
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+function viewSubmissionDetails(subId) {
+  window.open('{{ url_for("fronx_submission_inspect", sub_id=0) }}'.replace('0', subId), '_blank');
+}
+</script>
+{% endblock %}

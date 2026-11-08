@@ -478,3 +478,42 @@ class CampaignComplianceRecord(Base):
         UniqueConstraint('dealership_id', 'date_from', 'date_to', name='uq_dealership_campaign_compliance'),
     )
 
+
+class SalesSkillTestSubmission(Base):
+    __tablename__ = 'sales_skill_test_submissions'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    submission_uid = Column(String(80), nullable=False, unique=True)
+    dealership_id = Column(Integer, ForeignKey('dealerships.id', ondelete='CASCADE'), nullable=True)
+    dealership_name = Column(String(150), nullable=False)
+
+    candidate_name = Column(String(150), nullable=False)
+    emp_id = Column(String(60), nullable=False)
+    phone = Column(String(50), nullable=True)
+    designation = Column(String(100), nullable=True)
+    experience = Column(String(80), nullable=True)
+
+    quality_score = Column(DECIMAL(5, 1), default=0.0)
+    grade = Column(String(10), default='D')
+    mcq_correct = Column(Integer, default=0)
+    mcq_total = Column(Integer, default=60)
+    mcq_pct = Column(Integer, default=0)
+    mcq_weighted = Column(DECIMAL(5, 1), default=0.0)
+    open_weighted = Column(DECIMAL(5, 1), default=0.0)
+    discipline_weighted = Column(DECIMAL(5, 1), default=0.0)
+
+    integrity_status = Column(String(30), default='CLEAN')
+    cheat_risk_pct = Column(Integer, default=0)
+    tab_switches = Column(Integer, default=0)
+    away_total_sec = Column(Integer, default=0)
+    copy_attempts = Column(Integer, default=0)
+    paste_attempts = Column(Integer, default=0)
+    time_taken_sec = Column(Integer, default=0)
+    manager_reviewed = Column(Boolean, default=False)
+
+    payload_json = Column(Text, nullable=True)
+    submitted_at = Column(DateTime, default=func.now())
+
+    dealership = relationship('Dealership')
+
+
