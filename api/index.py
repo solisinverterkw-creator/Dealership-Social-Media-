@@ -5957,14 +5957,14 @@ def crm_voip_audit_export():
 # ==============================================================================
 
 OPEN_QUESTIONS_REF = [
-    {'id': 'O1', 'q': 'How would you pitch the Fronx GLX Mild-Hybrid against a customer considering the Kia Stonic EX+?', 'max': 5},
-    {'id': 'O2', 'q': 'A buyer is attracted to Peugeot 2008 Active/Allure for European styling. How do you convince them Fronx is the smarter financial & ownership choice in Pakistan?', 'max': 5},
-    {'id': 'O3', 'q': 'A customer is torn between a high-spec sedan (Honda City 1.5 Aspire / Toyota Yaris ATIV X) and Fronx. What key crossover advantages do you emphasize?', 'max': 5},
-    {'id': 'O4', 'q': 'A prospect is considering newly launched Chinese SUVs (Jaecoo J5 / J7 PHEV, Haval Jolion). What is your objection-handling strategy highlighting Suzuki strengths?', 'max': 5},
-    {'id': 'O5', 'q': 'Explain the practical everyday benefit of the SHVS Mild-Hybrid System with ISG to a customer worried about fuel costs in Pakistan.', 'max': 5},
-    {'id': 'O6', 'q': 'How do you demonstrate the Suzuki HEARTECT platform and 6-Airbag passive safety package to a safety-conscious family customer?', 'max': 5},
-    {'id': 'O7', 'q': 'A customer is looking at base Fronx GL (1.5L 5MT / 4AT). What customer profile is this best suited for vs Chinese entry models?', 'max': 5},
-    {'id': 'O8', 'q': 'Summarize Suzuki Fronx\'s 3 greatest competitive battlecard advantages that no competitor can match simultaneously in Pakistan.', 'max': 5}
+    {'id': 'O1', 'q': 'TOP 5 winning features of Pakistani Suzuki Fronx GLX/ADAS and practical family benefits (Mild-Hybrid, 6 Airbags, 10 ADAS, 360 Camera, exclusive HUD).', 'max': 5},
+    {'id': 'O2', 'q': 'Pitch against Jaecoo J5 Comfort (PKR 6.69M): Explaining J5 Comfort\'s safety compromises (2 airbags, no camera, 0 ADAS, halogen lights, 20 dealers) vs Fronx\'s loaded tech & 170+ network.', 'max': 5},
+    {'id': 'O3', 'q': 'Pitch against Honda HR-V VTi-S (PKR 7.3M) & BYD Atto 2 (PKR 7.3M): Rs. 5 Lakh savings, 6 airbags (vs HR-V 4), self-charging hybrid, 170+ outlets vs BYD 8 & Honda 36.', 'max': 5},
+    {'id': 'O4', 'q': 'Pitch to convert loyal Honda City Aspire / Toyota Yaris buyers: 170mm clearance, 6 airbags vs 2, ADAS safety, and 60:40 folding practicality.', 'max': 5},
+    {'id': 'O5', 'q': 'Pitch against Kia Stonic Turbo S (PKR 5.9M): 10 ADAS features, 360 camera, exclusive HUD, 7,500 KM service (vs Stonic 5,000 KM), and 170+ outlets (vs Kia 25).', 'max': 5},
+    {'id': 'O6', 'q': 'Differences between Fronx GL (4AT/5MT) and GLX (6AT Mild-Hybrid) and showroom upselling strategy.', 'max': 5},
+    {'id': 'O7', 'q': 'Handling customer objections (sunroof, non-turbo, etc.) into closed deals using Acknowledge -> Reframe -> Value method.', 'max': 5},
+    {'id': 'O8', 'q': '2 Actionable dealership marketing & booking ideas to dominate Fronx sales in your city.', 'max': 5}
 ]
 
 @app.route('/fronx-skill-portal')
