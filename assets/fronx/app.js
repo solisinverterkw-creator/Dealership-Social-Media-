@@ -323,16 +323,19 @@
 
   function showScreen(id) {
     ["screenWelcome", "screenInstructions", "screenExam", "screenResult"].forEach((s) => {
-      $(s).classList.toggle("hidden", s !== id);
+      const el = $(s);
+      if (el) {
+        el.classList.toggle("hidden", s !== id);
+      }
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   /* ---------- Registration & Retake Check ---------- */
   window.handleRegistration = async function (e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const errEl = $("regError");
-    errEl.style.display = "none";
+    if (errEl) errEl.style.display = "none";
 
     const dSel = $("inpDealershipSelect");
     const dealershipId = dSel && dSel.value ? parseInt(dSel.value, 10) : null;
@@ -340,37 +343,50 @@
       ? (dSel.options[dSel.selectedIndex].getAttribute("data-name") || dSel.options[dSel.selectedIndex].textContent.trim())
       : "Pak Suzuki Dealership";
 
-    const phoneVal = $("inpPhone").value.trim();
+    const nameVal = ($("inpName") && $("inpName").value.trim()) || "";
+    const phoneVal = ($("inpPhone") && $("inpPhone").value.trim()) || "";
     const phoneClean = phoneVal.replace(/\D/g, "");
     const empIdVal = ($("inpEmpId") && $("inpEmpId").value.trim().toUpperCase()) || phoneClean || ("PS-" + Date.now().toString().slice(-6));
+
+    if (!nameVal || !phoneVal) {
+      if (errEl) {
+        errEl.innerHTML = "Please enter your Name and Mobile / WhatsApp number. • برائے مہربانی اپنا نام اور موبائل نمبر درج کریں۔";
+        errEl.style.display = "block";
+      }
+      return;
+    }
 
     const candidate = {
       dealershipId: dealershipId,
       dealershipName: dealershipName,
-      name: $("inpName").value.trim(),
+      name: nameVal,
       empId: empIdVal,
       phone: phoneVal,
       branch: $("inpBranch") ? $("inpBranch").value : "Main Showroom",
       role: $("inpRole") ? $("inpRole").value : "Sales Consultant",
-      experience: $("inpExp") ? $("inpExp").value : "1 – 3 years (1 سے 3 سال)"
+      experience: $("inpExp") ? $("inpExp").value : "1 - 3 years"
     };
 
-    if (!candidate.name || !candidate.phone) return;
-
     const btn = $("btnProceedInstructions");
-    btn.disabled = true;
-    btn.textContent = "Checking details...";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Checking details...";
+    }
 
     if (CFG.ALLOW_RETAKE === false) {
       const existingLocal = getLocalResults().find(
         (r) => String(r.empId).toUpperCase() === candidate.empId || (r.phone && r.phone.replace(/\D/g, "") === phoneClean)
       );
       if (existingLocal) {
-        errEl.innerHTML =
-          `Candidate (Mobile: <strong>${escapeHtml(candidate.phone)}</strong>) has already completed this assessment (Score: ${existingLocal.qualityScore}/100). Retakes are disabled.<br/><span class="ur">اس امیدوار کا ٹیسٹ پہلے ہی مکمل کیا جا چکا ہے۔ دوبارہ ٹیسٹ کی اجازت نہیں ہے۔</span>`;
-        errEl.style.display = "block";
-        btn.disabled = false;
-        btn.textContent = "Continue to Instructions • آگے بڑھیں →";
+        if (errEl) {
+          errEl.innerHTML =
+            `Candidate (Mobile: <strong>${escapeHtml(candidate.phone)}</strong>) has already completed this assessment (Score: ${existingLocal.qualityScore}/100). Retakes are disabled.<br/><span class="ur">آپ اس موبائل نمبر سے ٹیسٹ مکمل کر چکے ہیں۔ دوبارہ ٹیسٹ دینے کی اجازت نہیں ہے۔</span>`;
+          errEl.style.display = "block";
+        }
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Continue to Instructions • آگے بڑھیں →";
+        }
         return;
       }
 
@@ -380,27 +396,45 @@
 
       if (checkUrl) {
         try {
-          const resp = await fetch(checkUrl);
-          const data = await resp.json();
-          if (data && data.exists) {
-            const dealerInfo = data.dealership ? ` at ${escapeHtml(data.dealership)}` : '';
-            const scoreInfo = data.score !== undefined ? ` (Score: ${data.score}/100)` : '';
-            errEl.innerHTML =
-              `Candidate (Mobile: <strong>${escapeHtml(candidate.phone)}</strong>) has already completed this assessment${scoreInfo}${dealerInfo}. Retakes are disabled.<br/><span class="ur">اس امیدوار کا ٹیسٹ پہلے ہی مکمل کیا جا چکا ہے۔</span>`;
-            errEl.style.display = "block";
-            btn.disabled = false;
-            btn.textContent = "Continue to Instructions • آگے بڑھیں →";
-            return;
+          const controller = new AbortController();
+          const timerId = setTimeout(() => controller.abort(), 2000);
+          const resp = await fetch(checkUrl, { signal: controller.signal });
+          clearTimeout(timerId);
+          if (resp && resp.ok) {
+            const data = await resp.json();
+            if (data && data.exists) {
+              const dealerInfo = data.dealership ? ` at ${escapeHtml(data.dealership)}` : '';
+              const scoreInfo = data.score !== undefined ? ` (Score: ${data.score}/100)` : '';
+              if (errEl) {
+                errEl.innerHTML =
+                  `Candidate (Mobile: <strong>${escapeHtml(candidate.phone)}</strong>) has already completed this assessment${scoreInfo}${dealerInfo}. Retakes are disabled.<br/><span class="ur">آپ اس موبائل نمبر سے ٹیسٹ مکمل کر چکے ہیں۔ دوبارہ ٹیسٹ دینے کی اجازت نہیں ہے۔</span>`;
+                errEl.style.display = "block";
+              }
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = "Continue to Instructions • آگے بڑھیں →";
+              }
+              return;
+            }
           }
-        } catch (err) {}
+        } catch (err) {
+          console.warn("Retake pre-check skipped or timed out:", err);
+        }
       }
     }
 
-    btn.disabled = false;
-    btn.textContent = "Continue to Instructions • آگے بڑھیں →";
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Continue to Instructions • آگے بڑھیں →";
+    }
 
-    state = buildNewSession(candidate);
-    showScreen("screenInstructions");
+    try {
+      state = buildNewSession(candidate);
+      showScreen("screenInstructions");
+    } catch (err) {
+      console.error("Failed to build test session:", err);
+      alert("Error starting test: " + err.message);
+    }
   };
 
   window.backToWelcome = function () {
