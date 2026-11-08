@@ -1342,7 +1342,9 @@
         "ground clearance",
         "کلیئرنس"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "1. SHVS Smart Mild-Hybrid (K15C DualJet): Gives exceptional 16–20 km/L city economy via Idle Stop & regenerative braking—with zero external plug-in charging hassle.\n2. Complete 10-Feature ADAS Suite: Dual Sensor Brake Support II (AEB), Adaptive Cruise, Lane Keep, and Blind Spot Monitor protect the family actively from collisions.\n3. 360° Around-View Camera & Exclusive HUD: Bird's-eye parking eliminates curb & biker scratches in tight Pakistani bazaars, while HUD projects speed without looking away.\n4. 6 SRS Airbags + HEARTECT Platform: Dual front, side, and curtain airbags provide 3x greater passive safety than sedans (City/Yaris).\n5. 6AT Torque Converter + 170mm Clearance: Smooth, durable automatic (no DCT overheating in crawling traffic) with high clearance over monsoon floods and rough potholes.",
+      "model_ur": "1۔ SHVS اسمارٹ مائلڈ ہائبرڈ: سگنل پر آٹو اسٹاپ اور بریک چارجنگ سے شہر میں شاندار فیول بچت (بغیر کسی بیرونی چارجر کے)۔\n2۔ مکمل 10 ADAS سیفٹی سسٹمز: آٹو ایمرجنسی بریکنگ، ایڈاپٹو کروز، لین کیپ اور بلائنڈ اسپاٹ مانیٹر فیملی کو ہر وقت حادثے سے محفوظ رکھتے ہیں۔\n3۔ 360 ڈگری کیمرہ اور ہیڈ اَپ ڈسپلے (HUD): تنگ بازاروں اور پارکنگ میں چاروں طرف کا منظر دکھاتا ہے اور اسپیڈ سامنے شیشے پر نظر آتی ہے۔\n4۔ 6 ایئر بیگز اور HEARTECT فریم: اگلی اور پچھلی سیٹوں کے لیے 6 ایئر بیگز جو سٹی اور یارِس سے تین گنا زیادہ سیفٹی دیتے ہیں۔\n5۔ 6-اسپیڈ ٹارک کنورٹر آٹومیٹک اور 170mm گراؤنڈ کلیئرنس: گرمی اور رش میں پائیدار گیئر (نہ گرم ہوتا ہے نہ جھٹکے مارتا ہے) اور اونچے اسپیڈ بریکرز پر بے فکری۔"
     },
     {
       "id": "O2",
@@ -1391,7 +1393,9 @@
         "test drive",
         "ٹیسٹ ڈرائیو"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Winning Showroom Pitch:\n\"Sir, Jaecoo J5 is an attractive new entrant, but at PKR 6,699,000, Jaecoo J5 Comfort makes critical safety compromises: it has ONLY 2 Airbags, ZERO ADAS features, NO rear camera, NO 360 camera, halogen headlights, and non-folding mirrors!\nFor the same PKR 6.79M, Suzuki Fronx GLX ADAS is a fully loaded safety fortress with 6 Airbags, 10 ADAS systems, 360° camera, Head-Up Display (HUD), and LED auto lights.\nMost importantly, Jaecoo has only 20 dealerships nationwide with uncertain resale and imported part delays, whereas Pak Suzuki provides 170+ 3S outlets across 100 cities with guaranteed liquid cash-like resale and cheap local parts. Fronx gives you complete family safety and investment protection.\"",
+      "model_ur": "جیتنے والی سیلز پچ:\n\"سر، 67 لاکھ روپے میں جیکو J5 کمفرٹ میں سیفٹی کے بہت بڑے سمجھوتے ہیں: اس میں صرف 2 ایئر بیگز ہیں، ایک بھی ADAS فیچر نہیں، نہ ریورس کیمرہ ہے، نہ 360 کیمرہ، ہیلوجن لائٹس ہیں اور شیشے بھی فولڈ نہیں ہوتے!\nاسی بجٹ (68 لاکھ) میں سوزوکی فرونکس GLX ADAS میں پورے 6 ایئر بیگز، مکمل 10 ADAS فیچرز، 360 کیمرہ، ہیڈ اَپ ڈسپلے اور فل ایل ای ڈی لائٹس ملتی ہیں۔\nسب سے بڑھ کر، پورے پاکستان میں جیکو کے صرف 20 شورومز ہیں، جبکہ پاک سوزوکی کے 100 شہروں میں 170 سے زائد 3S ڈیلرشپس، سستے پارٹس اور کیش جیسی فوری ری سیل کسٹمر کے سرمائے کو محفوظ بناتی ہے۔\""
     },
     {
       "id": "O3",
@@ -1437,7 +1441,9 @@
         "نیٹ ورک",
         "سوزوکی"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Winning Showroom Pitch:\n\"Sir, both Honda HR-V VTi-S (PKR 7,299,000) and BYD Atto 2 (PKR 7,290,000) cost Rs. 5 Lakh MORE than Fronx GLX ADAS (PKR 6,799,999).\nDespite charging 5 Lakh extra, Honda HR-V gives you only 4 Airbags, a non-hybrid CVT engine, and completely lacks 360 Camera, Head-Up Display, Blind Spot Warning, and RCTA, backed by only 36 dealerships.\nBYD Atto 2 is a pure EV with only 8 dealerships in all of Pakistan, leaving you stranded with highway charging anxiety, loadshedding reliance, and no Hill Hold or Blind Spot Monitor.\nSuzuki Fronx GLX ADAS saves you Rs. 500,000 in cash, gives 6 Airbags, self-charging Smart Hybrid (fuel at any pump), full ADAS, exclusive HUD, and Pak Suzuki's 170+ network peace of mind.\"",
+      "model_ur": "جیتنے والی سیلز پچ:\n\"سر، ہونڈا HR-V (73 لاکھ) اور BYD Atto 2 (73 لاکھ) دونوں فرونکس سے 5 لاکھ روپے مہنگی ہیں!\n5 لاکھ زیادہ لینے کے باوجود ہونڈا HR-V میں صرف 4 ایئر بیگز ہیں، نہ 360 کیمرہ ہے، نہ HUD، نہ بلائنڈ اسپاٹ، نان ہائبرڈ CVT ہے اور ملک بھر میں صرف 36 شوروم ہیں۔\nBYD Atto 2 خالص الیکٹرک ہے جس کے پورے پاکستان میں صرف 8 شورومز ہیں، لمبے سفر پر چارجنگ ختم ہونے کا شدید خطرہ ہے اور ہِل ہولڈ و بلائنڈ اسپاٹ بھی غائب ہے۔\nفرونکس آپ کے 5 لاکھ روپے نقد بچاتی ہے، 6 ایئر بیگز، 10 ADAS، سیلف چارجنگ ہائبرڈ اور 170 سے زائد شورومز کا ذہنی سکون دیتی ہے۔\""
     },
     {
       "id": "O4",
@@ -1484,7 +1490,9 @@
         "test drive",
         "ٹیسٹ ڈرائیو"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Winning Showroom Pitch:\n\"Sir, City Aspire and Yaris ATIV X are traditional low-slung sedans priced around Rs. 5.9M–6.1M.\nFor virtually the same monthly lease or cash budget, Suzuki Fronx GL/GLX upgrades your family into a modern Coupe-SUV:\n1. 170mm Ground Clearance: Never scrapes speed breakers, broken monsoon potholes, or flooded streets.\n2. 3x Higher Safety: 6 Airbags + ADAS on Fronx GLX vs only 2 front airbags in City/Yaris.\n3. Easy Elder Ingress: High hip-point seats let elderly parents enter and exit without bending their knees.\n4. 60:40 Foldable Boot: Fits tall cartons, baby strollers, and bulk luggage through the wide hatch that fixed sedan trunks cannot swallow.\"",
+      "model_ur": "جیتنے والی سیلز پچ:\n\"سر، 60 سے 61 لاکھ کی اسی قیمت میں ہونڈا سٹی یا یارِس سیڈان کے بجائے فرونکس لینے سے فیملی کو شاندار کراس اوور SUV ملتی ہے:\n1۔ 170mm گراؤنڈ کلیئرنس: بارش کے پانی، اونچے اسپیڈ بریکرز اور ٹوٹی سڑکوں پر گاڑی نیچے سے نہیں لگتی۔\n2۔ 3 گنا زیادہ سیفٹی: سٹی اور یارِس میں صرف 2 ایئر بیگز ہیں جبکہ فرونکس میں 6 ایئر بیگز اور ADAS سیفٹی ہے۔\n3۔ بزرگوں کے لیے آسانی: اونچی سیٹ ہونے کی وجہ سے گھٹنے جھکائے بغیر والدین بآسانی بیٹھ اور اتر سکتے ہیں۔\n4۔ 60:40 فولڈنگ ڈگی: سیٹ فولڈ کر کے بڑے کارٹن، پرام اور بھاری سامان بآسانی رکھا جا سکتا ہے جو سیڈان میں ممکن نہیں۔\""
     },
     {
       "id": "O5",
@@ -1526,7 +1534,9 @@
         "adas",
         "کیمرہ"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Winning Showroom Pitch:\n\"Sir, Kia Stonic Turbo S is priced at Rs. 5.9M and offers a sunroof, but let's compare real long-term ownership:\n1. Active Crash Safety: Fronx GLX offers 10 ADAS features (Emergency Braking, Radar Cruise, Lane Keep, Blind Spot, RCTA) + 360° Camera + HUD—Kia Stonic has RED X across all of these!\n2. Scheduled Maintenance: Fronx needs service every 7,500 KM, whereas Stonic forces you into the workshop every 5,000 KM (33% more frequent maintenance bills!).\n3. Dealership Reach: Kia has only 25 outlets nationwide vs Pak Suzuki's 170+ outlets in 100 cities.\n4. Gearbox Reliability: Fronx's 6-speed torque converter AT doesn't overheat in summer traffic like Stonic's 7-speed dry DCT. In Pakistan's 45°C heat, active ADAS and hybrid mileage protect you every day, while a sunroof stays closed 95% of the year.\"",
+      "model_ur": "جیتنے والی سیلز پچ:\n\"سر، کیا اسٹونک 59 لاکھ کی ہے اور سن روف دیتی ہے، لیکن روزمرہ کے استعمال کا موازنہ کریں:\n1۔ مکمل ADAS اور 360 کیمرہ: فرونکس میں 10 لائف سیونگ ADAS فیچرز، 360 کیمرہ اور ہیڈ اَپ ڈسپلے ہے؛ اسٹونک میں ان میں سے ایک بھی نہیں!\n2۔ سروس کا وقفہ: فرونکس کی سروس 7,500 کلومیٹر بعد ہوتی ہے جبکہ اسٹونک کو ہر 5,000 کلومیٹر بعد ورکشاپ لے جانا پڑتا ہے (سال میں بار بار خرچ)۔\n3۔ ڈیلرشپ نیٹ ورک: کیا کے پورے ملک میں صرف 25 شوروم ہیں جبکہ سوزوکی کے 170 سے زائد ہیں!\n4۔ پائیدار گیئر باکس: پاکستان کی شدید گرمی اور رش میں اسٹونک کا 7-اسپیڈ DCT گرم ہو جاتا ہے جبکہ فرونکس کا 6AT ٹارک کنورٹر انتہائی پائیدار ہے۔ گرمی میں سن روف بند رہتا ہے جبکہ ہائبرڈ بچت اور ADAS روزانہ کام آتے ہیں۔\""
     },
     {
       "id": "O6",
@@ -1574,7 +1584,9 @@
         "fuel",
         "بچت"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Comparison & Upselling Logic:\n- Fronx GL (5MT/4AT, ~Rs. 5.7M–6.1M): 1.5L K15B non-hybrid engine, 2 airbags, conventional instruments, steel/alloy wheels. Perfect for fleet/entry crossover buyers.\n- Fronx GLX (6AT, ~Rs. 6.4M–6.8M): 1.5L K15C DualJet SHVS Mild-Hybrid, 6-Speed AT with Paddle Shifters, 6 Airbags, 360° Camera, Head-Up Display (HUD), 9\" HD Apple CarPlay, Wireless Charger, Rear AC Vents, Cruise/ADAS, and Two-Tone roof.\nUpsell Pitch:\n\"Sir, on bank financing, upgrading from GL 4AT to GLX Mild-Hybrid is only a minor difference of ~Rs. 7,000–9,000/month in EMI. For this small difference, you get 6 Airbags, 360 Camera, exclusive HUD, Paddle Shifters, and save Rs. 8,000+ every month in petrol thanks to the Smart Hybrid! The car literally pays for its own upgrade.\"",
+      "model_ur": "موازنہ اور اپ سیل کرنے کا طریقہ:\n- فرونکس GL (5MT/4AT، ~57 سے 61 لاکھ): 1.5L K15B نان ہائبرڈ انجن، 2 ایئر بیگز، سادہ میٹر۔ یہ بجٹ اور کارپوریٹ کسٹمر کے لیے بہترین ہے۔\n- فرونکس GLX (6AT، ~64 سے 68 لاکھ): 1.5L ڈوئل جیٹ مائلڈ ہائبرڈ، 6AT گیئر مع پیڈل شفٹرز، 6 ایئر بیگز، 360 کیمرہ، ہیڈ اَپ ڈسپلے (HUD)، وائرلیس چارجر، ریئر اے سی اور ADAS۔\nاپ سیل پچ:\n\"سر، بینک قسط پر GL سے GLX میں صرف 7 سے 9 ہزار روپے ماہانہ کا معمولی فرق آئے گا۔ لیکن اس کے بدلے آپ کو 6 ایئر بیگز، 360 کیمرہ، HUD اور پیڈل شفٹرز ملتے ہیں اور مائلڈ ہائبرڈ کی وجہ سے گاڑی ہر ماہ 8 ہزار کا پیٹرول خود بچا کر اپنی قسط پوری کر دیتی ہے!\""
     },
     {
       "id": "O7",
@@ -1618,7 +1630,9 @@
         "installment",
         "قسط"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Showroom Objection Handling ('Sunroof' & 'Resale/Power'):\nObjection: \"Customer says: Fronx doesn't have a panoramic sunroof like Peugeot 2008 / Oshan X7.\"\nClosing Technique (Acknowledge -> Reframe -> Daily Value):\n1. Acknowledge: \"Sir, absolutely, panoramic sunroofs look stunning in showroom brochures, and I completely appreciate why you noticed that.\"\n2. Reframe: \"However, in Pakistan's 42°C–47°C summer temperatures and heavy dust, a glass roof acts as a greenhouse, placing extreme strain on the cabin AC and fading the upholstery.\"\n3. Daily Value & Close: \"Instead of glass roof heat, Fronx GLX invests that value where you benefit 365 days a year: Smart Hybrid city fuel economy, 360° parking cameras, Head-Up Display, and 6-Airbag safety. Let me hand you the keys for a quick test drive right now so you can experience how silent and chilled the cabin feels!\"",
+      "model_ur": "سن روف کے اعتراض کو سیل میں بدلنے کی تکنیک:\nاعتراض: \"کسٹمر کہتا ہے: فرونکس میں پیژو 2008 یا اوشان X7 کی طرح پینورامک سن روف نہیں ہے۔\"\nحل کرنے کا سنہری طریقہ (تسلیم کریں -> رخ موڑیں -> روزمرہ فائدہ):\n1۔ تسلیم کریں: \"سر، بالکل آپ درست فرما رہے ہیں، شوروم میں کھڑی گاڑی میں سن روف دیکھنے میں بہت خوبصورت لگتا ہے۔\"\n2۔ رخ موڑیں: \"لیکن پاکستان کی 45 ڈگری گرمی اور دھول میں شیشے کی چھت گاڑی کو اندر سے تندور بنا دیتی ہے جس سے اے سی پر دباؤ بڑھتا ہے اور گاڑی ٹھنڈی نہیں ہوتی۔\"\n3۔ روزمرہ فائدہ دکھا کر ڈیل کلوز کریں: \"سوزوکی نے چھت کی تپش کے بجائے وہ پیسہ روزمرہ کے فائدے پر لگایا ہے: مائلڈ ہائبرڈ پیٹرول بچت، 360 کیمرہ، ہیڈ اَپ ڈسپلے اور 6 ایئر بیگز۔ آئیں سر، میں آپ کو ابھی ٹیسٹ ڈرائیو کرواتا ہوں تاکہ آپ خود فرونکس کے شاندار اے سی اور خاموش کیبن کا لطف اٹھا سکیں!\""
     },
     {
       "id": "O8",
@@ -1668,7 +1682,9 @@
         "comparison",
         "موازنہ"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "2 Actionable Dealership Booking & Footfall Strategies:\nStrategy 1: \"The 1-Litre Fuel & Tech Showroom Challenge\":\nInvite local City, Yaris, and Stonic owners for a short test drive comparing Fronx's SHVS Mild-Hybrid flow, HUD, and 360 camera. Offer instant spot-trade valuation where they can exchange their old sedan for a new Fronx with zero delivery wait.\nStrategy 2: \"Corporate & Doctor Fleet Displays with Direct Bank MoUs\":\nSet up 3-day weekend display camps outside premier private hospitals, tech parks, and commercial banks with pre-approved zero-processing fee auto financing tables. Showcase Fronx GLX ADAS highlighting Rs. 40,000/month lower cash outflow vs Rs. 8M+ Chinese SUVs.",
+      "model_ur": "ڈیلرشپ کی سیلز بڑھانے کے لیے 2 شاندار تجاویز:\nتجویز 1: \"ایکسچینج میلہ اور ہائبرڈ ٹیسٹ ڈرائیو چیلنج\":\nشہر کے ہونڈا سٹی، یارِس اور اسٹونک مالکان کو شوروم پر مدعو کریں اور فرونکس کا 360 کیمرہ اور HUD خود چلا کر دکھائیں۔ موقع پر ہی پرانی گاڑی کی مارکیٹ سے بہتر قیمت لگا کر فرونکس کی فوری ڈیلیوری کی پیشکش کریں۔\nتجویز 2: \"ہسپتالوں اور بینکوں میں کارپوریٹ ڈسپلے کیمپس\":\nشہر کے بڑے ہسپتالوں (ڈاکٹرز کے لیے) اور کارپوریٹ دفاتر میں 3 روزہ فرونکس ڈسپلے کیمپ لگائیں جہاں بینک کے نمائندے فوری کم شرح سود پر لیزنگ کی منظوری دیں۔ 80 لاکھ کی گاڑیوں کے مقابلے میں فرونکس پر ماہانہ 40 ہزار کی بچت کا پوسٹر کسٹمرز کو فوری بکنگ پر آمادہ کرے گا۔"
     }
   ]
 }

@@ -153,6 +153,24 @@
       </span>
     </div>
 
+    <!-- Official Winning Model Answer / Pitch -->
+    {% if oq.model_en %}
+    <div style="background:rgba(34,197,94,0.08); border:1.5px solid #22c55e; border-radius:10px; padding:14px; margin-top:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <strong style="color:#22c55e; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">
+          ⭐ Official Winning Sales Pitch (ماڈل سیلز پچ اور درست جواب):
+        </strong>
+        <span style="font-size:11px; background:#22c55e; color:#0f172a; padding:2px 8px; border-radius:12px; font-weight:800;">
+          5/5 Full Marks Benchmark
+        </span>
+      </div>
+      <div style="color:#fff; font-size:13px; line-height:1.6; white-space:pre-wrap; font-weight:500;">{{ oq.model_en }}</div>
+      {% if oq.model_ur %}
+      <div class="ur" style="color:#86efac; font-size:14px; line-height:1.7; margin-top:10px; padding-top:10px; border-top:1px dashed rgba(34,197,94,0.3); white-space:pre-wrap; font-weight:600;">{{ oq.model_ur }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Scoring Keywords -->
     <div style="background:var(--panel-solid); border-radius:8px; padding:12px 14px; margin-top:10px; border:1px solid var(--border);">
       <div style="font-size:11px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
