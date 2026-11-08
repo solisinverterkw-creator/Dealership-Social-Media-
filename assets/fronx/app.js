@@ -340,30 +340,34 @@
       ? (dSel.options[dSel.selectedIndex].getAttribute("data-name") || dSel.options[dSel.selectedIndex].textContent.trim())
       : "Pak Suzuki Dealership";
 
+    const phoneVal = $("inpPhone").value.trim();
+    const phoneClean = phoneVal.replace(/\D/g, "");
+    const empIdVal = ($("inpEmpId") && $("inpEmpId").value.trim().toUpperCase()) || phoneClean || ("PS-" + Date.now().toString().slice(-6));
+
     const candidate = {
       dealershipId: dealershipId,
       dealershipName: dealershipName,
       name: $("inpName").value.trim(),
-      empId: $("inpEmpId").value.trim().toUpperCase(),
-      phone: $("inpPhone").value.trim(),
+      empId: empIdVal,
+      phone: phoneVal,
       branch: $("inpBranch") ? $("inpBranch").value : "Main Showroom",
-      role: $("inpRole") ? $("inpRole").value : "Sales Executive",
-      experience: $("inpExp") ? $("inpExp").value : "1 - 3 years"
+      role: $("inpRole") ? $("inpRole").value : "Sales Consultant",
+      experience: $("inpExp") ? $("inpExp").value : "1 – 3 years (1 سے 3 سال)"
     };
 
-    if (!candidate.name || !candidate.empId) return;
+    if (!candidate.name || !candidate.phone) return;
 
     const btn = $("btnProceedInstructions");
     btn.disabled = true;
-    btn.textContent = "Checking ID...";
+    btn.textContent = "Checking details...";
 
     if (CFG.ALLOW_RETAKE === false) {
       const existingLocal = getLocalResults().find(
-        (r) => String(r.empId).toUpperCase() === candidate.empId
+        (r) => String(r.empId).toUpperCase() === candidate.empId || (r.phone && r.phone.replace(/\D/g, "") === phoneClean)
       );
       if (existingLocal) {
         errEl.innerHTML =
-          `Employee ID <strong>${escapeHtml(candidate.empId)}</strong> has already completed this assessment (Score: ${existingLocal.qualityScore}/100). Retakes are disabled.<br/><span class="ur">اس ایمپلائی آئی ڈی سے ٹیسٹ پہلے ہی مکمل کیا جا چکا ہے۔ دوبارہ ٹیسٹ کی اجازت نہیں ہے۔</span>`;
+          `Candidate (Mobile: <strong>${escapeHtml(candidate.phone)}</strong>) has already completed this assessment (Score: ${existingLocal.qualityScore}/100). Retakes are disabled.<br/><span class="ur">اس امیدوار کا ٹیسٹ پہلے ہی مکمل کیا جا چکا ہے۔ دوبارہ ٹیسٹ کی اجازت نہیں ہے۔</span>`;
         errEl.style.display = "block";
         btn.disabled = false;
         btn.textContent = "Continue to Instructions • آگے بڑھیں →";
@@ -371,7 +375,7 @@
       }
 
       const checkUrl = CFG.CHECK_EMP_URL 
-        ? `${CFG.CHECK_EMP_URL}?empId=${encodeURIComponent(candidate.empId)}`
+        ? `${CFG.CHECK_EMP_URL}?empId=${encodeURIComponent(candidate.empId)}&phone=${encodeURIComponent(candidate.phone)}`
         : (CFG.SCRIPT_URL ? `${CFG.SCRIPT_URL}?action=checkEmp&empId=${encodeURIComponent(candidate.empId)}` : null);
 
       if (checkUrl) {
@@ -382,7 +386,7 @@
             const dealerInfo = data.dealership ? ` at ${escapeHtml(data.dealership)}` : '';
             const scoreInfo = data.score !== undefined ? ` (Score: ${data.score}/100)` : '';
             errEl.innerHTML =
-              `Employee ID <strong>${escapeHtml(candidate.empId)}</strong> has already completed this assessment${scoreInfo}${dealerInfo}. Retakes are disabled.<br/><span class="ur">اس ایمپلائی آئی ڈی سے ٹیسٹ پہلے ہی مکمل کیا جا چکا ہے۔</span>`;
+              `Candidate (Mobile: <strong>${escapeHtml(candidate.phone)}</strong>) has already completed this assessment${scoreInfo}${dealerInfo}. Retakes are disabled.<br/><span class="ur">اس امیدوار کا ٹیسٹ پہلے ہی مکمل کیا جا چکا ہے۔</span>`;
             errEl.style.display = "block";
             btn.disabled = false;
             btn.textContent = "Continue to Instructions • آگے بڑھیں →";

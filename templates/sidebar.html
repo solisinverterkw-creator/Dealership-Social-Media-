@@ -85,6 +85,7 @@
 
     {% if is_super_admin() %}
       <a href="{{ url_for('users') }}" class="sidebar-link {% if ep == 'users' %}active{% endif %}">User Management</a>
+      <a href="{{ url_for('fronx_official_key') }}" class="sidebar-link {% if ep == 'fronx_official_key' %}active{% endif %}" style="color:#ef4444; font-weight:700;">🔑 Fronx Master Answer Key</a>
     {% endif %}
     <a href="{{ url_for('change_password') }}" class="sidebar-link {% if ep == 'change_password' %}active{% endif %}">Change Password</a>
     <a href="{{ url_for('logout') }}" class="sidebar-link" style="color:var(--red); margin-top:8px; border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.08);">🚪 Logout</a>

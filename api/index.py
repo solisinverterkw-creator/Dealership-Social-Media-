@@ -6090,19 +6090,23 @@ def api_fronx_submit():
         return jsonify({'error': 'Invalid payload'}), 400
 
     sub_uid = data.get('submissionId') or f"SUB-{int(time.time()*1000)}"
-    emp_id = (data.get('empId') or '').strip().upper()
-    if not emp_id:
-        return jsonify({'error': 'Employee ID is required'}), 400
+    phone = (data.get('phone') or '').strip()
+    emp_id = (data.get('empId') or phone or f"CAND-{int(time.time())}").strip().upper()
 
-    # Retake validation
-    existing = db_session.query(SalesSkillTestSubmission).filter(
-        SalesSkillTestSubmission.emp_id == emp_id
-    ).first()
-    if existing:
-        return jsonify({
-            'error': f'Assessment already submitted for Employee ID {emp_id}',
-            'existing_score': float(existing.quality_score or 0)
-        }), 400
+    # Retake validation by employee ID or phone
+    conds = []
+    if emp_id:
+        conds.append(SalesSkillTestSubmission.emp_id == emp_id)
+    if phone:
+        conds.append(SalesSkillTestSubmission.phone == phone)
+
+    if conds:
+        existing = db_session.query(SalesSkillTestSubmission).filter(or_(*conds)).first()
+        if existing:
+            return jsonify({
+                'error': f'Assessment already submitted for {phone or emp_id}',
+                'existing_score': float(existing.quality_score or 0)
+            }), 400
 
     dealership_id = data.get('dealershipId')
     try:
@@ -6119,7 +6123,7 @@ def api_fronx_submit():
         dealership_name=dealership_name,
         candidate_name=data.get('name') or 'Anonymous Candidate',
         emp_id=emp_id,
-        phone=data.get('phone'),
+        phone=phone or data.get('phone'),
         designation=data.get('role'),
         experience=data.get('experience'),
         quality_score=Decimal(str(data.get('qualityScore', 0.0))),
@@ -6151,14 +6155,20 @@ def api_fronx_submit():
 
 @app.route('/api/fronx/check-emp', methods=['GET'])
 def api_fronx_check_emp():
-    """Checks if an employee has already submitted the test (retake prevention)."""
+    """Checks if an employee/candidate has already submitted the test (retake prevention)."""
     emp_id = (request.args.get('empId') or '').strip().upper()
-    if not emp_id:
+    phone = (request.args.get('phone') or '').strip()
+
+    conds = []
+    if emp_id:
+        conds.append(SalesSkillTestSubmission.emp_id == emp_id)
+    if phone:
+        conds.append(SalesSkillTestSubmission.phone == phone)
+
+    if not conds:
         return jsonify({'exists': False})
 
-    existing = db_session.query(SalesSkillTestSubmission).filter(
-        SalesSkillTestSubmission.emp_id == emp_id
-    ).first()
+    existing = db_session.query(SalesSkillTestSubmission).filter(or_(*conds)).first()
 
     if existing:
         return jsonify({
@@ -6168,6 +6178,30 @@ def api_fronx_check_emp():
             'grade': existing.grade
         })
     return jsonify({'exists': False})
+
+@app.route('/fronx-official-key')
+@require_super_admin
+def fronx_official_key():
+    """Exclusive Master Question & Answer Key Sheet (Strictly Super Admin Only)."""
+    json_path = os.path.join(root_dir, 'assets', 'fronx', 'questions.json')
+    bank = {}
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                bank = json.load(f)
+        except Exception:
+            bank = {}
+
+    mcqs = bank.get('mcq', [])
+    opens = bank.get('open', [])
+    sections = bank.get('sections', {})
+
+    return render_template(
+        'fronx_official_key.html',
+        mcqs=mcqs,
+        opens=opens,
+        sections=sections
+    )
 
 @app.route('/fronx-skill-report/export')
 @require_login
