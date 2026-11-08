@@ -1000,7 +1000,7 @@ window.QUESTION_BANK = {
         "بغیر DRL سادہ بلب"
       ],
       a: 0,
-      x: "Inspired by Suzuki Grand Vitara, Fronx'sNEXA-style triple-pod LED headlamps and wide stance attract young & executive buyers alike.",
+      x: "Inspired by Suzuki Grand Vitara, Fronx's NEXA-style triple-pod LED headlamps and wide stance attract young & executive buyers alike.",
       xu: "گرینڈ وٹارا سے متاثرہ ٹرپل بیم LED ہیڈ لیمپس اور چوڑا فرنٹ فرونکس کو مہنگی لگژری SUV جیسی کشش دیتا ہے۔"
     },
     {
