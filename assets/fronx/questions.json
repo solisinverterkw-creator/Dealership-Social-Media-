@@ -94,27 +94,6 @@
       "xu": "فرونکس GLX میں پائیدار 6-اسپیڈ آٹومیٹک گیئر باکس اور اسپورٹی پیڈل شفٹرز دیے گئے ہیں۔"
     },
     {
-      "id": "A4",
-      "s": "A",
-      "q": "What is the engine difference between Fronx GL and Fronx GLX in Pakistan?",
-      "qu": "پاکستانی فرونکس GL اور فرونکس GLX کے انجن میں بنیادی فرق کیا ہے؟",
-      "o": [
-        "GL has 1.5L K15B conventional petrol (~103 hp); GLX has 1.5L K15C DualJet Mild-Hybrid (~99 hp)",
-        "GL has 1.3L engine; GLX has 1.8L engine",
-        "Both have exact same plug-in electric motor",
-        "GL is diesel; GLX is petrol"
-      ],
-      "ou": [
-        "GL میں 1.5L K15B پیٹرول انجن ہے جبکہ GLX میں 1.5L K15C ڈوئل جیٹ مائلڈ ہائبرڈ انجن ہے",
-        "GL میں 1.3L اور GLX میں 1.8L انجن ہے",
-        "دونوں میں پلگ اِن الیکٹرک موٹر ہے",
-        "GL ڈیزل ہے اور GLX پیٹرول ہے"
-      ],
-      "a": 0,
-      "x": "GL uses the proven K15B non-hybrid engine, while GLX steps up to K15C DualJet + SHVS Mild-Hybrid.",
-      "xu": "GL میں K15B نان ہائبرڈ انجن ہے جبکہ GLX میں جدید K15C ڈوئل جیٹ مائلڈ ہائبرڈ انجن ہے۔"
-    },
-    {
       "id": "A5",
       "s": "A",
       "q": "Which Fronx variant offers the Two-Tone (contrasting black roof) exterior paint option?",
@@ -388,27 +367,6 @@
       "xu": "9 انچ ایچ ڈی اسکرین میں ایپل کار پلے، اینڈرائیڈ آٹو، ہائبرڈ انرجی فلو اور 360 کیمرہ ڈسپلے شامل ہے۔"
     },
     {
-      "id": "B9",
-      "s": "B",
-      "q": "What is the role of Blind Spot Monitor (BSM) and Rear Cross Traffic Alert (RCTA) on Fronx GLX ADAS?",
-      "qu": "فرونکس GLX ADAS میں بلائنڈ اسپاٹ مانیٹر (BSM) اور ریئر کراس ٹریفک الرٹ (RCTA) کیا کام کرتے ہیں؟",
-      "o": [
-        "BSM warns of vehicles in side blind spots via mirror LED; RCTA warns of approaching traffic from sides while reversing out of parking",
-        "Turns off headlights at night",
-        "Inflates tyres automatically",
-        "Locks the steering wheel above 80 km/h"
-      ],
-      "ou": [
-        "BSM سائیڈ مرر میں چھپی گاڑی/بائیک کی نشاندہی کرتا ہے جبکہ RCTA پارکنگ سے ریورس نکلتے وقت دائیں بائیں سے آتی ٹریفک پر الرٹ دیتا ہے",
-        "رات کو ہیڈ لائٹس بند کرتا ہے",
-        "ٹائروں میں خود ہوا بھرتا ہے",
-        "80 کی اسپیڈ پر اسٹیئرنگ لاک کرتا ہے"
-      ],
-      "a": 0,
-      "x": "BSM saves bikers hidden in side blind spots during lane changes; RCTA prevents backing accidents in busy plazas.",
-      "xu": "پاکستانی ٹریفک میں اچانک بائیں دائیں سے آنے والے موٹر سائیکل سواروں سے بچاؤ کے لیے یہ بہترین فیچر ہے۔"
-    },
-    {
       "id": "B10",
       "s": "B",
       "q": "Which stability and incline safety features come on Fronx to prevent skidding and rollback?",
@@ -556,27 +514,6 @@
       "xu": "5 لاکھ روپے مہنگی ہونے کے باوجود ہونڈا HR-V میں صرف 4 ایئر بیگز ہیں، نہ 360 کیمرہ ہے، نہ HUD ہے، نہ بلائنڈ اسپاٹ ہے اور پورے پاکستان میں صرف 36 شورومز ہیں جبکہ سوزوکی کے 170 سے زائد ہیں!"
     },
     {
-      "id": "C7",
-      "s": "C",
-      "q": "Does Honda City 1.5L Aspire offer Electronic Stability Program (ESP/VSA) or ADAS in Pakistan?",
-      "qu": "کیا پاکستانی ہونڈا سٹی 1.5 اسپائر میں ADAS، 360 کیمرہ یا ہیڈ اَپ ڈسپلے موجود ہے؟",
-      "o": [
-        "No—Honda City lacks ADAS, 360° camera, HUD, and 6 airbags that Fronx GLX ADAS offers",
-        "Yes—City comes with radar cruise, 360 camera, and 6 airbags",
-        "Yes—City is a Mild-Hybrid",
-        "City is an AWD SUV"
-      ],
-      "ou": [
-        "نہیں — ہونڈا سٹی میں ADAS، 360 کیمرہ، ہیڈ اَپ ڈسپلے اور 6 ایئر بیگز موجود نہیں ہیں",
-        "جی ہاں — سٹی میں ریڈار کروز اور 6 ایئر بیگز ہیں",
-        "جی ہاں — سٹی مائلڈ ہائبرڈ ہے",
-        "سٹی آل وہیل ڈرائیو SUV ہے"
-      ],
-      "a": 0,
-      "x": "City is an older-tech B-segment sedan; Fronx leapfrogs it by an entire generation in active & passive safety.",
-      "xu": "فرونکس سیفٹی اور جدید ٹیکنالوجی میں ہونڈا سٹی سے ایک پوری جنریشن آگے ہے۔"
-    },
-    {
       "id": "C8",
       "s": "C",
       "q": "What ex-factory price bracket do top variants of Honda City (Aspire) and Toyota Yaris (ATIV X 1.5) sit in?",
@@ -617,27 +554,6 @@
       "a": 0,
       "x": "At 66 Lakh PKR, MG ZS Vibe leaves the driver with Halogen lights, manual folding mirrors, no 360 camera, no HUD, and an 18-dealership footprint. Fronx GLX ADAS gives full LED multi-reflectors, power folding mirrors, 360 camera, HUD, and 170+ outlets!",
       "xu": "66 لاکھ میں MG ZS Vibe میں ہیلوجن بلب، ہاتھ سے فولڈ ہونے والے شیشے، بغیر 360 کیمرہ اور صرف 18 ڈیلرشپس ہیں جبکہ فرونکس GLX میں LED لائٹس، آٹو فولڈنگ مررز، 360 کیمرہ، HUD اور 170 سے زائد ڈیلرشپس ملتی ہیں!"
-    },
-    {
-      "id": "C10",
-      "s": "C",
-      "q": "Which local automotive group assembles both Kia Stonic and Peugeot 2008 in Pakistan?",
-      "qu": "پاکستان میں کیا اسٹونک اور پیژو 2008 دونوں کو کون سا گروپ اسمبل کرتا ہے؟",
-      "o": [
-        "Lucky Motor Corporation (LMC)",
-        "Indus Motor Company",
-        "Honda Atlas Cars",
-        "Master Changan Motors"
-      ],
-      "ou": [
-        "لکی موٹر کارپوریشن (Lucky Motor Corp)",
-        "انڈس موٹر کمپنی",
-        "ہونڈا اٹلس کارز",
-        "ماسٹر چنگان موٹرز"
-      ],
-      "a": 0,
-      "x": "Knowing competitor assemblers shows professional product command when speaking to informed buyers.",
-      "xu": "باخبر کسٹمرز سے بات کرتے وقت کمپیٹیٹر کمپنیوں کی درست معلومات سیلز پرسن کا اعتماد بڑھاتی ہے۔"
     },
     {
       "id": "F1",
@@ -682,27 +598,6 @@
       "xu": "فرونکس مائلڈ ہائبرڈ کو کسی چارجر کی ضرورت نہیں — کراچی سے خنجراب تک کسی بھی پمپ سے پیٹرول ڈلوائیں اور بے فکر چلائیں۔"
     },
     {
-      "id": "F3",
-      "s": "F",
-      "q": "How should a salesperson position Fronx GLX (~Rs. 6.4M–6.87M) against Jaecoo J5 HEV (Rs. 6.7M Comfort / Rs. 7.7M Premium)?",
-      "qu": "جیکو J5 HEV (67 لاکھ کمفرٹ / 77 لاکھ پریمیم) کے مقابلے میں فرونکس GLX کو کس طرح پیش کرنا چاہیے؟",
-      "o": [
-        "Acknowledge J5 HEV's bigger body & 221 hp, then highlight ~Rs. 8–9 Lakh savings vs J5 Premium, proven 4-cyl simplicity vs complex turbo+DHT, Suzuki's liquid resale, cheap parts, and 150+ nationwide 3S network",
-        "Claim Fronx has 300 horsepower",
-        "Tell the customer Jaecoo does not exist",
-        "Refuse to compare"
-      ],
-      "ou": [
-        "J5 HEV کے سائز اور پاور کو تسلیم کریں، پھر ٹاپ ویرینٹ پر 8 سے 9 لاکھ کی بچت، سادہ اور پائیدار انجن، سوزوکی کی فوری ری سیل، سستے پارٹس اور ملک گیر 3S نیٹ ورک کا مضبوط فائدہ بتائیں",
-        "دعویٰ کریں کہ فرونکس میں 300 ہارس پاور ہے",
-        "کہیں کہ جیکو کوئی کمپنی نہیں ہے",
-        "موازنہ کرنے سے انکار کر دیں"
-      ],
-      "a": 0,
-      "x": "In Pakistan, first-generation Chinese hybrid DHT transmissions & parts availability outside major metros remain big buyer concerns—Suzuki solves peace of mind.",
-      "xu": "پاکستان میں نئی چائنیز ہائبرڈ گاڑیوں کے پارٹس، پیچیدہ ٹربو DHT گیئر اور ری سیل کسٹمر کی بڑی فکر ہوتی ہے جہاں سوزوکی مکمل ذہنی سکون دیتی ہے۔"
-    },
-    {
       "id": "F4",
       "s": "F",
       "q": "What is Jaecoo J7 in Pakistan, and what is its approximate price bracket?",
@@ -722,27 +617,6 @@
       "a": 0,
       "x": "Jaecoo J7 PHEV sits near Rs. 1 Crore—completely different budget segment from Fronx (~Rs. 6.0–6.87M).",
       "xu": "جیکو J7 تقریباً ایک کروڑ روپے کے بجٹ کی گاڑی ہے جو فرونکس سے 30 لاکھ روپے سے زیادہ مہنگی ہے۔"
-    },
-    {
-      "id": "F5",
-      "s": "F",
-      "q": "Which brand family do Omoda (C5 / E5) and Jaecoo belong to globally, and what is Omoda E5 in Pakistan?",
-      "qu": "اوموڈا (Omoda C5 / E5) اور جیکو عالمی سطح پر کس چائنیز کمپنی کے سب برانڈز ہیں، اور پاکستانی Omoda E5 کیا ہے؟",
-      "o": [
-        "Sub-brands of Chery Automobile; Omoda E5 is a ~Rs. 8.99 Million pure Electric SUV (61 kWh battery)",
-        "Sub-brands of Toyota; Omoda E5 is a diesel van",
-        "Sub-brands of Peugeot; Omoda E5 is a manual sedan",
-        "Sub-brands of Honda"
-      ],
-      "ou": [
-        "یہ چائنیز کمپنی چیری (Chery) کے سب برانڈز ہیں؛ اور Omoda E5 تقریباً 90 لاکھ روپے کی مکمل الیکٹرک SUV ہے",
-        "یہ ٹویوٹا کے برانڈز ہیں",
-        "یہ پیژو کے برانڈز ہیں",
-        "یہ ہونڈا کے برانڈز ہیں"
-      ],
-      "a": 0,
-      "x": "Omoda & Jaecoo are Chery export sub-brands assembled/distributed via Nishat's NexGen Auto in Pakistan; Omoda E5 costs ~Rs. 9M.",
-      "xu": "اوموڈا اور جیکو دراصل چیری آٹوموبائل کے ذیلی برانڈز ہیں اور Omoda E5 تقریباً 90 لاکھ کی الیکٹرک گاڑی ہے۔"
     },
     {
       "id": "F6",
@@ -808,48 +682,6 @@
       "xu": "جیٹور کی گاڑیاں فرونکس سے 11 سے 20 لاکھ مہنگی ہیں، نان ہائبرڈ ٹربو انجن کی وجہ سے شہر میں پیٹرول زیادہ پیتی ہیں اور نیٹ ورک محدود ہے۔"
     },
     {
-      "id": "F9",
-      "s": "F",
-      "q": "Which SUVs are known under the Chery Tiggo lineup in Pakistan?",
-      "qu": "پاکستان میں چیری (Chery) برانڈ کی کون سی Tiggo ایس یو ویز جانی جاتی ہیں؟",
-      "o": [
-        "Chery Tiggo 4 Pro (1.5T subcompact crossover) and Chery Tiggo 8 Pro (1.6T 7-seater SUV ~Rs. 9.5M)",
-        "Chery Corolla and Chery Civic",
-        "Chery Bolan and Chery Ravi",
-        "Chery Land Cruiser"
-      ],
-      "ou": [
-        "چیری ٹگو 4 پرو (1.5T کراس اوور) اور چیری ٹگو 8 پرو (1.6T سیون سیٹر ~95 لاکھ)",
-        "چیری کرولا اور سوک",
-        "چیری بولان اور راوی",
-        "چیری لینڈ کروزر"
-      ],
-      "a": 0,
-      "x": "Buyers of newer/restructured Chinese brands often worry about dealership continuity, spare part wait times, and steep resale depreciation—Pak Suzuki's 40+ year local presence wins trust.",
-      "xu": "نئے یا بدلتے ڈسٹری بیوٹرز والے چائنیز برانڈز میں پارٹس کا انتظار اور ری سیل گرنے کا خدشہ رہتا ہے، جبکہ پاک سوزوکی 40 سالہ اعتماد کا نام ہے۔"
-    },
-    {
-      "id": "F10",
-      "s": "F",
-      "q": "What is Changan Oshan X7's positioning in Pakistan compared to Suzuki Fronx?",
-      "qu": "چنگان اوشان X7 (Changan Oshan X7) کا سوزوکی فرونکس سے کیا موازنہ ہے؟",
-      "o": [
-        "Mid-size 5/7-seater SUV with 1.5L Turbo (185 hp) priced ~Rs. 7.95M–8.45M; larger & faster, but Rs. 12–24 Lakh costlier, bigger to park, and consumes much more petrol in city traffic than Fronx Hybrid",
-        "Smaller hatchback than Alto",
-        "Pure electric car priced at Rs. 5.0M",
-        "Diesel pickup truck"
-      ],
-      "ou": [
-        "یہ 1.5 ٹربو (185 hp) مڈ سائز 5/7 سیٹر SUV ہے (~79.5 سے 84.5 لاکھ)؛ سائز میں بڑی ہے مگر فرونکس سے 12 تا 24 لاکھ مہنگی ہے اور شہر کے رش میں پیٹرول کافی زیادہ خرچ کرتی ہے",
-        "آلٹو سے چھوٹی گاڑی ہے",
-        "50 لاکھ کی الیکٹرک کار ہے",
-        "ڈیزل پک اپ ہے"
-      ],
-      "a": 0,
-      "x": "For urban nuclear families who don't need 7 seats daily, Fronx GLX saves Rs. 15+ Lakh upfront AND 35–45% on monthly fuel bills.",
-      "xu": "جن فیملیز کو روزمرہ شہر کے لیے اسمارٹ کراس اوور چاہیے، فرونکس ان کے 15 لاکھ+ بچاتی ہے اور ماہانہ پیٹرول خرچ بھی بہت کم رکھتی ہے۔"
-    },
-    {
       "id": "F11",
       "s": "F",
       "q": "How does Haval Jolion (1.5T Petrol ~Rs. 7.8M / Jolion HEV ~Rs. 9.1M) compare to Fronx GLX (~Rs. 6.4M–6.87M)?",
@@ -869,69 +701,6 @@
       "a": 0,
       "x": "Fronx democratizes premium features (Hybrid + ADAS + 360 + HUD) at ~Rs. 6.8M that buyers previously had to spend Rs. 9M+ on Jolion HEV to get.",
       "xu": "جو فیچرز پہلے 90 لاکھ سے اوپر والی گاڑیوں میں ملتے تھے، فرونکس وہ تمام فیچرز 68 لاکھ کے بجٹ میں فراہم کرتی ہے۔"
-    },
-    {
-      "id": "F12",
-      "s": "F",
-      "q": "What common concern do Pakistani car buyers face with Chinese SUVs having massive 12-to-15-inch screens and minimal physical buttons?",
-      "qu": "بڑی ٹچ اسکرینز اور بغیر فزیکل بٹن والی چائنیز گاڑیوں میں پاکستانی ڈرائیورز کو اکثر کیا دقت پیش آتی ہے؟",
-      "o": [
-        "Changing AC fan/temperature inside touch menus takes eyes off the road while driving, and replacement screens/sensors are very expensive if damaged",
-        "Touchscreens increase ground clearance",
-        "Physical AC buttons consume petrol",
-        "Big screens make tyres last longer"
-      ],
-      "ou": [
-        "چلتی گاڑی میں اے سی تیز یا کم کرنے کے لیے اسکرین مینو میں جانا توجہ ہٹاتا ہے، اور خراب ہونے پر بڑی اسکرین/سینسرز کی تبدیلی انتہائی مہنگی پڑتی ہے",
-        "بڑی اسکرین سے گراؤنڈ کلیئرنس بڑھتی ہے",
-        "فزیکل بٹن پیٹرول ضائع کرتے ہیں",
-        "بڑی اسکرین سے ٹائر نہیں گھستے"
-      ],
-      "a": 0,
-      "x": "Fronx balances a crisp 9-inch CarPlay touchscreen + HUD with ergonomic physical toggle switches for Auto Climate Control—safer & intuitive!",
-      "xu": "فرونکس میں 9 انچ ٹچ اسکرین اور HUD کے ساتھ اے سی کے لیے الگ فزیکل ٹوگل بٹن دیے گئے ہیں جو ڈرائیونگ کے دوران محفوظ اور آسان ہیں۔"
-    },
-    {
-      "id": "F13",
-      "s": "F",
-      "q": "Why do turbocharged Chinese petrol SUVs (1.5T DCT) often give 8–10 km/L in congested Karachi/Lahore traffic compared to Fronx GLX Mild-Hybrid?",
-      "qu": "کراچی اور لاہور جیسے رش والے شہروں میں نان ہائبرڈ 1.5 ٹربو چائنیز گاڑیاں اکثر 8 سے 10 کلومیٹر فی لیٹر ایوریج کیوں دیتی ہیں جبکہ فرونکس GLX بہت بہتر مائلیج دیتی ہے؟",
-      "o": [
-        "Heavy curb weight (1,450–1,600 kg) + turbo boost + no idle stop/regen drains fuel in stop-and-go traffic; lightweight HEARTECT Fronx GLX uses Idle Stop & electric assist",
-        "Because turbo cars have 10 wheels",
-        "Because Chinese cars use aviation kerosene",
-        "Fronx has a 200-liter fuel tank"
-      ],
-      "ou": [
-        "زیادہ وزن (1450 تا 1600 کلو)، ٹربو انجن اور اسٹاپ اینڈ گو رش میں پیٹرول زیادہ جلتا ہے؛ جبکہ ہلکے HEARTECT پلیٹ فارم اور مائلڈ ہائبرڈ آٹو اسٹاپ سے فرونکس بہترین مائلیج دیتی ہے",
-        "کیونکہ ان میں دس پہیے ہوتے ہیں",
-        "کیونکہ ان میں ہوائی جہاز کا تیل ڈلتا ہے",
-        "فرونکس کا ٹینک 200 لیٹر کا ہے"
-      ],
-      "a": 0,
-      "x": "Physics wins in city traffic: Fronx's light high-tensile body + DualJet K15C + SHVS hybrid shines exactly where Pakistani customers drive 85% of the time.",
-      "xu": "پاکستانی کسٹمر کی 85 فیصد ڈرائیونگ شہر کے رش میں ہوتی ہے جہاں فرونکس کا ہلکا مضبوط فریم اور مائلڈ ہائبرڈ سسٹم شاندار بچت دیتا ہے۔"
-    },
-    {
-      "id": "F14",
-      "s": "F",
-      "q": "If a customer takes an accident claim or needs a bumper/headlamp in a smaller city (e.g., Sukkur, Sahiwal, Abbottabad, Bahawalpur), how does Fronx compare to Omoda/Jaecoo/Jetour/BYD?",
-      "qu": "اگر سکھر، ساہیوال، ایبٹ آباد یا بہاولپور جیسے شہر میں گاڑی کا بمپر یا لائٹ بدلنی پڑ جائے تو فرونکس کا چائنیز برانڈز (اوموڈا، جیکو، جیٹور، BYD) سے کیا فرق ہوگا؟",
-      "o": [
-        "Pak Suzuki has 3S dealerships & body shops across big and small cities with local CKD parts stock; new Chinese brands have outlets mostly in 3–5 big cities with weeks of part wait time",
-        "Chinese EV parts are sold at every roadside puncture shop",
-        "Pak Suzuki has only 1 showroom in Pakistan",
-        "Body parts are never needed"
-      ],
-      "ou": [
-        "پاک سوزوکی کا پورے پاکستان کے چھوٹے بڑے شہروں میں 3S نیٹ ورک اور لوکل CKD پارٹس اسٹاک موجود ہے، جبکہ نئے چائنیز برانڈز صرف چند بڑے شہروں تک محدود ہیں اور پارٹس کے لیے ہفتوں انتظار کرنا پڑتا ہے",
-        "چائنیز الیکٹرک گاڑیوں کے پارٹس ہر کریانہ اسٹور سے مل جاتے ہیں",
-        "پاک سوزوکی کا پورے ملک میں صرف ایک شوروم ہے",
-        "باڈی پارٹس کی کبھی ضرورت نہیں پڑتی"
-      ],
-      "a": 0,
-      "x": "Nationwide service reach & local CKD parts availability is Suzuki's unbeatable moat in Pakistan.",
-      "xu": "ملک گیر سروس نیٹ ورک اور لوکل پارٹس کی فوری دستیابی پاک سوزوکی کی سب سے بڑی طاقت ہے۔"
     },
     {
       "id": "D1",
@@ -976,69 +745,6 @@
       "xu": "گرم موسم اور رش والی ٹریفک میں 6-اسپیڈ ٹارک کنورٹر آٹومیٹک سب سے پائیدار اور آرام دہ گیئر باکس مانا جاتا ہے۔"
     },
     {
-      "id": "D3",
-      "s": "D",
-      "q": "Against Honda City and Toyota Yaris, what 3 practical advantages does Fronx immediately win on a showroom walkaround?",
-      "qu": "شوروم میں گاڑی دکھاتے وقت ہونڈا سٹی اور ٹویوٹا یارِس کے مقابلے میں فرونکس کے کون سے 3 فوائد فوری نظر آتے ہیں؟",
-      "o": [
-        "1) Bold Coupe-SUV road presence & 170mm clearance, 2) Easy high hip-point entry/exit for elders, 3) 6 Airbags + 360 Camera + HUD + ADAS",
-        "1) Longer sedan trunk, 2) Lower roof, 3) Smaller tyres",
-        "1) Sliding van doors, 2) 8-seat layout, 3) Diesel engine",
-        "1) Wooden dashboard, 2) Manual choke, 3) Cassette deck"
-      ],
-      "ou": [
-        "1) شاندار کوپے SUV ڈیزائن اور 170mm گراؤنڈ کلیئرنس، 2) بزرگوں کے لیے اونچی سیٹ پر بیٹھنے نکلنے میں آسانی، 3) 6 ایئر بیگز، 360 کیمرہ، HUD اور ADAS",
-        "1) لمبی سیڈان ڈگی، 2) نیچی چھت، 3) چھوٹے ٹائر",
-        "1) وین والے دروازے، 2) آٹھ سیٹیں، 3) ڈیزل انجن",
-        "1) لکڑی کا ڈیش بورڈ، 2) مینوئل چوک"
-      ],
-      "a": 0,
-      "x": "High seating position (command view + easy ingress for parents) and pothole clearance instantly resonate with sedan shoppers.",
-      "xu": "اونچی ڈرائیونگ پوزیشن، بزرگ والدین کے لیے آسان نشست اور ٹوٹی سڑکوں پر بے فکری سیڈان کسٹمرز کو فوری متاثر کرتی ہے۔"
-    },
-    {
-      "id": "D4",
-      "s": "D",
-      "q": "Based on official competitor network data, how does Pak Suzuki's 'Dealer Network & Parts Availability' decisively crush all SUV competitors?",
-      "qu": "آفیشل موازنہ ڈیٹا کے مطابق پاک سوزوکی کا ڈیلرشپ نیٹ ورک اور پارٹس کی دستیابی تمام کمپیٹیٹرز کو کس طرح شکست دیتی ہے؟",
-      "o": [
-        "Suzuki has 170+ Outlets across 100 cities (vs BYD: 8, MG: 18–24, Jaecoo: 20, Kia: 25, Honda: 36) – offering unmatched convenience, instant parts, and zero breakdown anxiety anywhere in Pakistan",
-        "All brands have over 150 outlets in Pakistan",
-        "BYD has the largest network in Pakistan with 500 outlets",
-        "Dealership count does not matter in car ownership"
-      ],
-      "ou": [
-        "سوزوکی کے 100 شہروں میں 170 سے زائد آؤٹ لیٹس ہیں (جبکہ BYD کے 8، MG کے 18 تا 24، جیکو کے 20، کیا کے 25، اور ہونڈا کے 36 ہیں) — جس سے پورے پاکستان میں فوری پرزے اور بے فکری ملتی ہے",
-        "تمام برانڈز کے ڈیڑھ سو سے زیادہ شوروم ہیں",
-        "BYD کے سب سے زیادہ 500 شوروم ہیں",
-        "ڈیلرشپ نیٹ ورک سے کوئی فرق نہیں پڑتا"
-      ],
-      "a": 0,
-      "x": "The numbers speak: Suzuki has 170+ outlets in 100 cities, whereas BYD has only 8, MG 18–24, Jaecoo 20, Kia 25, and Honda 36. Wherever a customer drives in Pakistan, Suzuki 3S support is next door.",
-      "xu": "اعداد و شمار واضح ہیں: سوزوکی کے 170 سے زائد شورومز ہیں، جبکہ BYD کے صرف 8، MG کے 18-24، جیکو کے 20، کیا کے 25 اور ہونڈا کے 36 ہیں۔ کسٹمر پاکستان کے کسی بھی کونے میں چلا جائے، سوزوکی کا سروس سینٹر ساتھ کھڑا ہے!"
-    },
-    {
-      "id": "D5",
-      "s": "D",
-      "q": "Calculate the Total Cost of Ownership (TCO) advantage when a buyer chooses Fronx GLX (~Rs. 6.7M) over a Rs. 8.5M–9.0M Chinese SUV (Oshan X7 / BYD / Omoda E5 / Jolion HEV):",
-      "qu": "جب کسٹمر 85 تا 90 لاکھ والی چائنیز SUV کے بجائے فرونکس GLX (~67 لاکھ) خریدتا ہے تو اسے کل مالی بچت (TCO Advantage) کیسے حاصل ہوتی ہے؟",
-      "o": [
-        "Saves Rs. 18–23 Lakh upfront + lower WHT/registration + lower annual comprehensive insurance + cheaper periodic service + lower depreciation loss",
-        "No savings at all—insurance is higher on cheaper cars",
-        "Only saves Rs. 5,000",
-        "Fronx has higher token tax than 2.0L cars"
-      ],
-      "ou": [
-        "خریداری پر 18 سے 23 لاکھ کی فوری بچت + کم ودہولڈنگ ٹیکس/رجسٹریشن + سالانہ انشورنس میں بڑی بچت + سستی سروس + ری سیل میں کم نقصان",
-        "کوئی بچت نہیں ہوتی",
-        "صرف پانچ ہزار روپے بچتے ہیں",
-        "فرونکس کا ٹوکن ٹیکس بڑی گاڑیوں سے زیادہ ہے"
-      ],
-      "a": 0,
-      "x": "Even annual insurance (~2.5%–3%) on an extra Rs. 20 Lakh saves ~Rs. 50,000–60,000 every year, plus Rs. 3+ Lakh/year opportunity return on saved capital!",
-      "xu": "صرف انشورنس، رجسٹریشن اور بچائے گئے 20 لاکھ روپے کے منافع کو ہی جمع کریں تو کسٹمر کو ہر سال لاکھوں روپے کا فائدہ ہوتا ہے۔"
-    },
-    {
       "id": "D6",
       "s": "D",
       "q": "What exterior lighting design gives Suzuki Fronx its unmistakable premium SUV look at night?",
@@ -1058,48 +764,6 @@
       "a": 0,
       "x": "Inspired by Suzuki Grand Vitara, Fronx's NEXA-style triple-pod LED headlamps and wide stance attract young & executive buyers alike.",
       "xu": "گرینڈ وٹارا سے متاثرہ ٹرپل بیم LED ہیڈ لیمپس اور چوڑا فرنٹ فرونکس کو مہنگی لگژری SUV جیسی کشش دیتا ہے۔"
-    },
-    {
-      "id": "D7",
-      "s": "D",
-      "q": "How does Fronx's 60:40 split-folding rear seat add practicality over traditional sedans like City and Yaris?",
-      "qu": "ہونڈا سٹی اور ٹویوٹا یارِس جیسی سیڈان گاڑیوں کے مقابلے میں فرونکس کی 60:40 فولڈنگ ریئر سیٹ کیا عملی فائدہ دیتی ہے؟",
-      "o": [
-        "Allows folding one or both rear seatbacks flat to load tall/bulky items (strollers, cartons, appliances, luggage) through the wide tailgate opening",
-        "Turns the car into a 9-seater",
-        "Makes the engine louder",
-        "Increases tyre size"
-      ],
-      "ou": [
-        "پچھلی سیٹ کا ایک حصہ یا پوری سیٹ فولڈ کر کے بڑے کارٹن، بچوں کی پرام یا سامان چوڑے ہیچ دروازے سے بآسانی رکھا جا سکتا ہے جو سیڈان کی ڈگی میں ممکن نہیں",
-        "گاڑی کو 9 سیٹر بنا دیتی ہے",
-        "انجن کی آواز تیز کرتی ہے",
-        "ٹائر بڑا کر دیتی ہے"
-      ],
-      "a": 0,
-      "x": "Sedans have a low fixed trunk opening—tall suitcases or appliances won't fit even if liter volume looks bigger on paper.",
-      "xu": "سیڈان کی ڈگی کا منہ تنگ اور فکس ہوتا ہے جبکہ کراس اوور ہیچ میں سیٹ فولڈ کر کے بڑا سامان بآسانی آ جاتا ہے۔"
-    },
-    {
-      "id": "D8",
-      "s": "D",
-      "q": "Which steering adjustment is available in Fronx GLX to help drivers of all heights find the ideal driving posture?",
-      "qu": "ہر قد کے ڈرائیور کو آرام دہ ڈرائیونگ پوزیشن دینے کے لیے فرونکس GLX کے اسٹیئرنگ میں کون سی ایڈجسٹمنٹ موجود ہے؟",
-      "o": [
-        "Both Tilt (up/down) AND Telescopic (reach in/out) leather-wrapped steering wheel with audio, cruise & paddle controls",
-        "Fixed non-adjustable steering",
-        "Tilt-only plastic steering",
-        "Detachable racing wheel"
-      ],
-      "ou": [
-        "ٹِلٹ (اوپر/نیچے) اور ٹیلی اسکوپک (آگے/پیچھے) دونوں ایڈجسٹمنٹ والا لیدر اسٹیئرنگ وہیل مع آڈیو، کروز اور پیڈل کنٹرولز",
-        "فکسڈ اسٹیئرنگ جو حرکت نہیں کرتا",
-        "صرف اوپر نیچے ہونے والا سادہ اسٹیئرنگ",
-        "الگ ہو جانے والا ریسنگ اسٹیئرنگ"
-      ],
-      "a": 0,
-      "x": "Tilt + Telescopic steering plus height-adjustable driver seat gives Fronx GLX superb ergonomics.",
-      "xu": "ٹِلٹ اور ٹیلی اسکوپک اسٹیئرنگ اور ڈرائیور سیٹ ہائٹ ایڈجسٹمنٹ لمبے سفر میں تھکن نہیں ہونے دیتے۔"
     },
     {
       "id": "D9",
@@ -1207,27 +871,6 @@
       "xu": "HEARTECT ہائی ٹینسائل اسٹیل، 6 ایئر بیگز اور ADAS کے حقائق تحمل سے بتانے سے کسٹمر کا اعتماد مضبوط ہوتا ہے۔"
     },
     {
-      "id": "E5",
-      "s": "E",
-      "q": "A customer walks in interested in Fronx GL 4AT (~Rs. 6.1M). How do you ethically check if they can upgrade (upsell) to Fronx GLX Mild-Hybrid (~Rs. 6.4M–6.8M)?",
-      "qu": "ایک کسٹمر فرونکس GL 4AT (~61 لاکھ) دیکھنے آیا ہے۔ آپ بہترین طریقے سے اسے فرونکس GLX مائلڈ ہائبرڈ پر اپ گریڈ (Upsell) کیسے کروائیں گے؟",
-      "o": [
-        "Show the small monthly bank-installment / price difference vs massive upgrades: 6AT + Paddle Shifters, Smart Hybrid fuel savings, 6 Airbags, 360° Camera, HUD, Wireless Charger, 9\" screen, Rear AC & Alloy wheels—plus higher resale of top trim",
-        "Hide the GL car and lie that Pak Suzuki stopped making GL",
-        "Mock the GL variant as useless",
-        "Never mention GLX at all"
-      ],
-      "ou": [
-        "قیمت یا ماہانہ قسط کا معمولی فرق دکھا کر بڑے فوائد گنوائیں: 6AT گیئر + پیڈل شفٹرز، مائلڈ ہائبرڈ پیٹرول بچت، 6 ایئر بیگز، 360 کیمرہ، HUD، وائرلیس چارجر، ریئر اے سی اور ٹاپ ماڈل کی بہتر ری سیل",
-        "جھوٹ بولیں کہ کمپنی نے GL بنانا بند کر دیا ہے",
-        "GL ماڈل کو بیکار کہیں",
-        "GLX کا ذکر ہی نہ کریں"
-      ],
-      "a": 0,
-      "x": "Showing value-per-rupee and monthly EMI difference makes upgrading to GLX an easy, logical win for the customer.",
-      "xu": "ماہانہ قسط یا قیمت کے فرق کے مقابلے میں فیچرز اور پیٹرول کی بچت دکھانے سے کسٹمر خوشی سے GLX پر آ جاتا ہے۔"
-    },
-    {
       "id": "E6",
       "s": "E",
       "q": "Customer is stretching their budget via bank financing for Jetour Dashing / Changan Oshan X7 (~Rs. 8.0M+). What smart financial angle brings them to Fronx GLX ADAS?",
@@ -1268,27 +911,6 @@
       "a": 0,
       "x": "Customers buy with emotion and justify with logic—seeing the HUD rise and parking effortlessly with 360° camera seals emotional desire.",
       "xu": "جب کسٹمر خود HUD کو اٹھتے دیکھتا ہے اور 360 کیمرے سے پارکنگ کرتا ہے تو گاڑی فوراً اس کے دل کو بھا جاتی ہے۔"
-    },
-    {
-      "id": "E8",
-      "s": "E",
-      "q": "What is the GOLDEN RULE when any customer praises a competitor brand (Kia, Peugeot, Honda, Toyota, BYD, Jaecoo, MG, Changan)?",
-      "qu": "جب کوئی کسٹمر کسی بھی مقابل برانڈ (کیا، پیژو، ہونڈا، ٹویوٹا، BYD، جیکو، ایم جی، چنگان) کی تعریف کرے تو سیلز کا سنہری اصول کیا ہے؟",
-      "o": [
-        "Never badmouth or lie about competitors—respect their choice, acknowledge what that car does well, and pivot with facts to Fronx's total value, safety, hybrid economy & Suzuki peace of mind",
-        "Argue aggressively until the customer admits they are wrong",
-        "Spread fake rumors about competitor engine failures",
-        "End the conversation if they mention another brand"
-      ],
-      "ou": [
-        "کبھی کسی کمپیٹیٹر کی برائی یا غلط بیانی نہ کریں — کسٹمر کی پسند کا احترام کریں، خوبی کو تسلیم کریں اور حقائق کے ساتھ فرونکس کی مجموعی ویلیو، سیفٹی، ہائبرڈ بچت اور سوزوکی کے اعتماد کی طرف لائیں",
-        "کسٹمر سے بحث کر کے اسے غلط ثابت کریں",
-        "دوسری گاڑیوں کے بارے میں جھوٹی افواہیں سنائیں",
-        "دوسری گاڑی کا نام سن کر بات ختم کر دیں"
-      ],
-      "a": 0,
-      "x": "Criticizing a customer's shortlisted car attacks their judgment; respectful comparison builds instant credibility and closes more sales.",
-      "xu": "دوسری گاڑی کی برائی کرنے سے کسٹمر کا اعتماد ختم ہوتا ہے، جبکہ باوقار اور معلوماتی موازنہ سیلز پرسن کو قابلِ بھروسہ ایڈوائزر بناتا ہے۔"
     }
   ],
   "open": [
