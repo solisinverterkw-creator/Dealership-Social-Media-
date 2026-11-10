@@ -1,15 +1,12 @@
 /* ============================================================
    SUZUKI FRONX SALES MASTERY TEST - OFFICIAL QUESTION BANK
-   42 MCQs + 8 Open-Ended Showroom Winning Pitches (50 Total)
+   undefined MCQs + undefined Open-Ended Showroom Winning Pitches (undefined Total)
    Pak Suzuki Dealership Network - National Sales Skill Assessment
    Bilingual: English + Urdu (اردو)
+   Distributed Options (A, B, C, D Balanced)
    ============================================================ */
 
 window.QUESTION_BANK = {
-  "version": "2.1",
-  "totalQuestions": 50,
-  "mcqCount": 42,
-  "openCount": 8,
   "sections": {
     "A": {
       "en": "Fronx Local Variants & Specs",
@@ -68,18 +65,18 @@ window.QUESTION_BANK = {
       "q": "Which engine and hybrid technology powers the Pakistani Suzuki Fronx GLX variants?",
       "qu": "پاکستانی سوزوکی فرونکس GLX ویرینٹس میں کون سا انجن اور ہائبرڈ ٹیکنالوجی استعمال ہوئی ہے؟",
       "o": [
-        "1.5L DualJet (K15C) with SHVS Smart Mild-Hybrid system",
         "1.0L 3-Cylinder Boosterjet Turbo",
+        "1.5L DualJet (K15C) with SHVS Smart Mild-Hybrid system",
         "1.2L PureTech Plug-in Hybrid (PHEV)",
         "660cc Mild-Hybrid R06A"
       ],
       "ou": [
-        "1.5 لیٹر ڈوئل جیٹ (K15C) انجن مع SHVS اسمارٹ مائلڈ ہائبرڈ سسٹم",
         "1.0 لیٹر 3-سلنڈر بوسٹر جیٹ ٹربو",
+        "1.5 لیٹر ڈوئل جیٹ (K15C) انجن مع SHVS اسمارٹ مائلڈ ہائبرڈ سسٹم",
         "1.2 لیٹر پلگ اِن ہائبرڈ (PHEV)",
         "660 سی سی مائلڈ ہائبرڈ انجن"
       ],
-      "a": 0,
+      "a": 1,
       "x": "GLX features the 1.5L K15C DualJet engine paired with Suzuki's SHVS Mild-Hybrid system.",
       "xu": "GLX میں 1.5 لیٹر K15C ڈوئل جیٹ انجن اور سوزوکی کا SHVS مائلڈ ہائبرڈ سسٹم موجود ہے۔"
     },
@@ -89,18 +86,18 @@ window.QUESTION_BANK = {
       "q": "What transmission is paired with the Suzuki Fronx GLX Mild-Hybrid in Pakistan?",
       "qu": "پاکستان میں سوزوکی فرونکس GLX مائلڈ ہائبرڈ کے ساتھ کون سا گیئر باکس دیا گیا ہے؟",
       "o": [
-        "6-Speed Torque-Converter Automatic with Steering Paddle Shifters",
-        "Rubber-band CVT without manual mode",
         "4-Speed Automatic",
+        "Rubber-band CVT without manual mode",
+        "6-Speed Torque-Converter Automatic with Steering Paddle Shifters",
         "5-Speed Manual"
       ],
       "ou": [
-        "6-اسپیڈ ٹارک کنورٹر آٹومیٹک مع اسٹیئرنگ پیڈل شفٹرز",
-        "عام CVT ٹرانسمیشن",
         "4-اسپیڈ آٹومیٹک",
+        "عام CVT ٹرانسمیشن",
+        "6-اسپیڈ ٹارک کنورٹر آٹومیٹک مع اسٹیئرنگ پیڈل شفٹرز",
         "5-اسپیڈ مینوئل"
       ],
-      "a": 0,
+      "a": 2,
       "x": "Fronx GLX uses a smooth, durable 6-speed torque-converter AT with sporty paddle shifters.",
       "xu": "فرونکس GLX میں پائیدار 6-اسپیڈ آٹومیٹک گیئر باکس اور اسپورٹی پیڈل شفٹرز دیے گئے ہیں۔"
     },
@@ -110,18 +107,18 @@ window.QUESTION_BANK = {
       "q": "Which Fronx variant offers the Two-Tone (contrasting black roof) exterior paint option?",
       "qu": "فرونکس کے کس ویرینٹ میں ٹو ٹون (متضاد سیاہ چھت / Two-Tone Roof) کلر آپشن ملتا ہے؟",
       "o": [
-        "GLX (Standard & ADAS trims)",
+        "Two-Tone is not offered in Pakistan",
         "Only GL 5-Speed Manual",
         "Only GL 4-Speed Automatic",
-        "Two-Tone is not offered in Pakistan"
+        "GLX (Standard & ADAS trims)"
       ],
       "ou": [
-        "GLX ویرینٹس (اسٹینڈرڈ اور ADAS ٹرمز)",
+        "پاکستان میں ٹو ٹون دستیاب نہیں",
         "صرف GL مینوئل میں",
         "صرف GL 4-اسپیڈ آٹومیٹک میں",
-        "پاکستان میں ٹو ٹون دستیاب نہیں"
+        "GLX ویرینٹس (اسٹینڈرڈ اور ADAS ٹرمز)"
       ],
-      "a": 0,
+      "a": 3,
       "x": "Two-tone contrasting roof colors are offered exclusively on GLX trims.",
       "xu": "ٹو ٹون کلر آپشن صرف GLX ویرینٹس میں پیش کیا جاتا ہے۔"
     },
@@ -131,18 +128,18 @@ window.QUESTION_BANK = {
       "q": "What is the ground clearance and boot space of the Pakistani Suzuki Fronx?",
       "qu": "پاکستانی سوزوکی فرونکس کی گراؤنڈ کلیئرنس اور ڈگی (Boot Space) کتنی ہے؟",
       "o": [
-        "170 mm ground clearance and 304 Liters boot space",
         "135 mm ground clearance and 510 Liters boot space",
+        "170 mm ground clearance and 304 Liters boot space",
         "220 mm ground clearance and 180 Liters boot space",
         "150 mm ground clearance and 250 Liters boot space"
       ],
       "ou": [
-        "170 ملی میٹر گراؤنڈ کلیئرنس اور 304 لیٹر بوٹ اسپیس",
         "135 ملی میٹر گراؤنڈ کلیئرنس اور 510 لیٹر بوٹ اسپیس",
+        "170 ملی میٹر گراؤنڈ کلیئرنس اور 304 لیٹر بوٹ اسپیس",
         "220 ملی میٹر گراؤنڈ کلیئرنس اور 180 لیٹر بوٹ اسپیس",
         "150 ملی میٹر گراؤنڈ کلیئرنس اور 250 لیٹر بوٹ اسپیس"
       ],
-      "a": 0,
+      "a": 1,
       "x": "Fronx offers 170 mm SUV ground clearance suited for local speed breakers and a practical 304L boot.",
       "xu": "فرونکس میں 170 ملی میٹر گراؤنڈ کلیئرنس اور 304 لیٹر کی عملی ڈگی موجود ہے۔"
     },
@@ -152,18 +149,18 @@ window.QUESTION_BANK = {
       "q": "Which Fronx variant includes full ADAS (Autonomous Emergency Braking, Adaptive Cruise Control, Lane Keep Assist)?",
       "qu": "فرونکس کے کس ویرینٹ میں مکمل ADAS سیفٹی پیکیج (آٹو ایمرجنسی بریکنگ، ایڈاپٹو کروز، لین کیپ اسسٹ) شامل ہے؟",
       "o": [
-        "Flagship Fronx GLX Hybrid with ADAS (Mono-Tone & Two-Tone)",
-        "Base Fronx GL 5MT",
         "Fronx GL 4AT",
+        "Base Fronx GL 5MT",
+        "Flagship Fronx GLX Hybrid with ADAS (Mono-Tone & Two-Tone)",
         "All variants come with ADAS as standard"
       ],
       "ou": [
-        "فلیگ شپ فرونکس GLX ہائبرڈ مع ADAS ویرینٹ",
-        "بیس ماڈل GL 5MT",
         "فرونکس GL 4AT",
+        "بیس ماڈل GL 5MT",
+        "فلیگ شپ فرونکس GLX ہائبرڈ مع ADAS ویرینٹ",
         "تمام ویرینٹس میں اسٹینڈرڈ آتا ہے"
       ],
-      "a": 0,
+      "a": 2,
       "x": "Full ADAS suite is exclusive to the top-of-the-line GLX Hybrid ADAS variants.",
       "xu": "مکمل ADAS سیفٹی سسٹم ٹاپ آف دی لائن GLX ہائبرڈ ADAS ویرینٹ میں دیا گیا ہے۔"
     },
@@ -173,18 +170,18 @@ window.QUESTION_BANK = {
       "q": "A customer has a strict budget around Rs. 6.1 Million and wants a reliable automatic crossover. Which Fronx variant fits best?",
       "qu": "ایک کسٹمر کا بجٹ تقریباً 61 لاکھ روپے ہے اور وہ آٹومیٹک کراس اوور لینا چاہتا ہے۔ اس کے لیے بہترین ویرینٹ کون سا ہے؟",
       "o": [
-        "Suzuki Fronx GL 4-Speed Automatic",
+        "Tell the customer Fronx has no automatic near 6.1M",
         "Suzuki Fronx GL 5-Speed Manual",
         "Suzuki Fronx GLX ADAS Two-Tone",
-        "Tell the customer Fronx has no automatic near 6.1M"
+        "Suzuki Fronx GL 4-Speed Automatic"
       ],
       "ou": [
-        "سوزوکی فرونکس GL 4-اسپیڈ آٹومیٹک",
+        "کسٹمر کو کہیں کہ اس بجٹ میں آٹومیٹک موجود نہیں",
         "سوزوکی فرونکس GL 5-اسپیڈ مینوئل",
         "سوزوکی فرونکس GLX ADAS ٹو ٹون",
-        "کسٹمر کو کہیں کہ اس بجٹ میں آٹومیٹک موجود نہیں"
+        "سوزوکی فرونکس GL 4-اسپیڈ آٹومیٹک"
       ],
-      "a": 0,
+      "a": 3,
       "x": "Fronx GL 4AT (~Rs. 6.10M ex-factory) directly targets Yaris/City automatic sedan buyers wanting an SUV stance.",
       "xu": "فرونکس GL 4AT تقریباً 61 لاکھ ایکس فیکٹری قیمت پر سیڈان کے بجٹ میں بہترین آٹومیٹک کراس اوور ہے۔"
     },
@@ -215,18 +212,18 @@ window.QUESTION_BANK = {
       "q": "How does Suzuki's SHVS (Smart Hybrid Vehicle by Suzuki) system work in Fronx GLX?",
       "qu": "فرونکس GLX میں سوزوکی کا SHVS اسمارٹ مائلڈ ہائبرڈ سسٹم کیسے کام کرتا ہے؟",
       "o": [
-        "Uses an Integrated Starter Generator (ISG) + Lithium-ion battery for Engine Auto Stop-Start, Regenerative Braking, and Torque Assist—no plug-in charging needed",
-        "Requires plugging into a 3-phase home wall charger for 6 hours daily",
         "Drives 100 km purely on electric power with engine off at 120 km/h",
+        "Requires plugging into a 3-phase home wall charger for 6 hours daily",
+        "Uses an Integrated Starter Generator (ISG) + Lithium-ion battery for Engine Auto Stop-Start, Regenerative Braking, and Torque Assist—no plug-in charging needed",
         "Runs on CNG and petrol together"
       ],
       "ou": [
-        "یہ ISG اور لیتھیم آئن بیٹری کی مدد سے آٹو اسٹارٹ اسٹاپ، ری جنریٹو بریکنگ اور انجن اسسٹ دیتا ہے — کسی چارجر کی ضرورت نہیں",
-        "اسے روزانہ 6 گھنٹے بجلی کے چارجر پر لگانا پڑتا ہے",
         "یہ 120 کی سپیڈ پر 100 کلومیٹر خالص بجلی پر چلتی ہے",
+        "اسے روزانہ 6 گھنٹے بجلی کے چارجر پر لگانا پڑتا ہے",
+        "یہ ISG اور لیتھیم آئن بیٹری کی مدد سے آٹو اسٹارٹ اسٹاپ، ری جنریٹو بریکنگ اور انجن اسسٹ دیتا ہے — کسی چارجر کی ضرورت نہیں",
         "یہ سی این جی اور پیٹرول پر چلتی ہے"
       ],
-      "a": 0,
+      "a": 2,
       "x": "SHVS charges itself automatically while decelerating, saves fuel at signals via Idle Stop, and assists acceleration.",
       "xu": "SHVS بریک لگانے پر خود چارج ہوتا ہے، سگنل پر انجن بند کر کے پیٹرول بچاتا ہے اور پِک اپ میں مدد دیتا ہے۔"
     },
@@ -236,18 +233,18 @@ window.QUESTION_BANK = {
       "q": "What structural technology makes Fronx both fuel-efficient and crash-safe?",
       "qu": "فرونکس کا کون سا باڈی پلیٹ فارم اسے بیک وقت محفوظ اور فیول ایفیشنٹ بناتا ہے؟",
       "o": [
-        "Suzuki HEARTECT platform using Ultra-High-Tensile Steel in a smooth continuous frame",
+        "Aluminum-only racing monocoque",
         "Heavy ladder-on-frame truck chassis",
         "Fiberglass body panels",
-        "Aluminum-only racing monocoque"
+        "Suzuki HEARTECT platform using Ultra-High-Tensile Steel in a smooth continuous frame"
       ],
       "ou": [
-        "سوزوکی کا HEARTECT پلیٹ فارم جو ہائی ٹینسائل مضبوط اسٹیل سے بنا ہے",
+        "صرف ایلومینیم ریسنگ فریم",
         "بھاری ٹرک والا لیڈر فریم چیسز",
         "فائبر گلاس باڈی پینلز",
-        "صرف ایلومینیم ریسنگ فریم"
+        "سوزوکی کا HEARTECT پلیٹ فارم جو ہائی ٹینسائل مضبوط اسٹیل سے بنا ہے"
       ],
-      "a": 0,
+      "a": 3,
       "x": "HEARTECT disperses impact energy efficiently using high-tensile steel while keeping weight low for better mileage and braking.",
       "xu": "HEARTECT پلیٹ فارم ہائی ٹینسائل اسٹیل سے ٹکر کی قوت کو پھیلاتا ہے اور کم وزن کی وجہ سے بہترین مائلیج دیتا ہے۔"
     },
@@ -278,18 +275,18 @@ window.QUESTION_BANK = {
       "q": "Among all its C-SUV & crossover competitors (Kia Stonic, Jaecoo J5, MG HS, MG ZS, Honda HR-V, BYD Atto 2), which vehicle is the ONLY one equipped with a Head-Up Display (HUD)?",
       "qu": "اپنے تمام مدمقابل کراس اوورز (اسٹونک، جیکو J5، ایم جی HS، ایم جی ZS، ہونڈا HR-V، بی وائی ڈی ایٹو 2) میں سے کون سی واحد گاڑی ہے جس میں ہیڈ اَپ ڈسپلے (HUD) آتا ہے؟",
       "o": [
-        "Suzuki Fronx GLX – It is the ONLY vehicle in this segment with a pop-up color Head-Up Display (HUD)",
         "Kia Stonic Turbo S",
+        "Suzuki Fronx GLX – It is the ONLY vehicle in this segment with a pop-up color Head-Up Display (HUD)",
         "Jaecoo J5 Comfort",
         "Honda HR-V VTi-S"
       ],
       "ou": [
-        "سوزوکی فرونکس GLX — یہ اس پورے سیگمنٹ کی واحد گاڑی ہے جس میں کلر ہیڈ اَپ ڈسپلے (HUD) موجود ہے",
         "کیا اسٹونک ٹربو S",
+        "سوزوکی فرونکس GLX — یہ اس پورے سیگمنٹ کی واحد گاڑی ہے جس میں کلر ہیڈ اَپ ڈسپلے (HUD) موجود ہے",
         "جیکو J5 کمفرٹ",
         "ہونڈا HR-V VTi-S"
       ],
-      "a": 0,
+      "a": 1,
       "x": "Official Pakistani C-SUV comparison sheets confirm: Stonic, Jaecoo J5, MG HS, MG ZS, HR-V, and BYD Atto 2 all lack a Head-Up Display (HUD). Only Suzuki Fronx offers it!",
       "xu": "تمام کمپیریزن چارٹس کے مطابق اسٹونک، جیکو J5، ایم جی HS، ایم جی ZS، ہونڈا HR-V اور BYD سب میں HUD غائب ہے — صرف سوزوکی فرونکس یہ پریمیم لگژری فیچر فراہم کرتی ہے!"
     },
@@ -299,18 +296,18 @@ window.QUESTION_BANK = {
       "q": "How does the 360-Degree Around View Camera help Pakistani drivers every day?",
       "qu": "فرونکس کا 360 ڈگری کیمرہ روزمرہ پاکستانی ڈرائیونگ میں کس طرح مددگار ثابت ہوتا ہے؟",
       "o": [
-        "Stitches 4 cameras to show a bird's-eye top view & 3D view—preventing scratches from bikes, narrow streets, and high curbs",
+        "Replaces side mirrors completely",
         "Records TikTok videos inside the cabin",
         "Only shows behind the rear bumper when reversing",
-        "Replaces side mirrors completely"
+        "Stitches 4 cameras to show a bird's-eye top view & 3D view—preventing scratches from bikes, narrow streets, and high curbs"
       ],
       "ou": [
-        "چار کیمروں کی مدد سے گاڑی کے چاروں طرف اور اوپر سے (Bird's-Eye View) منظر دکھاتا ہے جس سے تنگ گلیوں اور موٹر سائیکلوں سے رگڑ نہیں لگتی",
+        "سائیڈ مررز کو ختم کر دیتا ہے",
         "صرف کیبن کے اندر ویڈیو بناتا ہے",
         "صرف ریورس گیئر میں پیچھے دکھاتا ہے",
-        "سائیڈ مررز کو ختم کر دیتا ہے"
+        "چار کیمروں کی مدد سے گاڑی کے چاروں طرف اور اوپر سے (Bird's-Eye View) منظر دکھاتا ہے جس سے تنگ گلیوں اور موٹر سائیکلوں سے رگڑ نہیں لگتی"
       ],
-      "a": 0,
+      "a": 3,
       "x": "In congested Pakistani bazaars and tight parking, the 360° camera eliminates blind spots and protects bumpers.",
       "xu": "رش والے بازاروں اور تنگ پارکنگ میں 360 کیمرہ بلائنڈ اسپاٹس ختم کر کے گاڑی کو خراشوں سے بچاتا ہے۔"
     },
@@ -341,18 +338,18 @@ window.QUESTION_BANK = {
       "q": "Which rear-passenger comfort and charging features are included in Fronx GLX?",
       "qu": "فرونکس GLX میں پچھلی سیٹ کے مسافروں کے آرام اور فون چارجنگ کے لیے کیا سہولت موجود ہے؟",
       "o": [
-        "Dedicated Rear AC Vents + Rear USB Type-A & Type-C fast-charging ports (plus front Wireless Charger)",
         "No rear vents and no rear charging ports",
+        "Dedicated Rear AC Vents + Rear USB Type-A & Type-C fast-charging ports (plus front Wireless Charger)",
         "Only a 12V cigarette lighter in the trunk",
         "Heated massage seats in the trunk"
       ],
       "ou": [
-        "ریئر اے سی وینٹس (Rear AC Vents) اور پیچھے USB Type-A و Type-C چارجنگ پورٹس (مع فرنٹ وائرلیس چارجر)",
         "نہ ریئر اے سی وینٹس ہیں اور نہ چارجنگ پورٹس",
+        "ریئر اے سی وینٹس (Rear AC Vents) اور پیچھے USB Type-A و Type-C چارجنگ پورٹس (مع فرنٹ وائرلیس چارجر)",
         "صرف ڈگی میں 12V ساکٹ ہے",
         "پچھلی سیٹوں میں مساج سسٹم ہے"
       ],
-      "a": 0,
+      "a": 1,
       "x": "Rear AC vents are critical in Pakistani summers, paired with rear USB-A/C ports and front Qi wireless charging.",
       "xu": "پاکستان کی شدید گرمی میں ریئر اے سی وینٹس اور فرنٹ وائرلیس چارجر فیملی کے لیے زبردست سہولت ہیں۔"
     },
@@ -362,18 +359,18 @@ window.QUESTION_BANK = {
       "q": "What size infotainment screen and smartphone connectivity comes in Fronx GLX?",
       "qu": "فرونکس GLX میں کتنے انچ کی انفوٹینمنٹ اسکرین اور کون سی اسمارٹ فون کنیکٹیویٹی آتی ہے؟",
       "o": [
-        "9-inch HD Touchscreen with Wireless Apple CarPlay & Android Auto + Arkamys sound tuning",
-        "5-inch monochrome radio screen",
         "7-inch screen without CarPlay",
+        "5-inch monochrome radio screen",
+        "9-inch HD Touchscreen with Wireless Apple CarPlay & Android Auto + Arkamys sound tuning",
         "Aftermarket Android tablet glued to dash"
       ],
       "ou": [
-        "9 انچ ایچ ڈی ٹچ اسکرین مع Apple CarPlay اور Android Auto",
-        "5 انچ سادہ ریڈیو اسکرین",
         "7 انچ اسکرین بغیر کار پلے کے",
+        "5 انچ سادہ ریڈیو اسکرین",
+        "9 انچ ایچ ڈی ٹچ اسکرین مع Apple CarPlay اور Android Auto",
         "عام آفٹر مارکیٹ ٹیبلٹ"
       ],
-      "a": 0,
+      "a": 2,
       "x": "The 9-inch floating HD unit supports Apple CarPlay, Android Auto, vehicle info, energy flow, and 360 camera views.",
       "xu": "9 انچ ایچ ڈی اسکرین میں ایپل کار پلے، اینڈرائیڈ آٹو، ہائبرڈ انرجی فلو اور 360 کیمرہ ڈسپلے شامل ہے۔"
     },
@@ -404,18 +401,18 @@ window.QUESTION_BANK = {
       "q": "What engine powers the Peugeot 2008 in Pakistan, and what should a salesperson know about it?",
       "qu": "پاکستان میں پیژو 2008 (Peugeot 2008) میں کون سا انجن آتا ہے اور سیلز پرسن کو اس کے بارے میں کیا معلوم ہونا چاہیے؟",
       "o": [
-        "1.2L 3-Cylinder PureTech Turbo (~130 hp / 230 Nm) – strong torque, but 3-cylinder turbo needs high-grade fuel/care and has costlier European parts",
         "1.5L 4-Cylinder Naturally Aspirated Hybrid",
+        "1.2L 3-Cylinder PureTech Turbo (~130 hp / 230 Nm) – strong torque, but 3-cylinder turbo needs high-grade fuel/care and has costlier European parts",
         "1.8L 4-Cylinder CVT",
         "Pure Electric 50 kWh motor"
       ],
       "ou": [
-        "1.2 لیٹر 3-سلنڈر ٹربو انجن (~130 hp) — پاور اچھی ہے مگر 3-سلنڈر ٹربو کی مینٹیننس، فیول کی حساسیت اور یورپی پارٹس مہنگے ہیں",
         "1.5 لیٹر 4-سلنڈر مائلڈ ہائبرڈ",
+        "1.2 لیٹر 3-سلنڈر ٹربو انجن (~130 hp) — پاور اچھی ہے مگر 3-سلنڈر ٹربو کی مینٹیننس، فیول کی حساسیت اور یورپی پارٹس مہنگے ہیں",
         "1.8 لیٹر سی وی ٹی انجن",
         "مکمل الیکٹرک موٹر"
       ],
-      "a": 0,
+      "a": 1,
       "x": "Always acknowledge Peugeot's 130 hp turbo punch honestly, then highlight Fronx's 4-cyl smoothness, hybrid city mileage, and low maintenance.",
       "xu": "پیژو کی پاور کو تسلیم کریں، پھر فرونکس کے 4-سلنڈر سموتھ انجن، ہائبرڈ فیول ایوریج اور سستی مینٹیننس کے فوائد بتائیں۔"
     },
@@ -425,18 +422,18 @@ window.QUESTION_BANK = {
       "q": "According to the official Metronome comparison between Suzuki Fronx GLX ADAS (PKR 6,799,999) and Kia Stonic Turbo S (PKR 5,899,000), which massive safety & driver assistance suite does Fronx offer that Stonic completely lacks?",
       "qu": "آفیشل موازنے کے مطابق سوزوکی فرونکس GLX ADAS (68 لاکھ) اور کیا اسٹونک ٹربو S (59 لاکھ) کے درمیان فرونکس میں کون سا مکمل سیفٹی اور ڈرائیور اسسٹنس سسٹم موجود ہے جو اسٹونک میں بالکل نہیں آتا؟",
       "o": [
-        "Full ADAS Suite (Adaptive Cruise, Dual Sensor Brake Support II, Lane Keep & Departure, Blind Spot, RCTA, High Beam, Driver Sway Warning) + 360° Camera + HUD",
-        "Stonic has more ADAS features than Fronx",
         "Both cars have identical ADAS and identical cameras",
+        "Stonic has more ADAS features than Fronx",
+        "Full ADAS Suite (Adaptive Cruise, Dual Sensor Brake Support II, Lane Keep & Departure, Blind Spot, RCTA, High Beam, Driver Sway Warning) + 360° Camera + HUD",
         "Fronx has no safety features"
       ],
       "ou": [
-        "مکمل ADAS سوٹ (اڈاپٹیو کروز، ایمرجنسی بریکنگ، لین کیپ، بلائنڈ اسپاٹ، ریئر کراس ٹریفک، ہائی بیم، ڈرائیور الرٹ) مع 360 کیمرہ اور ہیڈ اَپ ڈسپلے (HUD)",
-        "اسٹونک میں فرونکس سے زیادہ ADAS فیچرز ہیں",
         "دونوں گاڑیوں میں ایک جیسے ADAS اور کیمرے ہیں",
+        "اسٹونک میں فرونکس سے زیادہ ADAS فیچرز ہیں",
+        "مکمل ADAS سوٹ (اڈاپٹیو کروز، ایمرجنسی بریکنگ، لین کیپ، بلائنڈ اسپاٹ، ریئر کراس ٹریفک، ہائی بیم، ڈرائیور الرٹ) مع 360 کیمرہ اور ہیڈ اَپ ڈسپلے (HUD)",
         "فرونکس میں کوئی سیفٹی فیچر نہیں ہے"
       ],
-      "a": 0,
+      "a": 2,
       "x": "Kia Stonic Turbo S has RED X across all 10 ADAS and camera/HUD categories. Stonic only has a sunroof and Multi-Collision Braking, whereas Fronx GLX gives full active crash prevention + HUD + 360 camera.",
       "xu": "کیا اسٹونک میں تمام 10 ADAS، 360 کیمرہ اور HUD فیچرز غائب ہیں؛ اسٹونک میں صرف سن روف ہے جبکہ فرونکس مکمل لائف سیونگ ADAS، 360 کیمرہ اور ہیڈ اَپ ڈسپلے دیتی ہے۔"
     },
@@ -446,18 +443,18 @@ window.QUESTION_BANK = {
       "q": "How many SRS Airbags come in Pakistan-assembled Honda City 1.5 Aspire and standard Toyota Yaris sedans?",
       "qu": "پاکستان میں بننے والی ہونڈا سٹی 1.5 اسپائر اور ٹویوٹا یارِس سیڈان میں عام طور پر کتنے ایئر بیگز آتے ہیں؟",
       "o": [
-        "Only 2–3 front airbags (compared to 6 airbags in Fronx GLX)",
+        "Zero airbags",
         "6 airbags standard in all variants",
         "8 airbags including knee airbags",
-        "Zero airbags"
+        "Only 2–3 front airbags (compared to 6 airbags in Fronx GLX)"
       ],
       "ou": [
-        "صرف 2 سے 3 ایئر بیگز (جبکہ فرونکس GLX میں پورے 6 ایئر بیگز ہیں)",
+        "کوئی ایئر بیگ نہیں",
         "تمام ویرینٹس میں 6 ایئر بیگز",
         "8 ایئر بیگز",
-        "کوئی ایئر بیگ نہیں"
+        "صرف 2 سے 3 ایئر بیگز (جبکہ فرونکس GLX میں پورے 6 ایئر بیگز ہیں)"
       ],
-      "a": 0,
+      "a": 3,
       "x": "Honda City Aspire has only 2 front airbags; Fronx GLX provides 6 airbags (front, side, and curtain) plus ADAS.",
       "xu": "ہونڈا سٹی اسپائر میں صرف 2 ایئر بیگز ہیں جبکہ فرونکس GLX میں 6 ایئر بیگز اور ADAS تحفظ موجود ہے۔"
     },
@@ -467,18 +464,18 @@ window.QUESTION_BANK = {
       "q": "How does MG ZS Hybrid+ (Essence) compare in pricing with Suzuki Fronx GLX in Pakistan?",
       "qu": "ایم جی زیڈ ایس ہائبرڈ پلس (MG ZS Hybrid+ Essence) کی قیمت کا سوزوکی فرونکس GLX سے کیا موازنہ ہے؟",
       "o": [
-        "MG ZS Hybrid+ Essence costs ~Rs. 7.5M–7.7M ex-factory—roughly Rs. 7 to 11 Lakh MORE expensive than Fronx GLX/ADAS",
         "MG ZS Hybrid+ costs Rs. 4.5M—much cheaper than Fronx",
+        "MG ZS Hybrid+ Essence costs ~Rs. 7.5M–7.7M ex-factory—roughly Rs. 7 to 11 Lakh MORE expensive than Fronx GLX/ADAS",
         "MG ZS is only sold as a manual diesel",
         "MG ZS has no hybrid variant in Pakistan"
       ],
       "ou": [
-        "MG ZS Hybrid+ Essence تقریباً 75 سے 77 لاکھ ایکس فیکٹری ہے — جو فرونکس GLX سے تقریباً 7 سے 11 لاکھ روپے مہنگی ہے",
         "MG ZS ہائبرڈ 45 لاکھ روپے کی ہے",
+        "MG ZS Hybrid+ Essence تقریباً 75 سے 77 لاکھ ایکس فیکٹری ہے — جو فرونکس GLX سے تقریباً 7 سے 11 لاکھ روپے مہنگی ہے",
         "MG ZS صرف مینوئل ڈیزل میں آتی ہے",
         "پاکستان میں MG ZS ہائبرڈ موجود نہیں"
       ],
-      "a": 0,
+      "a": 1,
       "x": "While MG ZS Hybrid+ offers strong power (197 PS) and panoramic roof, it pushes on-road cost near Rs. 8M+ vs Fronx's sweet spot.",
       "xu": "MG ZS Hybrid+ طاقتور ہے لیکن آن روڈ جاتے جاتے تقریباً 80 لاکھ سے اوپر چلی جاتی ہے جبکہ فرونکس کم بجٹ میں شاندار فیچرز اور سوزوکی نیٹ ورک دیتی ہے۔"
     },
@@ -488,18 +485,18 @@ window.QUESTION_BANK = {
       "q": "Comparing Suzuki Fronx GLX vs Kia Stonic Turbo S on Warranty, Scheduled Maintenance, and Dealer Outlets: What huge ownership advantage does Fronx hold?",
       "qu": "وارنٹی، سروس کے وقفے اور ڈیلرشپ نیٹ ورک کے لحاظ سے سوزوکی فرونکس GLX کا کیا اسٹونک ٹربو S پر کیا زبردست فائدہ ہے؟",
       "o": [
-        "Fronx has 170+ Outlets (vs only 25 for Kia) and a relaxed 7,500 KM Scheduled Maintenance interval (vs only 5,000 KM for Stonic)",
-        "Kia has 300 outlets and 15,000 km maintenance interval",
         "Both have exactly 50 outlets and identical service intervals",
+        "Kia has 300 outlets and 15,000 km maintenance interval",
+        "Fronx has 170+ Outlets (vs only 25 for Kia) and a relaxed 7,500 KM Scheduled Maintenance interval (vs only 5,000 KM for Stonic)",
         "Fronx requires oil change every 2,000 km"
       ],
       "ou": [
-        "فرونکس کے 170 سے زائد آؤٹ لیٹس ہیں (کیا کے صرف 25) اور فرونکس کا سروس وقفہ 7,500 کلومیٹر ہے (جبکہ اسٹونک کو ہر 5,000 کلومیٹر بعد ورکشاپ جانا پڑتا ہے)",
-        "کیا کے 300 آؤٹ لیٹس ہیں اور 15 ہزار کلومیٹر کا وقفہ ہے",
         "دونوں کے یکساں 50 آؤٹ لیٹس ہیں",
+        "کیا کے 300 آؤٹ لیٹس ہیں اور 15 ہزار کلومیٹر کا وقفہ ہے",
+        "فرونکس کے 170 سے زائد آؤٹ لیٹس ہیں (کیا کے صرف 25) اور فرونکس کا سروس وقفہ 7,500 کلومیٹر ہے (جبکہ اسٹونک کو ہر 5,000 کلومیٹر بعد ورکشاپ جانا پڑتا ہے)",
         "فرونکس کو ہر 2 ہزار کلومیٹر بعد آئل بدلنا پڑتا ہے"
       ],
-      "a": 0,
+      "a": 2,
       "x": "Stonic forces the owner to visit the workshop every 5,000 KM (33% more frequent maintenance visits) and only has 25 dealerships. Pak Suzuki has 170+ outlets in 100 cities with a 7,500 KM service interval!",
       "xu": "اسٹونک کے مالک کو ہر 5 ہزار کلومیٹر بعد ورکشاپ جانا پڑتا ہے (سال میں بار بار چکر) جبکہ پورے ملک میں صرف 25 شوروم ہیں۔ پاک سوزوکی کے 170+ ڈیلرشپس ہیں اور 7,500 کلومیٹر کا پرسکون سروس وقفہ ہے!"
     },
@@ -509,18 +506,18 @@ window.QUESTION_BANK = {
       "q": "The Honda HR-V VTi-S is priced at PKR 7,299,000 (~Rs. 5 Lakh MORE expensive than Fronx GLX ADAS at PKR 6,799,999). How does Fronx GLX prove dramatically superior in safety, tech, and network?",
       "qu": "ہونڈا HR-V VTi-S کی قیمت 73 لاکھ روپے ہے (فرونکس GLX سے 5 لاکھ روپے مہنگی)۔ اس کے باوجود فرونکس سیفٹی، جدید ٹیک اور نیٹ ورک میں کیسے واضح برتر ہے؟",
       "o": [
-        "Fronx has 6 Airbags (HR-V has only 4), Mild-Hybrid + 6AT (HR-V is non-hybrid CVT), 360° Camera + HUD + Blind Spot + RCTA (all missing in HR-V), and 170+ outlets vs Honda's 36",
+        "HR-V is a plug-in hybrid with 100 outlets",
         "HR-V has 10 airbags, 360 camera, and HUD",
         "Fronx is more expensive than HR-V",
-        "HR-V is a plug-in hybrid with 100 outlets"
+        "Fronx has 6 Airbags (HR-V has only 4), Mild-Hybrid + 6AT (HR-V is non-hybrid CVT), 360° Camera + HUD + Blind Spot + RCTA (all missing in HR-V), and 170+ outlets vs Honda's 36"
       ],
       "ou": [
-        "فرونکس میں 6 ایئر بیگز ہیں (HR-V میں صرف 4)، مائلڈ ہائبرڈ مع 6AT گیئر (HR-V نان ہائبرڈ CVT ہے)، 360 کیمرہ، HUD، بلائنڈ اسپاٹ، RCTA (سب HR-V میں غائب ہیں)، اور 170+ ڈیلرشپس بمقابلہ ہونڈا کے صرف 36",
+        "HR-V پلگ اِن ہائبرڈ ہے",
         "HR-V میں 10 ایئر بیگز، 360 کیمرہ اور HUD ہیں",
         "فرونکس HR-V سے زیادہ مہنگی ہے",
-        "HR-V پلگ اِن ہائبرڈ ہے"
+        "فرونکس میں 6 ایئر بیگز ہیں (HR-V میں صرف 4)، مائلڈ ہائبرڈ مع 6AT گیئر (HR-V نان ہائبرڈ CVT ہے)، 360 کیمرہ، HUD، بلائنڈ اسپاٹ، RCTA (سب HR-V میں غائب ہیں)، اور 170+ ڈیلرشپس بمقابلہ ہونڈا کے صرف 36"
       ],
-      "a": 0,
+      "a": 3,
       "x": "Despite costing 5 Lakh more (PKR 7.3M), Honda HR-V VTi-S cuts corners: only 4 airbags, no 360 camera, no HUD, no Blind Spot Monitor, no RCTA, and only 36 dealerships vs Suzuki's 170+!",
       "xu": "5 لاکھ روپے مہنگی ہونے کے باوجود ہونڈا HR-V میں صرف 4 ایئر بیگز ہیں، نہ 360 کیمرہ ہے، نہ HUD ہے، نہ بلائنڈ اسپاٹ ہے اور پورے پاکستان میں صرف 36 شورومز ہیں جبکہ سوزوکی کے 170 سے زائد ہیں!"
     },
@@ -551,18 +548,18 @@ window.QUESTION_BANK = {
       "q": "In the C-SUV comparison chart, MG ZS Vibe is priced at PKR 6,599,000 (very close to Fronx GLX ADAS at PKR 6.79M). Which basic exterior & tech features are shockingly MISSING in MG ZS Vibe that Fronx GLX has?",
       "qu": "کمپیریزن چارٹ کے مطابق MG ZS Vibe کی قیمت 66 لاکھ روپے ہے (فرونکس کے بالکل برابر)۔ اس میں کون سے بنیادی ایکسٹیریئر اور ٹیکنالوجی فیچرز غائب ہیں جو فرونکس GLX میں موجود ہیں؟",
       "o": [
-        "MG ZS Vibe has old Halogen headlights, NON-retractable mirrors, NO 360° camera, NO HUD, NO Lane Departure Prevention, and only 18 dealerships nationwide",
-        "MG ZS Vibe has LED projection, HUD, and 360 camera",
         "MG ZS Vibe has 100 dealerships in Pakistan",
+        "MG ZS Vibe has LED projection, HUD, and 360 camera",
+        "MG ZS Vibe has old Halogen headlights, NON-retractable mirrors, NO 360° camera, NO HUD, NO Lane Departure Prevention, and only 18 dealerships nationwide",
         "Both cars are completely identical in lighting and cameras"
       ],
       "ou": [
-        "MG ZS Vibe میں پرانی ہیلوجن لائٹس ہیں، سائیڈ مررز فولڈ نہیں ہوتے، نہ 360 کیمرہ ہے، نہ HUD ہے، نہ لین پریوینشن ہے، اور ملک بھر میں صرف 18 ڈیلرشپس ہیں",
-        "MG ZS Vibe میں HUD اور 360 کیمرہ ہے",
         "MG ZS کے پاکستان میں 100 شوروم ہیں",
+        "MG ZS Vibe میں HUD اور 360 کیمرہ ہے",
+        "MG ZS Vibe میں پرانی ہیلوجن لائٹس ہیں، سائیڈ مررز فولڈ نہیں ہوتے، نہ 360 کیمرہ ہے، نہ HUD ہے، نہ لین پریوینشن ہے، اور ملک بھر میں صرف 18 ڈیلرشپس ہیں",
         "دونوں گاڑیوں کے کیمرے اور لائٹس بالکل ایک جیسے ہیں"
       ],
-      "a": 0,
+      "a": 2,
       "x": "At 66 Lakh PKR, MG ZS Vibe leaves the driver with Halogen lights, manual folding mirrors, no 360 camera, no HUD, and an 18-dealership footprint. Fronx GLX ADAS gives full LED multi-reflectors, power folding mirrors, 360 camera, HUD, and 170+ outlets!",
       "xu": "66 لاکھ میں MG ZS Vibe میں ہیلوجن بلب، ہاتھ سے فولڈ ہونے والے شیشے، بغیر 360 کیمرہ اور صرف 18 ڈیلرشپس ہیں جبکہ فرونکس GLX میں LED لائٹس، آٹو فولڈنگ مررز، 360 کیمرہ، HUD اور 170 سے زائد ڈیلرشپس ملتی ہیں!"
     },
@@ -572,18 +569,18 @@ window.QUESTION_BANK = {
       "q": "In the official C-SUV comparison, Jaecoo J5 SHS HEV Comfort is priced at PKR 6,699,000 (direct price rival to Fronx GLX ADAS at PKR 6,799,999). What shocking safety compromises does Jaecoo J5 Comfort have?",
       "qu": "آفیشل کمپیریزن چارٹ کے مطابق جیکو J5 HEV کمفرٹ کی قیمت 66 لاکھ 99 ہزار روپے ہے (فرونکس کے بالکل برابر)۔ اس 67 لاکھ کی گاڑی میں سیفٹی کے کون سے ہولناک سمجھوتے کیے گئے ہیں؟",
       "o": [
-        "Jaecoo J5 Comfort has ONLY 2 Airbags (Fronx has 6), NO Rear View Camera, NO 360° Camera, ZERO ADAS features, Halogen headlamps, non-retractable mirrors, and only 20 dealerships",
+        "Both cars have identical safety and 6 airbags",
         "Jaecoo J5 Comfort has 10 airbags, full ADAS, and 360 camera",
         "Jaecoo J5 has 150 dealerships in Pakistan",
-        "Both cars have identical safety and 6 airbags"
+        "Jaecoo J5 Comfort has ONLY 2 Airbags (Fronx has 6), NO Rear View Camera, NO 360° Camera, ZERO ADAS features, Halogen headlamps, non-retractable mirrors, and only 20 dealerships"
       ],
       "ou": [
-        "جیکو J5 کمفرٹ میں صرف 2 ایئر بیگز ہیں (فرونکس میں 6)، ریورس کیمرہ نہیں ہے، 360 کیمرہ نہیں ہے، ADAS بالکل صفر ہے، ہیلوجن لائٹس ہیں، شیشے فولڈ نہیں ہوتے اور پورے ملک میں صرف 20 ڈیلرشپس ہیں",
+        "دونوں گاڑیوں میں ایک جیسی سیفٹی اور 6 ایئر بیگز ہیں",
         "جیکو J5 کمفرٹ میں 10 ایئر بیگز، مکمل ADAS اور 360 کیمرہ ہے",
         "جیکو کے پاکستان میں 150 شوروم ہیں",
-        "دونوں گاڑیوں میں ایک جیسی سیفٹی اور 6 ایئر بیگز ہیں"
+        "جیکو J5 کمفرٹ میں صرف 2 ایئر بیگز ہیں (فرونکس میں 6)، ریورس کیمرہ نہیں ہے، 360 کیمرہ نہیں ہے، ADAS بالکل صفر ہے، ہیلوجن لائٹس ہیں، شیشے فولڈ نہیں ہوتے اور پورے ملک میں صرف 20 ڈیلرشپس ہیں"
       ],
-      "a": 0,
+      "a": 3,
       "x": "At Rs. 6.7 Million, Jaecoo J5 Comfort dangerously offers only 2 airbags, no camera, 0 ADAS features, halogen lights, and non-retractable mirrors! Fronx GLX ADAS provides 6 airbags, 360 camera, full ADAS, HUD, LED lights, and 170+ Suzuki outlets.",
       "xu": "67 لاکھ کی گاڑی میں صرف 2 ایئر بیگز، بغیر کیمرہ، صفر ADAS، ہیلوجن لائٹس اور صرف 20 ڈیلرشپس! جبکہ فرونکس GLX ADAS میں 6 ایئر بیگز، 360 کیمرہ، مکمل ADAS، HUD اور 170 سے زائد سوزوکی 3S سینٹرز ملتے ہیں!"
     },
@@ -614,18 +611,18 @@ window.QUESTION_BANK = {
       "q": "What is Jaecoo J7 in Pakistan, and what is its approximate price bracket?",
       "qu": "پاکستان میں جیکو J7 (Jaecoo J7) کس قسم کی گاڑی ہے اور اس کی قیمت تقریباً کتنی ہے؟",
       "o": [
-        "A larger 1.5T Plug-in Hybrid (PHEV) SUV priced around ~Rs. 10 Million (Rs. 30+ Lakh costlier than Fronx)",
         "A Rs. 4.0 Million hatchback",
+        "A larger 1.5T Plug-in Hybrid (PHEV) SUV priced around ~Rs. 10 Million (Rs. 30+ Lakh costlier than Fronx)",
         "A manual pickup truck",
         "A 660cc imported car"
       ],
       "ou": [
-        "یہ ایک بڑی 1.5 ٹربو پلگ اِن ہائبرڈ (PHEV) SUV ہے جس کی قیمت تقریباً 1 کروڑ روپے ہے (فرونکس سے 30 لاکھ+ مہنگی)",
         "یہ 40 لاکھ کی ہیچ بیک ہے",
+        "یہ ایک بڑی 1.5 ٹربو پلگ اِن ہائبرڈ (PHEV) SUV ہے جس کی قیمت تقریباً 1 کروڑ روپے ہے (فرونکس سے 30 لاکھ+ مہنگی)",
         "یہ مینوئل پک اپ ٹرک ہے",
         "یہ 660 سی سی گاڑی ہے"
       ],
-      "a": 0,
+      "a": 1,
       "x": "Jaecoo J7 PHEV sits near Rs. 1 Crore—completely different budget segment from Fronx (~Rs. 6.0–6.87M).",
       "xu": "جیکو J7 تقریباً ایک کروڑ روپے کے بجٹ کی گاڑی ہے جو فرونکس سے 30 لاکھ روپے سے زیادہ مہنگی ہے۔"
     },
@@ -635,18 +632,18 @@ window.QUESTION_BANK = {
       "q": "In the C-SUV comparison sheet, BYD Atto 2 is priced at PKR 7,290,000 (~Rs. 5 Lakh more than Fronx GLX ADAS). What critical feature and infrastructure drawbacks does BYD Atto 2 have in Pakistan?",
       "qu": "کمپیریزن چارٹ کے مطابق بی وائی ڈی ایٹو 2 (BYD Atto 2) کی قیمت 73 لاکھ روپے ہے (فرونکس سے 5 لاکھ زیادہ)۔ پاکستان میں BYD Atto 2 کے کون سے اہم فیچرز اور نیٹ ورک کے مسائل ہیں؟",
       "o": [
-        "BYD has only 8 dealerships in ALL of Pakistan, lacks Hill Hold Control, lacks Lane Keep Assist, lacks Blind Spot Warning, lacks RCTA, lacks HUD, and suffers severe EV charging anxiety",
+        "BYD Atto 2 has a petrol V8 engine",
         "BYD has 100 dealerships and full nationwide charging stations",
         "BYD Atto 2 is cheaper than Suzuki Alto",
-        "BYD Atto 2 has a petrol V8 engine"
+        "BYD has only 8 dealerships in ALL of Pakistan, lacks Hill Hold Control, lacks Lane Keep Assist, lacks Blind Spot Warning, lacks RCTA, lacks HUD, and suffers severe EV charging anxiety"
       ],
       "ou": [
-        "BYD کے پورے پاکستان میں صرف 8 ڈیلرشپس ہیں، ہِل ہولڈ کنٹرول غائب ہے، لین کیپ اسسٹ، بلائنڈ اسپاٹ، RCTA اور HUD نہیں ہے، اور الیکٹرک چارجنگ کا شدید دردِ سر ہے",
+        "BYD میں پیٹرول انجن آتا ہے",
         "BYD کے 100 شوروم اور پورے ملک میں چارجنگ اسٹیشنز ہیں",
         "BYD ایٹو 2 سوزوکی آلٹو سے سستی ہے",
-        "BYD میں پیٹرول انجن آتا ہے"
+        "BYD کے پورے پاکستان میں صرف 8 ڈیلرشپس ہیں، ہِل ہولڈ کنٹرول غائب ہے، لین کیپ اسسٹ، بلائنڈ اسپاٹ، RCTA اور HUD نہیں ہے، اور الیکٹرک چارجنگ کا شدید دردِ سر ہے"
       ],
-      "a": 0,
+      "a": 3,
       "x": "BYD Atto 2 has only 8 dealerships in the entire country! It lacks Hill Hold Control, Blind Spot Warning, RCTA, and HUD. Fronx GLX ADAS self-charges with Smart Mild-Hybrid, costs 5 Lakh less, and is backed by 170+ Suzuki outlets across 100 cities.",
       "xu": "پورے پاکستان میں BYD کے صرف 8 شوروم ہیں! ہِل ہولڈ، بلائنڈ اسپاٹ، RCTA اور HUD غائب ہیں۔ فرونکس 5 لاکھ روپے سستی ہے، چارجنگ کے جھنجھٹ کے بغیر مائلڈ ہائبرڈ ہے اور 100 شہروں میں 170+ ڈیلرشپس موجود ہیں!"
     },
@@ -677,18 +674,18 @@ window.QUESTION_BANK = {
       "q": "Which two SUVs does Jetour offer in Pakistan, and what are their key specs?",
       "qu": "جیٹور (Jetour) پاکستان میں کون سی دو SUVs پیش کر رہا ہے اور ان کی خاص بات کیا ہے؟",
       "o": [
-        "Jetour Dashing (5-seater) & Jetour X70 Plus (7-seater) – 1.5L Turbo petrol + 6DCT, priced ~Rs. 7.9M to 8.3M",
         "Jetour Swift & Jetour WagonR under Rs. 4M",
+        "Jetour Dashing (5-seater) & Jetour X70 Plus (7-seater) – 1.5L Turbo petrol + 6DCT, priced ~Rs. 7.9M to 8.3M",
         "Pure electric 2-door sports cars",
         "3.0L Diesel 4x4 SUVs"
       ],
       "ou": [
-        "جیٹور ڈیشنگ (5 سیٹر) اور جیٹور X70 پلس (7 سیٹر) — 1.5 ٹربو پیٹرول انجن، قیمت تقریباً 79 سے 83 لاکھ روپے",
         "40 لاکھ سے کم کی ہیچ بیک گاڑیاں",
+        "جیٹور ڈیشنگ (5 سیٹر) اور جیٹور X70 پلس (7 سیٹر) — 1.5 ٹربو پیٹرول انجن، قیمت تقریباً 79 سے 83 لاکھ روپے",
         "دو دروازوں والی الیکٹرک کاریں",
         "3.0 لیٹر ڈیزل 4x4"
       ],
-      "a": 0,
+      "a": 1,
       "x": "Jetour Dashing/X70+ cost Rs. 11–20 Lakh more than Fronx, use non-hybrid 1.5L turbo engines (heavier city fuel bills), and have a tiny dealer network.",
       "xu": "جیٹور کی گاڑیاں فرونکس سے 11 سے 20 لاکھ مہنگی ہیں، نان ہائبرڈ ٹربو انجن کی وجہ سے شہر میں پیٹرول زیادہ پیتی ہیں اور نیٹ ورک محدود ہے۔"
     },
@@ -698,18 +695,18 @@ window.QUESTION_BANK = {
       "q": "How does Haval Jolion (1.5T Petrol ~Rs. 7.8M / Jolion HEV ~Rs. 9.1M) compare to Fronx GLX (~Rs. 6.4M–6.87M)?",
       "qu": "ہیول جولیئن (Haval Jolion پیٹرول ~78 لاکھ / جولیئن HEV ~91 لاکھ) کے مقابلے میں فرونکس GLX کی پوزیشن کیا ہے؟",
       "o": [
-        "Jolion HEV costs over Rs. 22 Lakh more than Fronx GLX ADAS; Fronx delivers Hybrid efficiency + ADAS + 360 Camera + HUD under Rs. 6.9M!",
-        "Jolion HEV is cheaper than Fronx GL Manual",
         "Jolion has no touchscreen",
+        "Jolion HEV is cheaper than Fronx GL Manual",
+        "Jolion HEV costs over Rs. 22 Lakh more than Fronx GLX ADAS; Fronx delivers Hybrid efficiency + ADAS + 360 Camera + HUD under Rs. 6.9M!",
         "Jolion is a 3-wheeler"
       ],
       "ou": [
-        "جولیئن HEV فرونکس GLX ADAS سے 22 لاکھ روپے سے بھی زیادہ مہنگی ہے؛ فرونکس 69 لاکھ سے کم میں ہائبرڈ، ADAS، 360 کیمرہ اور HUD دے دیتی ہے!",
-        "جولیئن HEV فرونکس مینوئل سے سستی ہے",
         "جولیئن میں ٹچ اسکرین نہیں ہے",
+        "جولیئن HEV فرونکس مینوئل سے سستی ہے",
+        "جولیئن HEV فرونکس GLX ADAS سے 22 لاکھ روپے سے بھی زیادہ مہنگی ہے؛ فرونکس 69 لاکھ سے کم میں ہائبرڈ، ADAS، 360 کیمرہ اور HUD دے دیتی ہے!",
         "جولیئن سیڈان گاڑی ہے"
       ],
-      "a": 0,
+      "a": 2,
       "x": "Fronx democratizes premium features (Hybrid + ADAS + 360 + HUD) at ~Rs. 6.8M that buyers previously had to spend Rs. 9M+ on Jolion HEV to get.",
       "xu": "جو فیچرز پہلے 90 لاکھ سے اوپر والی گاڑیوں میں ملتے تھے، فرونکس وہ تمام فیچرز 68 لاکھ کے بجٹ میں فراہم کرتی ہے۔"
     },
@@ -740,18 +737,18 @@ window.QUESTION_BANK = {
       "q": "Why is Fronx's 6-Speed Torque-Converter Automatic (in GLX) superior to CVT and Dry DCT gearboxes for Pakistani roads?",
       "qu": "پاکستانی سڑکوں اور ٹریفک کے لحاظ سے فرونکس GLX کا 6-اسپیڈ ٹارک کنورٹر آٹومیٹک گیئر، CVT اور Dry DCT سے بہتر کیوں ہے؟",
       "o": [
-        "Real stepped gear feel with Paddle Shifters, no CVT rubber-band noise, and no Dry-DCT overheating/jerking in crawling traffic",
         "It never needs transmission fluid for 1 million km",
+        "Real stepped gear feel with Paddle Shifters, no CVT rubber-band noise, and no Dry-DCT overheating/jerking in crawling traffic",
         "It has 12 reverse gears",
         "It converts the car into 4x4 rock crawler"
       ],
       "ou": [
-        "پیڈل شفٹرز کے ساتھ حقیقی گیئر شفٹنگ کا مزہ، CVT جیسا ربڑ بینڈ شور نہیں، اور شدید ٹریفک جام میں Dry-DCT کی طرح ہیٹ اَپ یا جھٹکے نہیں مارتا",
         "اس میں دس لاکھ کلومیٹر تک آئل نہیں بدلتا",
+        "پیڈل شفٹرز کے ساتھ حقیقی گیئر شفٹنگ کا مزہ، CVT جیسا ربڑ بینڈ شور نہیں، اور شدید ٹریفک جام میں Dry-DCT کی طرح ہیٹ اَپ یا جھٹکے نہیں مارتا",
         "اس میں 12 ریورس گیئر ہوتے ہیں",
         "یہ گاڑی کو 4x4 بنا دیتا ہے"
       ],
-      "a": 0,
+      "a": 1,
       "x": "6AT torque converter is globally praised as the gold standard for smoothness + long-term reliability in hot climates.",
       "xu": "گرم موسم اور رش والی ٹریفک میں 6-اسپیڈ ٹارک کنورٹر آٹومیٹک سب سے پائیدار اور آرام دہ گیئر باکس مانا جاتا ہے۔"
     },
@@ -761,18 +758,18 @@ window.QUESTION_BANK = {
       "q": "What exterior lighting design gives Suzuki Fronx its unmistakable premium SUV look at night?",
       "qu": "فرونکس کا کون سا ایکسٹیریئر لائٹنگ ڈیزائن اسے رات کے وقت ایک پریمیم اور منفرد SUV لُک دیتا ہے؟",
       "o": [
-        "Split-design front fascia with Triple-Beam LED Headlamps (Auto Headlight + Follow-Me-Home) and connected-style LED rear signature lamps",
-        "Round yellow sealed-beam halogen bulbs",
         "Pop-up 1980s headlights",
+        "Round yellow sealed-beam halogen bulbs",
+        "Split-design front fascia with Triple-Beam LED Headlamps (Auto Headlight + Follow-Me-Home) and connected-style LED rear signature lamps",
         "Single candle bulb without DRLs"
       ],
       "ou": [
-        "اسپلٹ ڈیزائن فرنٹ گرل مع ٹرپل بیم (Triple-Beam) ایل ای ڈی ہیڈ لیمپس، آٹو لائٹس اور شاندار ایل ای ڈی ٹیل لائٹس",
-        "پرانے پیلے ہیلوجن بلب",
         "پاپ اَپ پرانی ہیڈ لائٹس",
+        "پرانے پیلے ہیلوجن بلب",
+        "اسپلٹ ڈیزائن فرنٹ گرل مع ٹرپل بیم (Triple-Beam) ایل ای ڈی ہیڈ لیمپس، آٹو لائٹس اور شاندار ایل ای ڈی ٹیل لائٹس",
         "بغیر DRL سادہ بلب"
       ],
-      "a": 0,
+      "a": 2,
       "x": "Inspired by Suzuki Grand Vitara, Fronx's NEXA-style triple-pod LED headlamps and wide stance attract young & executive buyers alike.",
       "xu": "گرینڈ وٹارا سے متاثرہ ٹرپل بیم LED ہیڈ لیمپس اور چوڑا فرنٹ فرونکس کو مہنگی لگژری SUV جیسی کشش دیتا ہے۔"
     },
@@ -782,18 +779,18 @@ window.QUESTION_BANK = {
       "q": "What is the crisp 1-sentence 'Elevator Pitch' for Pakistani Suzuki Fronx GLX?",
       "qu": "پاکستانی سوزوکی فرونکس GLX کے لیے ایک جملے کی بہترین 'سیلز پچ' کیا ہے؟",
       "o": [
-        "\"Pakistan's smartest Coupe-SUV that combines Smart Hybrid fuel economy, 6-Airbag + ADAS safety, 360° Camera & HUD luxury, backed by Pak Suzuki's unbeatable nationwide network and resale.\"",
+        "\"It is the cheapest manual hatchback.\"",
         "\"It is the biggest 7-seater off-road truck in Pakistan.\"",
         "\"It has the largest battery plug-in range of 1,000 km.\"",
-        "\"It is the cheapest manual hatchback.\""
+        "\"Pakistan's smartest Coupe-SUV that combines Smart Hybrid fuel economy, 6-Airbag + ADAS safety, 360° Camera & HUD luxury, backed by Pak Suzuki's unbeatable nationwide network and resale.\""
       ],
       "ou": [
-        "\"پاکستان کی ذہین ترین کوپے SUV جو اسمارٹ ہائبرڈ فیول ایوریج، 6 ایئر بیگز + ADAS سیفٹی، 360 کیمرہ اور HUD لگژری کو پاک سوزوکی کے ملک گیر نیٹ ورک اور شاندار ری سیل کے ساتھ یکجا کرتی ہے۔\"",
+        "\"یہ سب سے سستی مینوئل ہیچ بیک ہے۔\"",
         "\"یہ پاکستان کی سب سے بڑی 7 سیٹر آف روڈ جیپ ہے۔\"",
         "\"یہ بجلی سے چارج ہو کر ہزار کلومیٹر چلتی ہے۔\"",
-        "\"یہ سب سے سستی مینوئل ہیچ بیک ہے۔\""
+        "\"پاکستان کی ذہین ترین کوپے SUV جو اسمارٹ ہائبرڈ فیول ایوریج، 6 ایئر بیگز + ADAS سیفٹی، 360 کیمرہ اور HUD لگژری کو پاک سوزوکی کے ملک گیر نیٹ ورک اور شاندار ری سیل کے ساتھ یکجا کرتی ہے۔\""
       ],
-      "a": 0,
+      "a": 3,
       "x": "Every salesperson should internalize this core value proposition: Design + Hybrid Economy + Segment-Best Safety/Tech + Suzuki Peace of Mind.",
       "xu": "ہر سیلز ایگزیکٹو کو یہ بنیادی پیغام ازبر ہونا چاہیے: اسٹائل + ہائبرڈ بچت + بہترین سیفٹی/ٹیک + سوزوکی کا اعتماد۔"
     },
@@ -803,18 +800,18 @@ window.QUESTION_BANK = {
       "q": "Customer says: \"Jaecoo J5 BEV Comfort is also around Rs. 6.0M–6.7M and is full electric with 208 hp! Why shouldn't I buy J5 instead of Fronx?\" Best response?",
       "qu": "کسٹمر کہتا ہے: \"جیکو J5 الیکٹرک بھی 60 تا 67 لاکھ میں آ رہی ہے اور 208 ہارس پاور ہے، میں فرونکس کے بجائے وہ کیوں نہ لوں؟\" بہترین جواب کیا ہوگا؟",
       "o": [
-        "Appreciate J5's EV specs politely, then ask about their out-of-city travel & resale plans: highlight Fronx GLX's zero charging/load-shedding dependency, instant petrol refuel anywhere in Pakistan, proven 3S parts network, and risk-free resale",
         "Insult Chinese cars angrily and tell the customer EVs explode",
+        "Appreciate J5's EV specs politely, then ask about their out-of-city travel & resale plans: highlight Fronx GLX's zero charging/load-shedding dependency, instant petrol refuel anywhere in Pakistan, proven 3S parts network, and risk-free resale",
         "Lie that Fronx has 250 hp electric motor",
         "Offer Rs. 10 Lakh unauthorized discount immediately"
       ],
       "ou": [
-        "شائستگی سے J5 کے فیچرز کو سراہیں، پھر کسٹمر کے آؤٹ آف سٹی سفر اور ری سیل پلان کے بارے میں پوچھیں: فرونکس کی چارجنگ/لوڈشیڈنگ سے آزادی، ہر پمپ سے فوری فیول، ملک گیر 3S پارٹس نیٹ ورک اور محفوظ ری سیل واضح کریں",
         "چائنیز گاڑیوں کی برائی کریں اور ڈرائیں کہ بیٹری پھٹ جاتی ہے",
+        "شائستگی سے J5 کے فیچرز کو سراہیں، پھر کسٹمر کے آؤٹ آف سٹی سفر اور ری سیل پلان کے بارے میں پوچھیں: فرونکس کی چارجنگ/لوڈشیڈنگ سے آزادی، ہر پمپ سے فوری فیول، ملک گیر 3S پارٹس نیٹ ورک اور محفوظ ری سیل واضح کریں",
         "جھوٹ بولیں کہ فرونکس میں 250 ہارس پاور موٹر ہے",
         "بحث چھوڑ دیں"
       ],
-      "a": 0,
+      "a": 1,
       "x": "Consultative selling uncovers anxiety points (highway trips to Murree/Lahore/Islamabad, apartment charging, 3-year resale) where Fronx wins effortlessly.",
       "xu": "مشاورتی انداز اپنائیں: ہائی وے سفر، اپارٹمنٹ/گھر چارجنگ اور 3 سال بعد ری سیل کا سوال خود کسٹمر کو فرونکس کی طرف لے آتا ہے۔"
     },
@@ -824,18 +821,18 @@ window.QUESTION_BANK = {
       "q": "Customer says: \"Peugeot 2008 has a 130 hp turbo engine and panoramic sunroof, whereas Fronx has ~100 hp and no sunroof.\" Best response?",
       "qu": "کسٹمر کہتا ہے: \"پیژو 2008 میں 130 ہارس پاور ٹربو انجن اور سن روف ہے جبکہ فرونکس میں سن روف نہیں اور پاور ~100 hp ہے۔\" آپ کیا جواب دیں گے؟",
       "o": [
-        "Agree honestly on turbo & sunroof; then ask how often sunroof opens in 45°C dust vs daily benefits of Fronx's Smart Hybrid mileage, 360° Camera, HUD, ADAS, 4-cyl reliability, cheap maintenance & Suzuki resale—invite for a test drive!",
-        "Tell the customer Peugeot has only 70 hp",
         "Say we can cut the roof at local workshop to install sunroof",
+        "Tell the customer Peugeot has only 70 hp",
+        "Agree honestly on turbo & sunroof; then ask how often sunroof opens in 45°C dust vs daily benefits of Fronx's Smart Hybrid mileage, 360° Camera, HUD, ADAS, 4-cyl reliability, cheap maintenance & Suzuki resale—invite for a test drive!",
         "Tell them power doesn't matter at all"
       ],
       "ou": [
-        "ایمانداری سے ٹربو اور سن روف کو تسلیم کریں؛ پھر پوچھیں کہ پاکستان کی گرمی/دھول میں سن روف زیادہ کام آتا ہے یا روزمرہ ٹریفک میں فرونکس کا ہائبرڈ فیول ایوریج، 360 کیمرہ، HUD، ADAS، سستی مینٹیننس اور مضبوط ری سیل — اور ٹیسٹ ڈرائیو آفر کریں!",
-        "جھوٹ بولیں کہ پیژو صرف 70 ہارس پاور ہے",
         "کہیں کہ ہم بازار سے چھت کاٹ کر سن روف لگا دیں گے",
+        "جھوٹ بولیں کہ پیژو صرف 70 ہارس پاور ہے",
+        "ایمانداری سے ٹربو اور سن روف کو تسلیم کریں؛ پھر پوچھیں کہ پاکستان کی گرمی/دھول میں سن روف زیادہ کام آتا ہے یا روزمرہ ٹریفک میں فرونکس کا ہائبرڈ فیول ایوریج، 360 کیمرہ، HUD، ADAS، سستی مینٹیننس اور مضبوط ری سیل — اور ٹیسٹ ڈرائیو آفر کریں!",
         "کسٹمر سے بحث کریں"
       ],
-      "a": 0,
+      "a": 2,
       "x": "In Pakistan's heat & dust, sunroof is rarely opened, whereas 360 camera, HUD, Rear AC, Hybrid fuel savings, and low service bills benefit the owner every single day.",
       "xu": "پاکستان کی گرمی اور گرد و غبار میں سن روف شاذ و نادر کھلتا ہے جبکہ ہائبرڈ بچت، 360 کیمرہ، HUD اور سستی سروس روزانہ فائدہ دیتے ہیں۔"
     },
@@ -845,18 +842,18 @@ window.QUESTION_BANK = {
       "q": "Customer came to buy Honda City Aspire / Toyota Yaris ATIV X saying: \"Sedan trunk is bigger for family luggage.\" How do you convert them?",
       "qu": "کسٹمر ہونڈا سٹی یا ٹویوٹا یارِس لینے کا ارادہ رکھتا ہے اور کہتا ہے: \"سیڈان کی ڈگی بڑی ہوتی ہے۔\" آپ اسے فرونکس پر کیسے قائل کریں گے؟",
       "o": [
-        "Show Fronx's 304L boot + 60:40 split-folding seats in person, then demonstrate 170mm ground clearance over speed breakers, easy high seating for family, and 6 Airbags vs only 2 in City/Yaris at nearly the same price bracket",
+        "Say sedans are banned on motorways",
         "Claim Fronx boot is 700 liters",
         "Tell them luggage can be tied on the hood",
-        "Say sedans are banned on motorways"
+        "Show Fronx's 304L boot + 60:40 split-folding seats in person, then demonstrate 170mm ground clearance over speed breakers, easy high seating for family, and 6 Airbags vs only 2 in City/Yaris at nearly the same price bracket"
       ],
       "ou": [
-        "عملی طور پر فرونکس کی 304 لیٹر ڈگی اور 60:40 فولڈنگ سیٹ کھول کر دکھائیں، پھر اسپیڈ بریکرز کے لیے 170mm گراؤنڈ کلیئرنس، آرام دہ اونچی سیٹنگ اور 2 کے مقابلے میں 6 ایئر بیگز کا واضح فرق دکھائیں",
+        "کہیں کہ سیڈان موٹروے پر منع ہے",
         "جھوٹ بولیں کہ فرونکس کی ڈگی 700 لیٹر ہے",
         "کہیں کہ سامان بونٹ پر باندھ لیں",
-        "کہیں کہ سیڈان موٹروے پر منع ہے"
+        "عملی طور پر فرونکس کی 304 لیٹر ڈگی اور 60:40 فولڈنگ سیٹ کھول کر دکھائیں، پھر اسپیڈ بریکرز کے لیے 170mm گراؤنڈ کلیئرنس، آرام دہ اونچی سیٹنگ اور 2 کے مقابلے میں 6 ایئر بیگز کا واضح فرق دکھائیں"
       ],
-      "a": 0,
+      "a": 3,
       "x": "Physical demo of tailgate + folding seat + sitting in the driver's high SUV seat converts 7 out of 10 sedan shoppers.",
       "xu": "عملی ڈیمو (سیٹ فولڈ کر کے دکھانا اور ڈرائیونگ سیٹ پر بٹھانا) سیڈان کسٹمر کو فوری قائل کر لیتا ہے۔"
     },
@@ -887,18 +884,18 @@ window.QUESTION_BANK = {
       "q": "Customer is stretching their budget via bank financing for Jetour Dashing / Changan Oshan X7 (~Rs. 8.0M+). What smart financial angle brings them to Fronx GLX ADAS?",
       "qu": "کسٹمر بینک فنانسنگ پر زور ڈال کر جیٹور ڈیشنگ یا اوشان X7 (~80 لاکھ+) لینے کی سوچ رہا ہے۔ کون سی مالی دلیل اسے فرونکس GLX ADAS پر لا سکتی ہے؟",
       "o": [
-        "Demonstrate how choosing Fronx GLX ADAS cuts down-payment, saves ~Rs. 30,000–45,000/month in EMI + insurance + city petrol, while still giving ADAS, 360° camera, HUD, and stress-free resale at lease end",
-        "Tell them banks never lease Chinese cars",
         "Tell them SUVs above 4 meters cannot enter malls",
+        "Tell them banks never lease Chinese cars",
+        "Demonstrate how choosing Fronx GLX ADAS cuts down-payment, saves ~Rs. 30,000–45,000/month in EMI + insurance + city petrol, while still giving ADAS, 360° camera, HUD, and stress-free resale at lease end",
         "Offer no financial comparison"
       ],
       "ou": [
-        "حساب کر کے دکھائیں کہ فرونکس GLX ADAS لینے سے ڈاؤن پیمنٹ کم ہوگی، ماہانہ قسط، انشورنس اور پیٹرول کی مد میں ماہانہ 30 سے 45 ہزار روپے بچیں گے، اور ساتھ ADAS، 360 کیمرہ، HUD اور لیز کے اختتام پر بہترین ری سیل ملے گی",
-        "کہیں کہ بینک چائنیز گاڑیاں لیز نہیں کرتے",
         "کہیں کہ بڑی گاڑی مال میں نہیں جا سکتی",
+        "کہیں کہ بینک چائنیز گاڑیاں لیز نہیں کرتے",
+        "حساب کر کے دکھائیں کہ فرونکس GLX ADAS لینے سے ڈاؤن پیمنٹ کم ہوگی، ماہانہ قسط، انشورنس اور پیٹرول کی مد میں ماہانہ 30 سے 45 ہزار روپے بچیں گے، اور ساتھ ADAS، 360 کیمرہ، HUD اور لیز کے اختتام پر بہترین ری سیل ملے گی",
         "کوئی حساب نہ دکھائیں"
       ],
-      "a": 0,
+      "a": 2,
       "x": "Bank-financed buyers are monthly-cashflow sensitive—showing EMI + fuel + insurance savings closes deals fast!",
       "xu": "بینک لیز والے کسٹمر کے لیے ماہانہ قسط، انشورنس اور پیٹرول کا مجموعی خرچ سب سے اہم ہوتا ہے — یہ موازنہ فوری ڈیل کلوز کرواتا ہے۔"
     },
@@ -908,18 +905,18 @@ window.QUESTION_BANK = {
       "q": "During a Fronx GLX test drive, which 4 features MUST the salesperson actively demonstrate to create a 'WOW' moment?",
       "qu": "فرونکس GLX کی ٹیسٹ ڈرائیو کے دوران سیلز پرسن کو کون سے 4 فیچرز لازمی عملی طور پر تجربہ کروانے چاہئیں؟",
       "o": [
-        "1) Pop-up Head-Up Display (HUD), 2) 360° Bird's-Eye Camera while parking, 3) SHVS Idle Stop-Start & Hybrid flow screen, 4) 6AT smoothness + Paddle Shifters (and ADAS alerts on ADAS trim)",
+        "Keep radio at full volume and don't explain anything",
         "1) Spare tyre jack, 2) Owner's manual pages, 3) Fuse box, 4) Radiator cap",
         "1) Driving at 160 km/h in narrow street, 2) Hard handbrake turns",
-        "Keep radio at full volume and don't explain anything"
+        "1) Pop-up Head-Up Display (HUD), 2) 360° Bird's-Eye Camera while parking, 3) SHVS Idle Stop-Start & Hybrid flow screen, 4) 6AT smoothness + Paddle Shifters (and ADAS alerts on ADAS trim)"
       ],
       "ou": [
-        "1) ہیڈ اَپ ڈسپلے (HUD)، 2) پارکنگ کرتے وقت 360 ڈگری کیمرہ، 3) سگنل پر ہائبرڈ آٹو اسٹاپ اسٹارٹ اور انرجی فلو، 4) 6AT گیئر کی نرمی اور پیڈل شفٹرز",
+        "تاکہ کسٹمر کچھ نہ پوچھے، اونچی آواز میں گانے چلا دیں",
         "1) جیک پانا، 2) فیوز باکس، 3) ریڈی ایٹر ڈھکن، 4) بک کے صفحات",
         "تنگ گلی میں تیز رفتاری اور ہینڈ بریک ٹرن",
-        "تاکہ کسٹمر کچھ نہ پوچھے، اونچی آواز میں گانے چلا دیں"
+        "1) ہیڈ اَپ ڈسپلے (HUD)، 2) پارکنگ کرتے وقت 360 ڈگری کیمرہ، 3) سگنل پر ہائبرڈ آٹو اسٹاپ اسٹارٹ اور انرجی فلو، 4) 6AT گیئر کی نرمی اور پیڈل شفٹرز"
       ],
-      "a": 0,
+      "a": 3,
       "x": "Customers buy with emotion and justify with logic—seeing the HUD rise and parking effortlessly with 360° camera seals emotional desire.",
       "xu": "جب کسٹمر خود HUD کو اٹھتے دیکھتا ہے اور 360 کیمرے سے پارکنگ کرتا ہے تو گاڑی فوراً اس کے دل کو بھا جاتی ہے۔"
     }
@@ -975,7 +972,9 @@ window.QUESTION_BANK = {
         "ground clearance",
         "کلیئرنس"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "1. SHVS Smart Mild-Hybrid (K15C DualJet): Gives exceptional 16–20 km/L city economy via Idle Stop & regenerative braking—with zero external plug-in charging hassle.\n2. Complete 10-Feature ADAS Suite: Dual Sensor Brake Support II (AEB), Adaptive Cruise, Lane Keep, and Blind Spot Monitor protect the family actively from collisions.\n3. 360° Around-View Camera & Exclusive HUD: Bird's-eye parking eliminates curb & biker scratches in tight Pakistani bazaars, while HUD projects speed without looking away.\n4. 6 SRS Airbags + HEARTECT Platform: Dual front, side, and curtain airbags provide 3x greater passive safety than sedans (City/Yaris).\n5. 6AT Torque Converter + 170mm Clearance: Smooth, durable automatic (no DCT overheating in crawling traffic) with high clearance over monsoon floods and rough potholes.",
+      "model_ur": "1۔ SHVS اسمارٹ مائلڈ ہائبرڈ: سگنل پر آٹو اسٹاپ اور بریک چارجنگ سے شہر میں شاندار فیول بچت (بغیر کسی بیرونی چارجر کے)۔\n2۔ مکمل 10 ADAS سیفٹی سسٹمز: آٹو ایمرجنسی بریکنگ، ایڈاپٹو کروز، لین کیپ اور بلائنڈ اسپاٹ مانیٹر فیملی کو ہر وقت حادثے سے محفوظ رکھتے ہیں۔\n3۔ 360 ڈگری کیمرہ اور ہیڈ اَپ ڈسپلے (HUD): تنگ بازاروں اور پارکنگ میں چاروں طرف کا منظر دکھاتا ہے اور اسپیڈ سامنے شیشے پر نظر آتی ہے۔\n4۔ 6 ایئر بیگز اور HEARTECT فریم: اگلی اور پچھلی سیٹوں کے لیے 6 ایئر بیگز جو سٹی اور یارِس سے تین گنا زیادہ سیفٹی دیتے ہیں۔\n5۔ 6-اسپیڈ ٹارک کنورٹر آٹومیٹک اور 170mm گراؤنڈ کلیئرنس: گرمی اور رش میں پائیدار گیئر (نہ گرم ہوتا ہے نہ جھٹکے مارتا ہے) اور اونچے اسپیڈ بریکرز پر بے فکری۔"
     },
     {
       "id": "O2",
@@ -1024,7 +1023,9 @@ window.QUESTION_BANK = {
         "test drive",
         "ٹیسٹ ڈرائیو"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Winning Showroom Pitch:\n\"Sir, Jaecoo J5 is an attractive new entrant, but at PKR 6,699,000, Jaecoo J5 Comfort makes critical safety compromises: it has ONLY 2 Airbags, ZERO ADAS features, NO rear camera, NO 360 camera, halogen headlights, and non-folding mirrors!\nFor the same PKR 6.79M, Suzuki Fronx GLX ADAS is a fully loaded safety fortress with 6 Airbags, 10 ADAS systems, 360° camera, Head-Up Display (HUD), and LED auto lights.\nMost importantly, Jaecoo has only 20 dealerships nationwide with uncertain resale and imported part delays, whereas Pak Suzuki provides 170+ 3S outlets across 100 cities with guaranteed liquid cash-like resale and cheap local parts. Fronx gives you complete family safety and investment protection.\"",
+      "model_ur": "جیتنے والی سیلز پچ:\n\"سر، 67 لاکھ روپے میں جیکو J5 کمفرٹ میں سیفٹی کے بہت بڑے سمجھوتے ہیں: اس میں صرف 2 ایئر بیگز ہیں، ایک بھی ADAS فیچر نہیں، نہ ریورس کیمرہ ہے، نہ 360 کیمرہ، ہیلوجن لائٹس ہیں اور شیشے بھی فولڈ نہیں ہوتے!\nاسی بجٹ (68 لاکھ) میں سوزوکی فرونکس GLX ADAS میں پورے 6 ایئر بیگز، مکمل 10 ADAS فیچرز، 360 کیمرہ، ہیڈ اَپ ڈسپلے اور فل ایل ای ڈی لائٹس ملتی ہیں۔\nسب سے بڑھ کر، پورے پاکستان میں جیکو کے صرف 20 شورومز ہیں، جبکہ پاک سوزوکی کے 100 شہروں میں 170 سے زائد 3S ڈیلرشپس، سستے پارٹس اور کیش جیسی فوری ری سیل کسٹمر کے سرمائے کو محفوظ بناتی ہے۔\""
     },
     {
       "id": "O3",
@@ -1070,7 +1071,9 @@ window.QUESTION_BANK = {
         "نیٹ ورک",
         "سوزوکی"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Winning Showroom Pitch:\n\"Sir, both Honda HR-V VTi-S (PKR 7,299,000) and BYD Atto 2 (PKR 7,290,000) cost Rs. 5 Lakh MORE than Fronx GLX ADAS (PKR 6,799,999).\nDespite charging 5 Lakh extra, Honda HR-V gives you only 4 Airbags, a non-hybrid CVT engine, and completely lacks 360 Camera, Head-Up Display, Blind Spot Warning, and RCTA, backed by only 36 dealerships.\nBYD Atto 2 is a pure EV with only 8 dealerships in all of Pakistan, leaving you stranded with highway charging anxiety, loadshedding reliance, and no Hill Hold or Blind Spot Monitor.\nSuzuki Fronx GLX ADAS saves you Rs. 500,000 in cash, gives 6 Airbags, self-charging Smart Hybrid (fuel at any pump), full ADAS, exclusive HUD, and Pak Suzuki's 170+ network peace of mind.\"",
+      "model_ur": "جیتنے والی سیلز پچ:\n\"سر، ہونڈا HR-V (73 لاکھ) اور BYD Atto 2 (73 لاکھ) دونوں فرونکس سے 5 لاکھ روپے مہنگی ہیں!\n5 لاکھ زیادہ لینے کے باوجود ہونڈا HR-V میں صرف 4 ایئر بیگز ہیں، نہ 360 کیمرہ ہے، نہ HUD، نہ بلائنڈ اسپاٹ، نان ہائبرڈ CVT ہے اور ملک بھر میں صرف 36 شوروم ہیں۔\nBYD Atto 2 خالص الیکٹرک ہے جس کے پورے پاکستان میں صرف 8 شورومز ہیں، لمبے سفر پر چارجنگ ختم ہونے کا شدید خطرہ ہے اور ہِل ہولڈ و بلائنڈ اسپاٹ بھی غائب ہے۔\nفرونکس آپ کے 5 لاکھ روپے نقد بچاتی ہے، 6 ایئر بیگز، 10 ADAS، سیلف چارجنگ ہائبرڈ اور 170 سے زائد شورومز کا ذہنی سکون دیتی ہے۔\""
     },
     {
       "id": "O4",
@@ -1117,7 +1120,9 @@ window.QUESTION_BANK = {
         "test drive",
         "ٹیسٹ ڈرائیو"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Winning Showroom Pitch:\n\"Sir, City Aspire and Yaris ATIV X are traditional low-slung sedans priced around Rs. 5.9M–6.1M.\nFor virtually the same monthly lease or cash budget, Suzuki Fronx GL/GLX upgrades your family into a modern Coupe-SUV:\n1. 170mm Ground Clearance: Never scrapes speed breakers, broken monsoon potholes, or flooded streets.\n2. 3x Higher Safety: 6 Airbags + ADAS on Fronx GLX vs only 2 front airbags in City/Yaris.\n3. Easy Elder Ingress: High hip-point seats let elderly parents enter and exit without bending their knees.\n4. 60:40 Foldable Boot: Fits tall cartons, baby strollers, and bulk luggage through the wide hatch that fixed sedan trunks cannot swallow.\"",
+      "model_ur": "جیتنے والی سیلز پچ:\n\"سر، 60 سے 61 لاکھ کی اسی قیمت میں ہونڈا سٹی یا یارِس سیڈان کے بجائے فرونکس لینے سے فیملی کو شاندار کراس اوور SUV ملتی ہے:\n1۔ 170mm گراؤنڈ کلیئرنس: بارش کے پانی، اونچے اسپیڈ بریکرز اور ٹوٹی سڑکوں پر گاڑی نیچے سے نہیں لگتی۔\n2۔ 3 گنا زیادہ سیفٹی: سٹی اور یارِس میں صرف 2 ایئر بیگز ہیں جبکہ فرونکس میں 6 ایئر بیگز اور ADAS سیفٹی ہے۔\n3۔ بزرگوں کے لیے آسانی: اونچی سیٹ ہونے کی وجہ سے گھٹنے جھکائے بغیر والدین بآسانی بیٹھ اور اتر سکتے ہیں۔\n4۔ 60:40 فولڈنگ ڈگی: سیٹ فولڈ کر کے بڑے کارٹن، پرام اور بھاری سامان بآسانی رکھا جا سکتا ہے جو سیڈان میں ممکن نہیں۔\""
     },
     {
       "id": "O5",
@@ -1159,7 +1164,9 @@ window.QUESTION_BANK = {
         "adas",
         "کیمرہ"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Winning Showroom Pitch:\n\"Sir, Kia Stonic Turbo S is priced at Rs. 5.9M and offers a sunroof, but let's compare real long-term ownership:\n1. Active Crash Safety: Fronx GLX offers 10 ADAS features (Emergency Braking, Radar Cruise, Lane Keep, Blind Spot, RCTA) + 360° Camera + HUD—Kia Stonic has RED X across all of these!\n2. Scheduled Maintenance: Fronx needs service every 7,500 KM, whereas Stonic forces you into the workshop every 5,000 KM (33% more frequent maintenance bills!).\n3. Dealership Reach: Kia has only 25 outlets nationwide vs Pak Suzuki's 170+ outlets in 100 cities.\n4. Gearbox Reliability: Fronx's 6-speed torque converter AT doesn't overheat in summer traffic like Stonic's 7-speed dry DCT. In Pakistan's 45°C heat, active ADAS and hybrid mileage protect you every day, while a sunroof stays closed 95% of the year.\"",
+      "model_ur": "جیتنے والی سیلز پچ:\n\"سر، کیا اسٹونک 59 لاکھ کی ہے اور سن روف دیتی ہے، لیکن روزمرہ کے استعمال کا موازنہ کریں:\n1۔ مکمل ADAS اور 360 کیمرہ: فرونکس میں 10 لائف سیونگ ADAS فیچرز، 360 کیمرہ اور ہیڈ اَپ ڈسپلے ہے؛ اسٹونک میں ان میں سے ایک بھی نہیں!\n2۔ سروس کا وقفہ: فرونکس کی سروس 7,500 کلومیٹر بعد ہوتی ہے جبکہ اسٹونک کو ہر 5,000 کلومیٹر بعد ورکشاپ لے جانا پڑتا ہے (سال میں بار بار خرچ)۔\n3۔ ڈیلرشپ نیٹ ورک: کیا کے پورے ملک میں صرف 25 شوروم ہیں جبکہ سوزوکی کے 170 سے زائد ہیں!\n4۔ پائیدار گیئر باکس: پاکستان کی شدید گرمی اور رش میں اسٹونک کا 7-اسپیڈ DCT گرم ہو جاتا ہے جبکہ فرونکس کا 6AT ٹارک کنورٹر انتہائی پائیدار ہے۔ گرمی میں سن روف بند رہتا ہے جبکہ ہائبرڈ بچت اور ADAS روزانہ کام آتے ہیں۔\""
     },
     {
       "id": "O6",
@@ -1207,7 +1214,9 @@ window.QUESTION_BANK = {
         "fuel",
         "بچت"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Comparison & Upselling Logic:\n- Fronx GL (5MT/4AT, ~Rs. 5.7M–6.1M): 1.5L K15B non-hybrid engine, 2 airbags, conventional instruments, steel/alloy wheels. Perfect for fleet/entry crossover buyers.\n- Fronx GLX (6AT, ~Rs. 6.4M–6.8M): 1.5L K15C DualJet SHVS Mild-Hybrid, 6-Speed AT with Paddle Shifters, 6 Airbags, 360° Camera, Head-Up Display (HUD), 9\" HD Apple CarPlay, Wireless Charger, Rear AC Vents, Cruise/ADAS, and Two-Tone roof.\nUpsell Pitch:\n\"Sir, on bank financing, upgrading from GL 4AT to GLX Mild-Hybrid is only a minor difference of ~Rs. 7,000–9,000/month in EMI. For this small difference, you get 6 Airbags, 360 Camera, exclusive HUD, Paddle Shifters, and save Rs. 8,000+ every month in petrol thanks to the Smart Hybrid! The car literally pays for its own upgrade.\"",
+      "model_ur": "موازنہ اور اپ سیل کرنے کا طریقہ:\n- فرونکس GL (5MT/4AT، ~57 سے 61 لاکھ): 1.5L K15B نان ہائبرڈ انجن، 2 ایئر بیگز، سادہ میٹر۔ یہ بجٹ اور کارپوریٹ کسٹمر کے لیے بہترین ہے۔\n- فرونکس GLX (6AT، ~64 سے 68 لاکھ): 1.5L ڈوئل جیٹ مائلڈ ہائبرڈ، 6AT گیئر مع پیڈل شفٹرز، 6 ایئر بیگز، 360 کیمرہ، ہیڈ اَپ ڈسپلے (HUD)، وائرلیس چارجر، ریئر اے سی اور ADAS۔\nاپ سیل پچ:\n\"سر، بینک قسط پر GL سے GLX میں صرف 7 سے 9 ہزار روپے ماہانہ کا معمولی فرق آئے گا۔ لیکن اس کے بدلے آپ کو 6 ایئر بیگز، 360 کیمرہ، HUD اور پیڈل شفٹرز ملتے ہیں اور مائلڈ ہائبرڈ کی وجہ سے گاڑی ہر ماہ 8 ہزار کا پیٹرول خود بچا کر اپنی قسط پوری کر دیتی ہے!\""
     },
     {
       "id": "O7",
@@ -1251,7 +1260,9 @@ window.QUESTION_BANK = {
         "installment",
         "قسط"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "Showroom Objection Handling ('Sunroof' & 'Resale/Power'):\nObjection: \"Customer says: Fronx doesn't have a panoramic sunroof like Peugeot 2008 / Oshan X7.\"\nClosing Technique (Acknowledge -> Reframe -> Daily Value):\n1. Acknowledge: \"Sir, absolutely, panoramic sunroofs look stunning in showroom brochures, and I completely appreciate why you noticed that.\"\n2. Reframe: \"However, in Pakistan's 42°C–47°C summer temperatures and heavy dust, a glass roof acts as a greenhouse, placing extreme strain on the cabin AC and fading the upholstery.\"\n3. Daily Value & Close: \"Instead of glass roof heat, Fronx GLX invests that value where you benefit 365 days a year: Smart Hybrid city fuel economy, 360° parking cameras, Head-Up Display, and 6-Airbag safety. Let me hand you the keys for a quick test drive right now so you can experience how silent and chilled the cabin feels!\"",
+      "model_ur": "سن روف کے اعتراض کو سیل میں بدلنے کی تکنیک:\nاعتراض: \"کسٹمر کہتا ہے: فرونکس میں پیژو 2008 یا اوشان X7 کی طرح پینورامک سن روف نہیں ہے۔\"\nحل کرنے کا سنہری طریقہ (تسلیم کریں -> رخ موڑیں -> روزمرہ فائدہ):\n1۔ تسلیم کریں: \"سر، بالکل آپ درست فرما رہے ہیں، شوروم میں کھڑی گاڑی میں سن روف دیکھنے میں بہت خوبصورت لگتا ہے۔\"\n2۔ رخ موڑیں: \"لیکن پاکستان کی 45 ڈگری گرمی اور دھول میں شیشے کی چھت گاڑی کو اندر سے تندور بنا دیتی ہے جس سے اے سی پر دباؤ بڑھتا ہے اور گاڑی ٹھنڈی نہیں ہوتی۔\"\n3۔ روزمرہ فائدہ دکھا کر ڈیل کلوز کریں: \"سوزوکی نے چھت کی تپش کے بجائے وہ پیسہ روزمرہ کے فائدے پر لگایا ہے: مائلڈ ہائبرڈ پیٹرول بچت، 360 کیمرہ، ہیڈ اَپ ڈسپلے اور 6 ایئر بیگز۔ آئیں سر، میں آپ کو ابھی ٹیسٹ ڈرائیو کرواتا ہوں تاکہ آپ خود فرونکس کے شاندار اے سی اور خاموش کیبن کا لطف اٹھا سکیں!\""
     },
     {
       "id": "O8",
@@ -1301,7 +1312,9 @@ window.QUESTION_BANK = {
         "comparison",
         "موازنہ"
       ],
-      "max": 5
+      "max": 5,
+      "model_en": "2 Actionable Dealership Booking & Footfall Strategies:\nStrategy 1: \"The 1-Litre Fuel & Tech Showroom Challenge\":\nInvite local City, Yaris, and Stonic owners for a short test drive comparing Fronx's SHVS Mild-Hybrid flow, HUD, and 360 camera. Offer instant spot-trade valuation where they can exchange their old sedan for a new Fronx with zero delivery wait.\nStrategy 2: \"Corporate & Doctor Fleet Displays with Direct Bank MoUs\":\nSet up 3-day weekend display camps outside premier private hospitals, tech parks, and commercial banks with pre-approved zero-processing fee auto financing tables. Showcase Fronx GLX ADAS highlighting Rs. 40,000/month lower cash outflow vs Rs. 8M+ Chinese SUVs.",
+      "model_ur": "ڈیلرشپ کی سیلز بڑھانے کے لیے 2 شاندار تجاویز:\nتجویز 1: \"ایکسچینج میلہ اور ہائبرڈ ٹیسٹ ڈرائیو چیلنج\":\nشہر کے ہونڈا سٹی، یارِس اور اسٹونک مالکان کو شوروم پر مدعو کریں اور فرونکس کا 360 کیمرہ اور HUD خود چلا کر دکھائیں۔ موقع پر ہی پرانی گاڑی کی مارکیٹ سے بہتر قیمت لگا کر فرونکس کی فوری ڈیلیوری کی پیشکش کریں۔\nتجویز 2: \"ہسپتالوں اور بینکوں میں کارپوریٹ ڈسپلے کیمپس\":\nشہر کے بڑے ہسپتالوں (ڈاکٹرز کے لیے) اور کارپوریٹ دفاتر میں 3 روزہ فرونکس ڈسپلے کیمپ لگائیں جہاں بینک کے نمائندے فوری کم شرح سود پر لیزنگ کی منظوری دیں۔ 80 لاکھ کی گاڑیوں کے مقابلے میں فرونکس پر ماہانہ 40 ہزار کی بچت کا پوسٹر کسٹمرز کو فوری بکنگ پر آمادہ کرے گا۔"
     }
   ]
 };
