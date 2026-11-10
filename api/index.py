@@ -16,7 +16,7 @@ import threading
 from decimal import Decimal
 import openpyxl
 
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file, Response, abort
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file, Response, abort, flash
 from sqlalchemy import or_, and_, func, distinct
 
 from api.config import Config
@@ -6178,6 +6178,38 @@ def api_fronx_check_emp():
             'grade': existing.grade
         })
     return jsonify({'exists': False})
+
+@app.route('/fronx-official-key/download-excel')
+@require_super_admin
+def fronx_download_excel():
+    """Downloads the current question bank as a pre-formatted Excel workbook (.xlsx)."""
+    from api.fronx_excel_sync import export_questions_to_excel
+    output = export_questions_to_excel(root_dir)
+    return send_file(
+        output,
+        download_name="Suzuki_Fronx_Question_Bank_Master.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+@app.route('/fronx-official-key/upload-excel', methods=['POST'])
+@require_super_admin
+def fronx_upload_excel():
+    """Uploads an Excel file to update live questions.json and questions.js instantly."""
+    from api.fronx_excel_sync import import_questions_from_excel
+    if 'excel_file' not in request.files:
+        return redirect(url_for('fronx_official_key', msg='No file selected for upload', status='error'))
+    
+    file = request.files['excel_file']
+    if not file or not file.filename:
+        return redirect(url_for('fronx_official_key', msg='No file chosen', status='error'))
+    
+    if not file.filename.lower().endswith(('.xlsx', '.xlsm')):
+        return redirect(url_for('fronx_official_key', msg='Please upload a valid Excel file (.xlsx)', status='error'))
+    
+    success, message, mcq_count, open_count = import_questions_from_excel(root_dir, file.stream)
+    status = 'success' if success else 'error'
+    return redirect(url_for('fronx_official_key', msg=message, status=status))
 
 @app.route('/fronx-official-key')
 @require_super_admin

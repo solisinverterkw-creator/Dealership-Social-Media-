@@ -1,6 +1,37 @@
 {% extends "base.html" %}
 
-{% block title %}🔒 Official Master Answer Key (Super Admin Only) – Suzuki Fronx | ROSP{% endblock %}
+{% block title %}🔒 Official Master Answer Key (Super Admin Only) – Suzuki Fronx | ROSP
+<!-- EXCEL UPLOAD MODAL -->
+<div id="excelUploadModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; justify-content:center; align-items:center; padding:20px;">
+  <div style="background:#0f172a; border:2px solid #38bdf8; border-radius:16px; max-width:540px; width:100%; padding:24px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid #334155; padding-bottom:10px;">
+      <h3 style="color:#38bdf8; margin:0; font-size:1.2rem; display:flex; align-items:center; gap:8px;">
+        📤 Upload Questions Excel Sheet
+      </h3>
+      <button type="button" onclick="document.getElementById('excelUploadModal').style.display='none'" style="background:transparent; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
+    </div>
+
+    <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin-bottom:16px;">
+      Aap pehle <strong>Download Question Bank</strong> se Excel sheet download karein, usme naye MCQs ya open questions add/edit karein, aur yahan upload karein. Upload hotay hi online test portal aur super admin sheet foran update ho jayegi.
+    </p>
+
+    <form action="{{ url_for('fronx_upload_excel') }}" method="POST" enctype="multipart/form-data">
+      <div style="background:#1e293b; border:2px dashed #475569; border-radius:10px; padding:20px; text-align:center; margin-bottom:18px;">
+        <input type="file" name="excel_file" id="excel_file" accept=".xlsx,.xlsm" required style="display:block; width:100%; font-size:13px; color:#e2e8f0;" />
+        <div style="color:#64748b; font-size:11px; margin-top:8px;">Only Microsoft Excel files (.xlsx) are supported</div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="document.getElementById('excelUploadModal').style.display='none'" class="btn" style="background:#334155; color:#fff; border:none;">Cancel</button>
+        <button type="submit" class="btn" style="background:#0284c7; color:#fff; font-weight:700; border:none; padding:10px 20px;">
+          🚀 Upload &amp; Update Live Portal
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
 
 {% block content %}
 <header>
@@ -10,13 +41,32 @@
       Confidential Super Admin Reference · 42 MCQs &amp; 8 Open-Ended Sales Pitch Scenarios with Full Answers &amp; Explanations
     </div>
   </div>
-  <div class="toolbar">
+  <div class="toolbar" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <a href="{{ url_for('fronx_download_excel') }}" class="btn" style="background:#166534; color:#fff; font-weight:700; border:none; display:inline-flex; align-items:center; gap:6px;">
+      📥 Download Question Bank (Excel .xlsx)
+    </a>
+    <button type="button" class="btn" onclick="document.getElementById('excelUploadModal').style.display='flex'" style="background:#0284c7; color:#fff; font-weight:700; border:none; display:inline-flex; align-items:center; gap:6px;">
+      📤 Upload &amp; Sync Excel to Server
+    </button>
     <a href="{{ url_for('fronx_skill_report') }}" class="btn">← Back to Dealership Report</a>
     <button type="button" class="btn primary" onclick="window.print()" style="background:#2563eb; color:#fff; border:none;">
-      🖨 Print / Save as PDF
+      🖨️ Print / Save as PDF
     </button>
   </div>
 </header>
+
+
+{% if request.args.get('msg') %}
+<div class="detail-card" style="margin-bottom:20px; background:{% if request.args.get('status') == 'success' %}rgba(34,197,94,0.15){% else %}rgba(239,68,68,0.15){% endif %}; border:1.5px solid {% if request.args.get('status') == 'success' %}#22c55e{% else %}#ef4444{% endif %}; border-radius:12px; padding:16px 20px;">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <span style="font-size:24px;">{% if request.args.get('status') == 'success' %}✅{% else %}⚠️{% endif %}</span>
+    <div>
+      <strong style="color:#fff; font-size:15px;">{{ request.args.get('msg') }}</strong>
+      <div style="color:#94a3b8; font-size:12px; margin-top:2px;">Online Test Portal and Answer Key have been updated instantly.</div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- CONFIDENTIALITY ALERT BANNER -->
 <div class="detail-card" style="margin-bottom:20px; background:linear-gradient(135deg, rgba(239,68,68,0.15), rgba(15,23,42,0.6)); border:1.5px solid #ef4444; border-radius:12px; padding:16px 20px;">
