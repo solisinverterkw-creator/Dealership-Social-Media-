@@ -6047,6 +6047,18 @@ def fronx_skill_report():
         total_ai_flagged=total_ai_flagged
     )
 
+@app.route('/fronx-submission/<int:sub_id>/delete', methods=['POST'])
+@require_super_admin
+def fronx_submission_delete(sub_id):
+    """Allows Super Admin to delete an invalid/test submission."""
+    s = db_session.query(SalesSkillTestSubmission).filter(SalesSkillTestSubmission.id == sub_id).first()
+    if not s:
+        abort(404)
+    c_name = s.candidate_name
+    db_session.delete(s)
+    db_session.commit()
+    return redirect(url_for('fronx_skill_report', msg=f'Submission for {c_name} deleted successfully', status='success'))
+
 @app.route('/fronx-submission/<int:sub_id>')
 @require_login
 def fronx_submission_inspect(sub_id):

@@ -3,7 +3,7 @@
    42 MCQs + undefined Open-Ended Showroom Winning Pitches (50 Total)
    Pak Suzuki Dealership Network - National Sales Skill Assessment
    Bilingual: English + Urdu (اردو)
-   Equal-Length Distractors & High Difficulty Discrimination
+   Equal-Length Distractors & Medium Difficulty Level
    ============================================================ */
 
 window.QUESTION_BANK = {
@@ -101,12 +101,12 @@ window.QUESTION_BANK = {
       "qu": "پاکستانی سوزوکی فرونکس کی گراؤنڈ کلیئرنس اور ڈگی (Boot Space) کتنی ہے؟",
       "o": [
         "150 mm ground clearance and 260 Liters cargo luggage volume",
-        "170 mm ground clearance and 304 Liters boot capacity (expandable)",
+        "170 mm ground clearance and 304 Liters boot capacity",
         "190 mm ground clearance and 410 Liters standard trunk compartment",
         "205 mm ground clearance and 350 Liters heavy utility load space"
       ],
       "a": 1,
-      "x": "Fronx delivers 170 mm of road clearance tailored for broken city streets and speed breakers, combined with a 304-liter cargo hold expandable via 60:40 split seats."
+      "x": "Fronx delivers 170 mm of road clearance tailored for broken city streets and speed breakers, combined with a 304-liter cargo hold extendable with 60:40 split seats."
     },
     {
       "id": "A7",
